@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { bluumApi } from '@/services/bluum-api';
+import { bluumApi } from '@/lib/bluum-api';
 import type { FundRequest } from '@/types/bluum';
 
 export async function POST(request: NextRequest) {

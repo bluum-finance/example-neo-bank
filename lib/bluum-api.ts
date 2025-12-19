@@ -1,13 +1,9 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
 const BLUUM_API_BASE_URL =
-  process.env.BLUUM_API_BASE_URL || 'https://sandbox.api.bluum.finance/v1';
-const BLUUM_API_KEY =
-  process.env.BLUUM_API_KEY ||
-  'test_bluum_f9ff3f567b9a558ecae2920e26670d6d7890e4c4425e8f39ea216b573c1940cc';
-const BLUUM_SECRET_KEY =
-  process.env.BLUUM_SECRET_KEY ||
-  '061ee6a8010f0303bc9954fb4931b154f84721b47f0dbef2becad4629d7e01ce';
+  process.env.BLUUM_API_BASE_URL || 'https://test-service.bluumfinance.com/v1';
+const BLUUM_API_KEY = process.env.BLUUM_API_KEY || '';
+const BLUUM_SECRET_KEY = process.env.BLUUM_SECRET_KEY || '';
 
 class BluumApiClient {
   private client: AxiosInstance;
@@ -176,4 +172,3 @@ class BluumApiClient {
 }
 
 export const bluumApi = new BluumApiClient();
-

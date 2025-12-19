@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { bluumApi } from '@/services/bluum-api';
+import { bluumApi } from '@/lib/bluum-api';
 
 export async function GET(request: NextRequest) {
   try {

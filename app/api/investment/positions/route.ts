@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { bluumApi } from '@/services/bluum-api';
+import { bluumApi } from '@/lib/bluum-api';
 
 function getAccountId(request: NextRequest): string | null {
   const searchParams = request.nextUrl.searchParams;
