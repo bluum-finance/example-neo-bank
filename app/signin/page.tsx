@@ -28,6 +28,14 @@ export default function SignIn() {
     }
   }, [router]);
 
+  // Generate a unique email to avoid email constraint violations
+  const generateUniqueEmail = (baseEmail: string): string => {
+    const [localPart, domain] = baseEmail.split('@');
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    return `${localPart}+${timestamp}-${randomSuffix}@${domain}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -41,8 +49,11 @@ export default function SignIn() {
     const isPasswordValid = password.length >= 8;
 
     if (isEmailValid && isPasswordValid) {
+      // Generate a unique email to avoid email constraint violations
+      const uniqueEmail = generateUniqueEmail(email);
+
       setAuth({
-        email: email,
+        email: uniqueEmail,
         name: mockUserAccount.name,
         // Include all user account fields
         phoneNumber: mockUserAccount.phoneNumber,
@@ -55,6 +66,8 @@ export default function SignIn() {
         lastName: mockUserAccount.lastName,
         dateOfBirth: mockUserAccount.dateOfBirth,
         countryOfBirth: mockUserAccount.countryOfBirth,
+        // Reset onboarding on new signin
+        hasAcceptedInvestTerms: false,
       });
       toast.success('Signed in successfully!');
       router.push('/dashboard');
@@ -125,4 +138,3 @@ export default function SignIn() {
     </div>
   );
 }
-

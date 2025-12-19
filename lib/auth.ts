@@ -15,6 +15,7 @@ export interface User {
   lastName?: string;
   dateOfBirth?: string;
   countryOfBirth?: string;
+  hasAcceptedInvestTerms?: boolean;
 }
 
 // Helper to check if localStorage is available (client-side only)
@@ -47,18 +48,17 @@ export function isAuthenticated(): boolean {
 }
 
 // Investment terms acceptance
-const INVEST_TERMS_KEY = 'neobank_invest_terms_accepted';
-
 export function hasAcceptedInvestTerms(): boolean {
-  if (!isLocalStorageAvailable()) {
-    return false;
-  }
-  const accepted = localStorage.getItem(INVEST_TERMS_KEY);
-  return accepted === 'true';
+  const user = getAuth();
+  return user?.hasAcceptedInvestTerms === true;
 }
 
 export function acceptInvestTerms() {
-  if (isLocalStorageAvailable()) {
-    localStorage.setItem(INVEST_TERMS_KEY, 'true');
+  const user = getAuth();
+  if (user) {
+    setAuth({
+      ...user,
+      hasAcceptedInvestTerms: true,
+    });
   }
 }
