@@ -15,9 +15,12 @@ import { Label } from '../ui/label';
 import { Select } from '../ui/select';
 import { Separator } from '../ui/separator';
 import { Checkbox } from '../ui/checkbox';
+import { AccountService } from '~/services/account.service';
+import { getAuth, setAuth } from '~/lib/auth';
+import { toast } from 'sonner';
 
 interface InvestOnboardingProps {
-  onAccept: () => void;
+  onAccept: (accountId?: string) => void;
 }
 
 interface FinancialProfile {
@@ -55,6 +58,7 @@ interface Agreements {
 
 export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
   const [step, setStep] = useState(0);
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [financialProfile, setFinancialProfile] = useState<FinancialProfile>({
     annualIncome: '',
     netWorth: '',
@@ -63,9 +67,9 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
   });
   const [taxInfo, setTaxInfo] = useState<TaxInfo>({
     taxId: '',
-    taxIdType: 'USA_SSN',
-    countryOfCitizenship: 'NGA',
-    countryOfTaxResidence: 'NGA',
+    taxIdType: 'SSN',
+    countryOfCitizenship: 'US',
+    countryOfTaxResidence: 'US',
   });
   const [employmentInfo, setEmploymentInfo] = useState<EmploymentInfo>({
     employmentStatus: '',
@@ -136,8 +140,8 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
           newErrors.employerAddress = 'Employer Address is required';
         }
       }
-    } else if (stepNum === 5) {
-      // Agreements
+    } else if (stepNum === 4) {
+      // Disclosures and Agreements
       if (!agreements.accountAgreement) {
         newErrors.accountAgreement = 'You must agree to the Account Agreement';
       }
@@ -150,10 +154,12 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
   const handleNext = () => {
     if (step === 0) {
       setStep(1);
-    } else if (step >= 1 && step < 5) {
+    } else if (step >= 1 && step < 4) {
       if (validateStep(step)) {
         setStep(step + 1);
       }
+    } else if (step === 4) {
+      handleCreateAccount();
     }
   };
 
@@ -195,7 +201,95 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
     }
   };
 
-  const totalSteps = 6; // Welcome (0), Financial (1), Tax (2), Employment (3), Disclosures (4), Agreements (5)
+  const mapFundingSource = (source: string): string => {
+    const mapping: Record<string, string> = {
+      employment_income: 'employment_income',
+      business_income: 'business_income',
+      savings: 'other',
+      inheritance: 'inheritance',
+      investment_returns: 'investment_income',
+      other: 'other',
+    };
+    return mapping[source] || 'other';
+  };
+
+  const handleCreateAccount = async () => {
+    if (!validateStep(4)) {
+      return;
+    }
+
+    setIsCreatingAccount(true);
+    try {
+      const user = getAuth();
+      if (!user) {
+        toast.error('Please sign in first');
+        return;
+      }
+
+      // Build account creation payload using user data
+      const accountPayload = {
+        account_type: 'trading',
+        contact: {
+          email_address: user.email,
+          phone_number: user.phoneNumber,
+          street_address: user.streetAddress,
+          city: user.city,
+          state: user.state,
+          postal_code: user.postalCode,
+          country: user.country || 'US',
+        },
+        identity: {
+          first_name: user.firstName,
+          last_name: user.lastName,
+          date_of_birth: user.dateOfBirth,
+          tax_id: taxInfo.taxId,
+          tax_id_type: taxInfo.taxIdType as
+            | 'SSN'
+            | 'ITIN'
+            | 'EIN'
+            | 'SIN'
+            | 'NINO'
+            | 'TFN'
+            | 'VAT'
+            | 'TIN'
+            | 'OTHER',
+          country_of_citizenship: taxInfo.countryOfCitizenship || 'US',
+          country_of_birth: user.countryOfBirth || 'US',
+          country_of_tax_residence: taxInfo.countryOfTaxResidence || 'US',
+          funding_source: financialProfile.fundingSource
+            ? [mapFundingSource(financialProfile.fundingSource) as any]
+            : undefined,
+        },
+        disclosures: {
+          is_control_person: disclosures.isControlPerson,
+          is_affiliated_exchange_or_finra: disclosures.isAffiliatedExchangeOrFinra,
+          is_politically_exposed: disclosures.isPoliticallyExposed,
+          immediate_family_exposed: disclosures.immediateFamilyExposed,
+        },
+        agreements: [
+          {
+            agreement: 'account_agreement',
+            agreed: agreements.accountAgreement,
+            signed_at: new Date().toISOString(),
+            ip_address: '127.0.0.1', // In production, fetch actual client IP
+          },
+        ],
+      };
+
+      const account = await AccountService.createAccount(accountPayload);
+
+      toast.success('Investment account created successfully!');
+      onAccept(account.id);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create account';
+      toast.error(errorMessage);
+      console.error('Account creation error:', error);
+    } finally {
+      setIsCreatingAccount(false);
+    }
+  };
+
+  const totalSteps = 5; // Welcome (0), Financial (1), Tax (2), Employment (3), Disclosures & Agreements (4)
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
@@ -281,16 +375,22 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
                   <Label htmlFor="annualIncome">
                     Annual Income <span className="text-destructive">*</span>
                   </Label>
-                  <Input
+                  <Select
                     id="annualIncome"
-                    type="text"
-                    placeholder="Enter your total annual income"
                     value={financialProfile.annualIncome}
                     onChange={(e) =>
                       handleFinancialProfileChange('annualIncome', e.target.value)
                     }
                     aria-invalid={!!errors.annualIncome}
-                  />
+                    placeholder="Select annual income range"
+                  >
+                    <option value="under_25000">Under $25,000</option>
+                    <option value="25000_99999">$25,000 - $99,999</option>
+                    <option value="100000_249999">$100,000 - $249,999</option>
+                    <option value="250000_499999">$250,000 - $499,999</option>
+                    <option value="500000_999999">$500,000 - $999,999</option>
+                    <option value="over_1000000">Over $1,000,000</option>
+                  </Select>
                   <p className="text-xs text-muted-foreground">
                     Your total annual income from all sources
                   </p>
@@ -303,14 +403,20 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
                   <Label htmlFor="netWorth">
                     Estimated Net Worth <span className="text-destructive">*</span>
                   </Label>
-                  <Input
+                  <Select
                     id="netWorth"
-                    type="text"
-                    placeholder="Enter your estimated net worth"
                     value={financialProfile.netWorth}
                     onChange={(e) => handleFinancialProfileChange('netWorth', e.target.value)}
                     aria-invalid={!!errors.netWorth}
-                  />
+                    placeholder="Select net worth range"
+                  >
+                    <option value="under_25000">Under $25,000</option>
+                    <option value="25000_99999">$25,000 - $99,999</option>
+                    <option value="100000_499999">$100,000 - $499,999</option>
+                    <option value="500000_999999">$500,000 - $999,999</option>
+                    <option value="1000000_4999999">$1,000,000 - $4,999,999</option>
+                    <option value="over_5000000">Over $5,000,000</option>
+                  </Select>
                   <p className="text-xs text-muted-foreground">
                     Your total assets minus total liabilities
                   </p>
@@ -323,16 +429,22 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
                   <Label htmlFor="liquidAssets">
                     Investible / Liquid Assets <span className="text-destructive">*</span>
                   </Label>
-                  <Input
+                  <Select
                     id="liquidAssets"
-                    type="text"
-                    placeholder="Enter your liquid assets"
                     value={financialProfile.liquidAssets}
                     onChange={(e) =>
                       handleFinancialProfileChange('liquidAssets', e.target.value)
                     }
                     aria-invalid={!!errors.liquidAssets}
-                  />
+                    placeholder="Select liquid assets range"
+                  >
+                    <option value="under_25000">Under $25,000</option>
+                    <option value="25000_99999">$25,000 - $99,999</option>
+                    <option value="100000_249999">$100,000 - $249,999</option>
+                    <option value="250000_499999">$250,000 - $499,999</option>
+                    <option value="500000_999999">$500,000 - $999,999</option>
+                    <option value="over_1000000">Over $1,000,000</option>
+                  </Select>
                   <p className="text-xs text-muted-foreground">
                     Assets readily available for investment (cash, stocks, bonds, etc.)
                   </p>
@@ -404,9 +516,16 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
                     value={taxInfo.taxIdType}
                     onChange={(e) => handleTaxInfoChange('taxIdType', e.target.value)}
                     aria-invalid={!!errors.taxIdType}
+                    placeholder="Select tax ID type"
                   >
-                    <option value="USA_SSN">USA SSN</option>
-                    <option value="NGA_TIN">Nigeria TIN</option>
+                    <option value="SSN">SSN</option>
+                    <option value="ITIN">ITIN</option>
+                    <option value="EIN">EIN</option>
+                    <option value="SIN">SIN</option>
+                    <option value="NINO">NINO</option>
+                    <option value="TFN">TFN</option>
+                    <option value="VAT">VAT</option>
+                    <option value="TIN">TIN</option>
                     <option value="OTHER">Other</option>
                   </Select>
                   {errors.taxIdType && (
@@ -426,11 +545,11 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
                     }
                     aria-invalid={!!errors.countryOfCitizenship}
                   >
-                    <option value="NGA">Nigeria</option>
-                    <option value="USA">United States</option>
-                    <option value="GBR">United Kingdom</option>
-                    <option value="CAN">Canada</option>
-                    <option value="OTHER">Other</option>
+                    <option value="NG">Nigeria</option>
+                    <option value="US">United States</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="CA">Canada</option>
+                    <option value="AU">Australia</option>
                   </Select>
                   {errors.countryOfCitizenship && (
                     <p className="text-xs text-destructive">{errors.countryOfCitizenship}</p>
@@ -449,11 +568,11 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
                     }
                     aria-invalid={!!errors.countryOfTaxResidence}
                   >
-                    <option value="NGA">Nigeria</option>
-                    <option value="USA">United States</option>
-                    <option value="GBR">United Kingdom</option>
-                    <option value="CAN">Canada</option>
-                    <option value="OTHER">Other</option>
+                    <option value="NG">Nigeria</option>
+                    <option value="US">United States</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="CA">Canada</option>
+                    <option value="AU">Australia</option>
                   </Select>
                   {errors.countryOfTaxResidence && (
                     <p className="text-xs text-destructive">{errors.countryOfTaxResidence}</p>
@@ -597,175 +716,144 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
             </div>
           )}
 
-          {/* Step 4: Disclosures */}
+          {/* Step 4: Disclosures & Agreements */}
           {step === 4 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-xl font-semibold mb-2">Disclosures</h2>
+                <h2 className="text-xl font-semibold mb-2">Disclosures & Agreements</h2>
                 <p className="text-sm text-muted-foreground">
-                  Regulatory compliance disclosures
+                  Regulatory compliance disclosures and account agreement
                 </p>
               </div>
 
-              <div className="space-y-4">
-                <p className="text-sm font-medium">
-                  Do any of the following apply to you or your family?{' '}
-                  <span className="text-destructive">*</span>
-                </p>
+              <div className="space-y-6">
+                {/* Regulatory Disclosures */}
+                <div className="space-y-4">
+                  <p className="text-sm font-medium">
+                    Do any of the following apply to you or your family?{' '}
+                    <span className="text-destructive">*</span>
+                  </p>
 
-                <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
-                  <Checkbox
-                    id="none"
-                    checked={
-                      !disclosures.isControlPerson &&
-                      !disclosures.isAffiliatedExchangeOrFinra &&
-                      !disclosures.isPoliticallyExposed &&
-                      !disclosures.immediateFamilyExposed
-                    }
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setDisclosures({
-                          isControlPerson: false,
-                          isAffiliatedExchangeOrFinra: false,
-                          isPoliticallyExposed: false,
-                          immediateFamilyExposed: false,
-                        });
+                  <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
+                    <Checkbox
+                      id="none"
+                      checked={
+                        !disclosures.isControlPerson &&
+                        !disclosures.isAffiliatedExchangeOrFinra &&
+                        !disclosures.isPoliticallyExposed &&
+                        !disclosures.immediateFamilyExposed
                       }
-                    }}
-                    label="None of the below applies to me or my family"
-                  />
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setDisclosures({
+                            isControlPerson: false,
+                            isAffiliatedExchangeOrFinra: false,
+                            isPoliticallyExposed: false,
+                            immediateFamilyExposed: false,
+                          });
+                        }
+                      }}
+                      label="None of the below applies to me or my family"
+                    />
 
-                  <Separator />
+                    <Separator />
 
-                  <Checkbox
-                    id="affiliated"
-                    checked={disclosures.isAffiliatedExchangeOrFinra}
-                    onChange={(e) => {
-                      handleDisclosureChange('isAffiliatedExchangeOrFinra', e.target.checked);
-                      if (e.target.checked) {
-                        setDisclosures((prev) => ({
-                          ...prev,
-                          isControlPerson: false,
-                          isPoliticallyExposed: false,
-                          immediateFamilyExposed: false,
-                        }));
-                      }
-                    }}
-                    label="Affiliated or work with a US registered broker dealer or FINRA."
-                  />
+                    <Checkbox
+                      id="affiliated"
+                      checked={disclosures.isAffiliatedExchangeOrFinra}
+                      onChange={(e) => {
+                        handleDisclosureChange(
+                          'isAffiliatedExchangeOrFinra',
+                          e.target.checked
+                        );
+                      }}
+                      label="Affiliated or work with a US registered broker dealer or FINRA."
+                    />
 
-                  <Checkbox
-                    id="controlPerson"
-                    checked={disclosures.isControlPerson}
-                    onChange={(e) => {
-                      handleDisclosureChange('isControlPerson', e.target.checked);
-                      if (e.target.checked) {
-                        setDisclosures((prev) => ({
-                          ...prev,
-                          isAffiliatedExchangeOrFinra: false,
-                          isPoliticallyExposed: false,
-                          immediateFamilyExposed: false,
-                        }));
-                      }
-                    }}
-                    label="Senior executive at or 10% shareholder of a publicly traded company."
-                  />
+                    <Checkbox
+                      id="controlPerson"
+                      checked={disclosures.isControlPerson}
+                      onChange={(e) => {
+                        handleDisclosureChange('isControlPerson', e.target.checked);
+                      }}
+                      label="Senior executive at or 10% shareholder of a publicly traded company."
+                    />
 
-                  <Checkbox
-                    id="politicallyExposed"
-                    checked={disclosures.isPoliticallyExposed}
-                    onChange={(e) => {
-                      handleDisclosureChange('isPoliticallyExposed', e.target.checked);
-                      if (e.target.checked) {
-                        setDisclosures((prev) => ({
-                          ...prev,
-                          isAffiliatedExchangeOrFinra: false,
-                          isControlPerson: false,
-                          immediateFamilyExposed: false,
-                        }));
-                      }
-                    }}
-                    label="I am a senior political figure."
-                  />
+                    <Checkbox
+                      id="politicallyExposed"
+                      checked={disclosures.isPoliticallyExposed}
+                      onChange={(e) => {
+                        handleDisclosureChange('isPoliticallyExposed', e.target.checked);
+                      }}
+                      label="I am a senior political figure."
+                    />
 
-                  <Checkbox
-                    id="familyExposed"
-                    checked={disclosures.immediateFamilyExposed}
-                    onChange={(e) => {
-                      handleDisclosureChange('immediateFamilyExposed', e.target.checked);
-                      if (e.target.checked) {
-                        setDisclosures((prev) => ({
-                          ...prev,
-                          isAffiliatedExchangeOrFinra: false,
-                          isControlPerson: false,
-                          isPoliticallyExposed: false,
-                        }));
-                      }
-                    }}
-                    label="I am a family member or relative of a senior political figure."
-                  />
+                    <Checkbox
+                      id="familyExposed"
+                      checked={disclosures.immediateFamilyExposed}
+                      onChange={(e) => {
+                        handleDisclosureChange('immediateFamilyExposed', e.target.checked);
+                      }}
+                      label="I am a family member or relative of a senior political figure."
+                    />
+                  </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    These disclosures are required for regulatory compliance. Your information
+                    will be kept confidential and used only for account verification purposes.
+                  </p>
                 </div>
 
-                <p className="text-xs text-muted-foreground">
-                  These disclosures are required for regulatory compliance. Your information
-                  will be kept confidential and used only for account verification purposes.
-                </p>
-              </div>
-            </div>
-          )}
+                <Separator />
 
-          {/* Step 5: Agreements/Disclosure */}
-          {step === 5 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-2">Investment Disclosure</h2>
-                <p className="text-sm text-muted-foreground">
-                  Please review and accept the terms to continue
-                </p>
-              </div>
-
-              <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
-                <div className="flex items-start gap-3">
-                  <FileText className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <h3 className="font-semibold">Terms and Conditions</h3>
-                    <div className="text-sm text-muted-foreground space-y-2">
-                      <p>
-                        Investing in stocks involves risk, including the possible loss of
-                        principal. Past performance does not guarantee future results.
-                      </p>
-                      <p>
-                        By proceeding, you acknowledge that you understand the risks associated
-                        with stock market investing and agree to our Terms of Service and
-                        Privacy Policy.
-                      </p>
-                      <Separator />
-                      <div>
-                        <p className="font-medium mb-2">Important Information:</p>
-                        <ul className="list-disc list-inside space-y-1 ml-2">
-                          <li>Minimum deposit: $20</li>
-                          <li>Minimum withdrawal: $5</li>
-                          <li>Market hours: 9:30 AM - 4:00 PM EST</li>
-                          <li>All investments are subject to market volatility</li>
-                          <li>You may lose some or all of your investment</li>
-                          <li>Past performance is not indicative of future results</li>
-                        </ul>
+                {/* Account Agreement */}
+                <div className="space-y-4">
+                  <div className="p-4 rounded-lg border bg-muted/30">
+                    <div className="flex items-start gap-3">
+                      <FileText className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <h3 className="font-semibold">Terms and Conditions</h3>
+                        <div className="text-sm text-muted-foreground space-y-2">
+                          <p>
+                            Investing in stocks involves risk, including the possible loss of
+                            principal. Past performance does not guarantee future results.
+                          </p>
+                          <p>
+                            By proceeding, you acknowledge that you understand the risks
+                            associated with stock market investing and agree to our Terms of
+                            Service and Privacy Policy.
+                          </p>
+                          <Separator />
+                          <div>
+                            <p className="font-medium mb-2">Important Information:</p>
+                            <ul className="list-disc list-inside space-y-1 ml-2">
+                              <li>Minimum deposit: $20</li>
+                              <li>Minimum withdrawal: $5</li>
+                              <li>Market hours: 9:30 AM - 4:00 PM EST</li>
+                              <li>All investments are subject to market volatility</li>
+                              <li>You may lose some or all of your investment</li>
+                              <li>Past performance is not indicative of future results</li>
+                            </ul>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="space-y-2">
-                <Checkbox
-                  id="accountAgreement"
-                  checked={agreements.accountAgreement}
-                  onChange={(e) => handleAgreementChange('accountAgreement', e.target.checked)}
-                  label="I have read and agree to the Account Agreement *"
-                />
-                {errors.accountAgreement && (
-                  <p className="text-xs text-destructive">{errors.accountAgreement}</p>
-                )}
+                  <div className="space-y-2">
+                    <Checkbox
+                      id="accountAgreement"
+                      checked={agreements.accountAgreement}
+                      onChange={(e) =>
+                        handleAgreementChange('accountAgreement', e.target.checked)
+                      }
+                      label="I have read and agree to the Account Agreement *"
+                    />
+                    {errors.accountAgreement && (
+                      <p className="text-xs text-destructive">{errors.accountAgreement}</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -800,15 +888,19 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
                   </Button>
                 ) : (
                   <Button
-                    onClick={() => {
-                      if (validateStep(5)) {
-                        onAccept();
-                      }
-                    }}
+                    onClick={handleCreateAccount}
                     size="lg"
                     className="flex items-center gap-2"
+                    disabled={isCreatingAccount}
                   >
-                    <DollarSign className="h-4 w-4" />I Understand and Accept Terms
+                    {isCreatingAccount ? (
+                      <>
+                        <span className="animate-spin">⏳</span>
+                        Creating Account...
+                      </>
+                    ) : (
+                      <>Continue</>
+                    )}
                   </Button>
                 )}
               </>

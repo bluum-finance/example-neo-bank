@@ -46,7 +46,7 @@ export interface NewAccountRequest {
     last_name: string;
     date_of_birth: string;
     tax_id: string;
-    tax_id_type: 'USA_SSN' | 'USA_EIN' | 'CAN_SIN' | 'GBR_NINO' | 'AUS_TFN';
+    tax_id_type: 'SSN' | 'ITIN' | 'EIN' | 'SIN' | 'NINO' | 'TFN' | 'VAT' | 'TIN' | 'OTHER';
     country_of_citizenship: string;
     country_of_birth: string;
     country_of_tax_residence: string;

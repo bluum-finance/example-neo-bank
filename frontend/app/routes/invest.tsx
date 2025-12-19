@@ -7,14 +7,9 @@ import { Badge } from '~/components/ui/badge';
 import { BalanceCard } from '~/components/balance-card';
 import { Separator } from '~/components/ui/separator';
 import { InvestOnboarding } from '~/components/invest/onboarding';
-import {
-  getStocks,
-  mockInvestmentBalance,
-  mockTotalGain,
-  mockTotalGainPercent,
-  type Stock,
-} from '~/lib/mock-data';
-import { hasAcceptedInvestTerms, acceptInvestTerms } from '~/lib/auth';
+import { InvestmentService, type Position } from '~/services/investment.service';
+import { AccountService } from '~/services/account.service';
+import { hasAcceptedInvestTerms, acceptInvestTerms, getAuth, setAuth } from '~/lib/auth';
 import { toast } from 'sonner';
 
 export function meta({}: Route.MetaArgs) {
@@ -23,21 +18,82 @@ export function meta({}: Route.MetaArgs) {
 
 export default function Invest() {
   const [hasAccepted, setHasAccepted] = useState(hasAcceptedInvestTerms());
-  const [stocks, setStocks] = useState<Stock[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [portfolioTotals, setPortfolioTotals] = useState({
+    balance: 0,
+    totalGain: 0,
+    totalGainPercent: 0,
+  });
 
   useEffect(() => {
     if (hasAccepted) {
-      getStocks().then((data) => {
-        setStocks(data);
-        setLoading(false);
-      });
+      loadPortfolio();
+    } else {
+      setLoading(false);
     }
   }, [hasAccepted]);
 
-  const handleAcceptTerms = () => {
+  const loadPortfolio = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Get account ID from user object
+      const user = getAuth();
+      let accountId = user?.externalAccountId;
+
+      if (!accountId) {
+        // Try to get existing accounts first
+        try {
+          const accounts = await AccountService.getAccounts();
+          if (accounts && accounts.length > 0) {
+            accountId = accounts[0].id;
+          } else {
+            // No account exists yet - user needs to create one
+            setError('No investment account found. Please create an account first.');
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          setError('Failed to load accounts. Please try again later.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Fetch positions
+      const positionsData = await InvestmentService.getPositions(accountId);
+      setPositions(positionsData);
+
+      // Calculate portfolio totals
+      const totals = InvestmentService.calculatePortfolioTotals(positionsData);
+      setPortfolioTotals(totals);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load portfolio';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAcceptTerms = (accountId?: string) => {
     acceptInvestTerms();
     setHasAccepted(true);
+
+    // Update user with account ID if provided
+    if (accountId) {
+      const user = getAuth();
+      if (user) {
+        setAuth({
+          ...user,
+          externalAccountId: accountId,
+        });
+      }
+    }
+
     toast.success('Welcome to investing!');
   };
 
@@ -51,6 +107,10 @@ export default function Invest() {
 
   const handleDeposit = () => {
     toast.info('Deposit feature coming soon');
+  };
+
+  const handleRetry = () => {
+    loadPortfolio();
   };
 
   // Show onboarding if terms not accepted
@@ -72,11 +132,11 @@ export default function Invest() {
 
       {/* Investment Balance Card */}
       <BalanceCard
-        balance={mockInvestmentBalance}
+        balance={portfolioTotals.balance}
         label="Investment Balance"
         portfolioValue={{
-          totalGain: mockTotalGain,
-          totalGainPercent: mockTotalGainPercent,
+          totalGain: portfolioTotals.totalGain,
+          totalGainPercent: portfolioTotals.totalGainPercent,
         }}
       />
 
@@ -108,62 +168,69 @@ export default function Invest() {
         <CardContent>
           {loading ? (
             <div className="py-8 text-center text-muted-foreground">Loading portfolio...</div>
-          ) : stocks.length === 0 ? (
+          ) : error ? (
+            <div className="py-8 text-center">
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button onClick={handleRetry} variant="outline" size="sm">
+                Retry
+              </Button>
+            </div>
+          ) : positions.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
               No holdings yet. Start investing!
             </div>
           ) : (
             <div className="space-y-4">
-              {stocks.map((stock, index) => (
-                <div key={stock.symbol}>
+              {positions.map((position, index) => (
+                <div key={position.symbol}>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold">{stock.symbol}</h3>
+                        <h3 className="font-semibold">{position.symbol}</h3>
                         <Badge variant="outline" className="text-xs">
-                          {stock.shares} shares
+                          {position.shares} shares
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground">{stock.name}</p>
+                      <p className="text-sm text-muted-foreground">{position.name}</p>
                       <div className="flex items-center gap-4 mt-2">
                         <div>
                           <p className="text-xs text-muted-foreground">Current Price</p>
                           <p className="text-sm font-medium">
-                            ${stock.currentPrice.toFixed(2)}
+                            ${position.currentPrice.toFixed(2)}
                           </p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Value</p>
-                          <p className="text-sm font-medium">${stock.value.toFixed(2)}</p>
+                          <p className="text-sm font-medium">${position.value.toFixed(2)}</p>
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
                       <div className="flex items-center gap-1 mb-1">
-                        {stock.gain >= 0 ? (
+                        {position.gain >= 0 ? (
                           <ArrowUp className="h-4 w-4 text-green-600" />
                         ) : (
                           <ArrowDown className="h-4 w-4 text-red-600" />
                         )}
                         <span
                           className={`text-sm font-semibold ${
-                            stock.gain >= 0 ? 'text-green-600' : 'text-red-600'
+                            position.gain >= 0 ? 'text-green-600' : 'text-red-600'
                           }`}
                         >
-                          {stock.gain >= 0 ? '+' : ''}${stock.gain.toFixed(2)}
+                          {position.gain >= 0 ? '+' : ''}${position.gain.toFixed(2)}
                         </span>
                       </div>
                       <p
                         className={`text-xs ${
-                          stock.gainPercent >= 0 ? 'text-green-600' : 'text-red-600'
+                          position.gainPercent >= 0 ? 'text-green-600' : 'text-red-600'
                         }`}
                       >
-                        {stock.gainPercent >= 0 ? '+' : ''}
-                        {stock.gainPercent.toFixed(2)}%
+                        {position.gainPercent >= 0 ? '+' : ''}
+                        {position.gainPercent.toFixed(2)}%
                       </p>
                     </div>
                   </div>
-                  {index < stocks.length - 1 && <Separator className="mt-4" />}
+                  {index < positions.length - 1 && <Separator className="mt-4" />}
                 </div>
               ))}
             </div>

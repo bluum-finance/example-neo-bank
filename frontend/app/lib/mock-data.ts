@@ -1,5 +1,4 @@
 // Mock data service - re-exports from centralized data folder
-// This file maintains backward compatibility while using the new data structure
 
 export type {
   Transaction,

@@ -47,6 +47,17 @@ export default function SignIn() {
       setAuth({
         email: email,
         name: mockUserAccount.name,
+        // Include all user account fields
+        phoneNumber: mockUserAccount.phoneNumber,
+        streetAddress: mockUserAccount.streetAddress,
+        city: mockUserAccount.city,
+        state: mockUserAccount.state,
+        postalCode: mockUserAccount.postalCode,
+        country: mockUserAccount.country,
+        firstName: mockUserAccount.firstName,
+        lastName: mockUserAccount.lastName,
+        dateOfBirth: mockUserAccount.dateOfBirth,
+        countryOfBirth: mockUserAccount.countryOfBirth,
       });
       toast.success('Signed in successfully!');
       navigate('/dashboard');

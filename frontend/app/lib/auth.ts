@@ -5,6 +5,19 @@ const AUTH_KEY = 'neobank_auth';
 export interface User {
   email: string;
   name: string;
+  externalAccountId?: string;
+  // Contact information
+  phoneNumber?: string;
+  streetAddress?: string[];
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  country?: string;
+  // Identity information
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string; // YYYY-MM-DD format
+  countryOfBirth?: string;
 }
 
 export function setAuth(user: User) {
