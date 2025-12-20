@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowDown, ArrowUp, Plus, TrendingUp } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowDown, ArrowUp, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,10 +15,12 @@ import { hasAcceptedInvestTerms, acceptInvestTerms, getAuth, setAuth } from '@/l
 import { toast } from 'sonner';
 
 export default function Invest() {
+  const router = useRouter();
   const [hasAccepted, setHasAccepted] = useState(hasAcceptedInvestTerms());
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [accountId, setAccountId] = useState<string | null>(null);
   const [portfolioTotals, setPortfolioTotals] = useState({
     balance: 0,
     totalGain: 0,
@@ -60,6 +63,9 @@ export default function Invest() {
         }
       }
 
+      // Store account ID
+      setAccountId(accountId);
+
       // Fetch positions
       const positionsData = await InvestmentService.getPositions(accountId);
       setPositions(positionsData);
@@ -95,15 +101,11 @@ export default function Invest() {
   };
 
   const handleBuy = () => {
-    toast.info('Buy feature coming soon');
+    router.push('/invest/trade?side=buy');
   };
 
   const handleSell = () => {
-    toast.info('Sell feature coming soon');
-  };
-
-  const handleDeposit = () => {
-    toast.info('Deposit feature coming soon');
+    router.push('/invest/trade?side=sell');
   };
 
   const handleRetry = () => {
@@ -135,10 +137,12 @@ export default function Invest() {
           totalGain: portfolioTotals.totalGain,
           totalGainPercent: portfolioTotals.totalGainPercent,
         }}
+        accountId={accountId || undefined}
+        onSuccess={loadPortfolio}
       />
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         <Button onClick={handleBuy} className="h-auto flex-col gap-2 py-4">
           <TrendingUp className="h-5 w-5" />
           <span className="text-sm">Buy</span>
@@ -146,14 +150,6 @@ export default function Invest() {
         <Button onClick={handleSell} variant="outline" className="h-auto flex-col gap-2 py-4">
           <TrendingUp className="h-5 w-5 rotate-180" />
           <span className="text-sm">Sell</span>
-        </Button>
-        <Button
-          onClick={handleDeposit}
-          variant="outline"
-          className="h-auto flex-col gap-2 py-4"
-        >
-          <Plus className="h-5 w-5" />
-          <span className="text-sm">Deposit</span>
         </Button>
       </div>
 
@@ -237,4 +233,3 @@ export default function Invest() {
     </div>
   );
 }
-
