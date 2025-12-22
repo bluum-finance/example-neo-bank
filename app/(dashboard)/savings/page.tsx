@@ -125,7 +125,7 @@ export default function Savings() {
                               Amount
                             </p>
                             <p className="text-lg font-semibold">
-                              ₦{plan.amount.toLocaleString()}
+                              ${plan.amount.toLocaleString()}
                             </p>
                           </div>
                           <div>
@@ -162,7 +162,7 @@ export default function Savings() {
                               />
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">
-                              Target: ₦{plan.targetAmount.toLocaleString()}
+                              Target: ${plan.targetAmount.toLocaleString()}
                             </p>
                           </div>
                         )}

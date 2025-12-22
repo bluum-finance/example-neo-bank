@@ -148,7 +148,7 @@ export default function Cards() {
                             Spending Limit
                           </span>
                           <span className="text-sm font-medium">
-                            ₦{card.spendingLimit.toLocaleString()}
+                            ${card.spendingLimit.toLocaleString()}
                           </span>
                         </div>
                       )}

@@ -11,7 +11,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'account_id is required' }, { status: 400 });
     }
 
-    const fundData: FundRequest = body;
+    // Validate required fields
+    if (!body.amount || !body.funding_details) {
+      return NextResponse.json(
+        { error: 'amount and funding_details are required' },
+        { status: 400 }
+      );
+    }
+
+    // Extract fund request data (excluding account_id which goes in the URL)
+    const fundData: FundRequest = {
+      amount: body.amount,
+      funding_details: body.funding_details,
+      description: body.description,
+      external_reference_id: body.external_reference_id,
+    };
+
     const transaction = await bluumApi.fundAccount(accountId, fundData);
     return NextResponse.json(transaction, { status: 202 });
   } catch (error: any) {

@@ -137,7 +137,23 @@ class BluumApiClient {
   }
 
   // Wallet
-  async fundAccount(accountId: string, fundData: any) {
+  async fundAccount(
+    accountId: string,
+    fundData: {
+      amount: string;
+      funding_details: {
+        funding_type: 'fiat' | 'crypto';
+        fiat_currency?: 'USD';
+        bank_account_id?: string;
+        method?: 'ach' | 'wire';
+        crypto_asset?: 'BTC' | 'ETH' | 'USDC' | 'USDT';
+        wallet_address?: string;
+        network?: 'Bitcoin' | 'Ethereum' | 'Polygon';
+      };
+      description?: string;
+      external_reference_id?: string;
+    }
+  ) {
     const response = await this.client.post(`/wallet/accounts/${accountId}/funding`, fundData);
     return response.data;
   }
@@ -160,7 +176,21 @@ class BluumApiClient {
     return response.data;
   }
 
-  async withdrawFunds(withdrawalData: any) {
+  async withdrawFunds(withdrawalData: {
+    account_id: string;
+    amount: string;
+    funding_details: {
+      funding_type: 'fiat' | 'crypto';
+      fiat_currency?: 'USD';
+      bank_account_id?: string;
+      method?: 'ach' | 'wire';
+      crypto_asset?: 'BTC' | 'ETH' | 'USDC' | 'USDT';
+      wallet_address?: string;
+      network?: 'Bitcoin' | 'Ethereum' | 'Polygon';
+    };
+    description?: string;
+    external_reference_id?: string;
+  }) {
     const response = await this.client.post('/wallet/withdrawals', withdrawalData);
     return response.data;
   }

@@ -3,12 +3,13 @@ export interface Account {
   id: string;
   account_number?: string;
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  balance?: string;
   crypto_status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   currency: string;
   last_equity: string;
   created_at: string;
   account_type: 'trading' | 'individual' | 'joint' | 'ira' | 'corporate';
-  trading_type: 'margin' | 'cash';
+  trading_type?: 'margin' | 'cash';
   contact?: {
     email_address: string;
     phone_number?: string;
@@ -145,21 +146,53 @@ export interface Order {
 
 // Transaction Types
 export interface Transaction {
-  id: string;
+  transaction_id: string;
   account_id: string;
   type: 'deposit' | 'withdrawal';
   status: 'pending' | 'processing' | 'settled' | 'failed' | 'canceled';
   amount: string;
   currency: string;
-  funding_type?: 'fiat' | 'crypto';
+  funding_type: 'fiat' | 'crypto';
+  funding_details: FiatFundingDetails | CryptoFundingDetails;
+  description?: string;
+  external_reference_id?: string;
+  fee: string;
+  net_amount: string;
   created_at: string;
-  updated_at: string;
+  settled_at?: string | null;
+  failed_at?: string | null;
+  failure_reason?: string | null;
 }
 
+// Funding Details Types
+export interface FiatFundingDetails {
+  funding_type: 'fiat';
+  fiat_currency: 'USD';
+  bank_account_id: string;
+  method: 'ach' | 'wire';
+}
+
+export interface CryptoFundingDetails {
+  funding_type: 'crypto';
+  crypto_asset: 'BTC' | 'ETH' | 'USDC' | 'USDT';
+  wallet_address: string;
+  network: 'Bitcoin' | 'Ethereum' | 'Polygon';
+}
+
+// Fund Request (for deposits)
 export interface FundRequest {
   amount: string;
-  currency: string;
-  funding_type: 'fiat' | 'crypto';
-  // Additional fields for fiat/crypto specific data
+  funding_details: FiatFundingDetails | CryptoFundingDetails;
+  description?: string;
+  external_reference_id?: string;
+}
+
+// Withdrawal Request
+export interface WithdrawalRequest {
+  account_id: string;
+  amount: string;
+  funding_details: FiatFundingDetails | CryptoFundingDetails;
+  description?: string;
+  external_reference_id?: string;
 }
 

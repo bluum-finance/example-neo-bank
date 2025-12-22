@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { bluumApi } from '@/lib/bluum-api';
-import type { FundRequest } from '@/types/bluum'; 
+import type { WithdrawalRequest } from '@/types/bluum';
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,11 +11,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'account_id is required' }, { status: 400 });
     }
 
-    const withdrawalData = {
+    // Validate required fields
+    if (!body.amount || !body.funding_details) {
+      return NextResponse.json(
+        { error: 'amount and funding_details are required' },
+        { status: 400 }
+      );
+    }
+
+    // Structure withdrawal request according to backend API
+    const withdrawalData: WithdrawalRequest = {
       account_id: accountId,
       amount: body.amount,
-      currency: body.currency || 'USD',
-      funding_type: body.funding_type || 'fiat',
+      funding_details: body.funding_details,
+      description: body.description,
+      external_reference_id: body.external_reference_id,
     };
 
     const transaction = await bluumApi.withdrawFunds(withdrawalData);

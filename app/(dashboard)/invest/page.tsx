@@ -21,8 +21,8 @@ export default function Invest() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [accountId, setAccountId] = useState<string | null>(null);
-  const [portfolioTotals, setPortfolioTotals] = useState({
-    balance: 0,
+  const [accountBalance, setAccountBalance] = useState<number>(0);
+  const [portfolioGains, setPortfolioGains] = useState({
     totalGain: 0,
     totalGainPercent: 0,
   });
@@ -51,9 +51,10 @@ export default function Invest() {
         return;
       }
 
-      // Verify account exists by fetching it
+      setAccountId(accountId);
+      let account;
       try {
-        await AccountService.getAccount(accountId);
+        account = await AccountService.getAccount(accountId);
       } catch (err) {
         // Account doesn't exist or is invalid
         setError('Investment account not found. Please create an account first.');
@@ -61,16 +62,19 @@ export default function Invest() {
         return;
       }
 
-      // Store account ID
-      setAccountId(accountId);
+      const balance = account?.balance ? parseFloat(account.balance) : 0;
+      setAccountBalance(balance);
 
       // Fetch positions
       const positionsData = await InvestmentService.getPositions(accountId);
       setPositions(positionsData);
 
-      // Calculate portfolio totals
+      // Calculate portfolio gains (for display in BalanceCard)
       const totals = InvestmentService.calculatePortfolioTotals(positionsData);
-      setPortfolioTotals(totals);
+      setPortfolioGains({
+        totalGain: totals.totalGain,
+        totalGainPercent: totals.totalGainPercent,
+      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load portfolio';
       setError(errorMessage);
@@ -129,11 +133,11 @@ export default function Invest() {
 
       {/* Investment Balance Card */}
       <BalanceCard
-        balance={portfolioTotals.balance}
+        balance={accountBalance}
         label="Investment Balance"
         portfolioValue={{
-          totalGain: portfolioTotals.totalGain,
-          totalGainPercent: portfolioTotals.totalGainPercent,
+          totalGain: portfolioGains.totalGain,
+          totalGainPercent: portfolioGains.totalGainPercent,
         }}
         accountId={accountId || undefined}
         onSuccess={loadPortfolio}

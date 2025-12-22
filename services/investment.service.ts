@@ -38,10 +38,35 @@ export interface OrderRequest {
 }
 
 export interface FundRequest {
-  amount: string;
-  currency: string;
-  funding_type: 'fiat' | 'crypto';
   account_id: string;
+  amount: string;
+  funding_details: {
+    funding_type: 'fiat' | 'crypto';
+    fiat_currency?: 'USD';
+    bank_account_id?: string;
+    method?: 'ach' | 'wire';
+    crypto_asset?: 'BTC' | 'ETH' | 'USDC' | 'USDT';
+    wallet_address?: string;
+    network?: 'Bitcoin' | 'Ethereum' | 'Polygon';
+  };
+  description?: string;
+  external_reference_id?: string;
+}
+
+export interface WithdrawalRequest {
+  account_id: string;
+  amount: string;
+  funding_details: {
+    funding_type: 'fiat' | 'crypto';
+    fiat_currency?: 'USD';
+    bank_account_id?: string;
+    method?: 'ach' | 'wire';
+    crypto_asset?: 'BTC' | 'ETH' | 'USDC' | 'USDT';
+    wallet_address?: string;
+    network?: 'Bitcoin' | 'Ethereum' | 'Polygon';
+  };
+  description?: string;
+  external_reference_id?: string;
 }
 
 // Investment Service
@@ -126,6 +151,17 @@ export class InvestmentService {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(fundData),
+    });
+    return handleResponse(response);
+  }
+
+  static async withdrawFunds(withdrawalData: WithdrawalRequest): Promise<any> {
+    const response = await fetch('/api/investment/withdrawals', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(withdrawalData),
     });
     return handleResponse(response);
   }

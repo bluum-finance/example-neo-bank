@@ -18,6 +18,7 @@ export interface Account {
   id: string;
   account_number?: string;
   status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  balance?: string;
   currency: string;
   last_equity: string;
   created_at: string;

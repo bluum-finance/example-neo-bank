@@ -53,8 +53,13 @@ export function BalanceCard({
       await InvestmentService.fundAccount({
         account_id: accountId,
         amount: depositAmount.toFixed(2),
-        currency: 'USD',
-        funding_type: 'fiat',
+        funding_details: {
+          funding_type: 'fiat',
+          fiat_currency: 'USD',
+          bank_account_id: 'default_bank_account', // TODO: Replace with actual bank account selection
+          method: 'ach',
+        },
+        description: `Deposit of $${depositAmount.toFixed(2)}`,
       });
       toast.success('Deposit successful!');
       setShowDepositModal(false);
@@ -87,25 +92,17 @@ export function BalanceCard({
 
     setProcessing(true);
     try {
-      // Create withdrawal API route if it doesn't exist
-      const response = await fetch('/api/investment/withdrawals', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          account_id: accountId,
-          amount: withdrawAmount.toFixed(2),
-          currency: 'USD',
+      await InvestmentService.withdrawFunds({
+        account_id: accountId,
+        amount: withdrawAmount.toFixed(2),
+        funding_details: {
           funding_type: 'fiat',
-        }),
+          fiat_currency: 'USD',
+          bank_account_id: 'default_bank_account', // TODO: Replace with actual bank account selection
+          method: 'ach',
+        },
+        description: `Withdrawal of $${withdrawAmount.toFixed(2)}`,
       });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Failed to withdraw funds' }));
-        throw new Error(error.error || 'Failed to withdraw funds');
-      }
-
       toast.success('Withdrawal successful!');
       setShowWithdrawModal(false);
       setAmount('');
@@ -125,25 +122,19 @@ export function BalanceCard({
           <div className="flex items-start justify-between text-primary-foreground">
             <div className="flex flex-col gap-1">
               <p className="text-sm opacity-90">{label}</p>
-              {accountNumber && (
-                <p className="text-xs opacity-75">Account: {accountNumber}</p>
-              )}
+              {accountNumber && <p className="text-xs opacity-75">Account: {accountNumber}</p>}
             </div>
             <button
               type="button"
               onClick={() => setIsVisible(!isVisible)}
               className="rounded-full p-1.5 hover:bg-white/10 transition-colors"
             >
-              {isVisible ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
+              {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
           <div className="mt-4">
             <p className="text-3xl font-bold text-primary-foreground">
-              {isVisible ? `₦${balance.toLocaleString()}` : '••••••'}
+              {isVisible ? `$${balance.toLocaleString()}` : '••••••'}
             </p>
             {portfolioValue && isVisible && (
               <div className="flex items-center gap-2 mt-3">
@@ -158,7 +149,7 @@ export function BalanceCard({
                     portfolioValue.totalGain >= 0 ? 'text-green-200' : 'text-red-200'
                   )}
                 >
-                  {portfolioValue.totalGain >= 0 ? '+' : ''}₦
+                  {portfolioValue.totalGain >= 0 ? '+' : ''}$
                   {Math.abs(portfolioValue.totalGain).toLocaleString()} (
                   {portfolioValue.totalGainPercent > 0 ? '+' : ''}
                   {portfolioValue.totalGainPercent.toFixed(2)}%)
@@ -232,11 +223,7 @@ export function BalanceCard({
                   >
                     Cancel
                   </Button>
-                  <Button
-                    className="flex-1"
-                    onClick={handleDeposit}
-                    disabled={processing}
-                  >
+                  <Button className="flex-1" onClick={handleDeposit} disabled={processing}>
                     {processing ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -297,11 +284,7 @@ export function BalanceCard({
                   >
                     Cancel
                   </Button>
-                  <Button
-                    className="flex-1"
-                    onClick={handleWithdraw}
-                    disabled={processing}
-                  >
+                  <Button className="flex-1" onClick={handleWithdraw} disabled={processing}>
                     {processing ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -320,4 +303,3 @@ export function BalanceCard({
     </>
   );
 }
-

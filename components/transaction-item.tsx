@@ -43,7 +43,7 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
             isCredit ? 'text-green-600 dark:text-green-400' : 'text-foreground'
           )}
         >
-          {isCredit ? '+' : '-'}₦{transaction.amount.toLocaleString()}
+          {isCredit ? '+' : '-'}${transaction.amount.toLocaleString()}
         </p>
         <Badge
           variant={
