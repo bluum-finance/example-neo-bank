@@ -134,7 +134,12 @@ export function BalanceCard({
           </div>
           <div className="mt-4">
             <p className="text-3xl font-bold text-primary-foreground">
-              {isVisible ? `$${balance.toLocaleString()}` : '••••••'}
+              {isVisible
+                ? `$${balance.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}`
+                : '••••••'}
             </p>
             {portfolioValue && isVisible && (
               <div className="flex items-center gap-2 mt-3">

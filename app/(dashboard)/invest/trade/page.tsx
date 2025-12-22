@@ -521,35 +521,44 @@ export default function TradeStock() {
                     </div>
                   )}
 
-                  {/* Quantity Input */}
-                  <div className="space-y-2">
-                    <Label>Quantity (Shares)</Label>
-                    <Input
-                      type="number"
-                      step="0.0001"
-                      placeholder="0"
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                      disabled={orderSide === 'sell' && !selectedPosition}
-                    />
-                    {orderSide === 'sell' && selectedPosition && (
-                      <p className="text-xs text-muted-foreground">
-                        You own {selectedPosition.shares} shares
-                      </p>
-                    )}
-                    {orderSide === 'buy' && orderBy === 'quantity' && quantity && (
-                      <p className="text-xs text-muted-foreground">
-                        {calculatedTotal > 0
-                          ? `≈ $${calculatedTotal.toFixed(2)} total`
-                          : 'Total will be calculated at execution'}
-                      </p>
-                    )}
-                    {orderSide === 'sell' && quantity && assetPrice && (
-                      <p className="text-xs text-muted-foreground">
-                        ≈ ${(parseFloat(quantity) * assetPrice).toFixed(2)} total
-                      </p>
-                    )}
-                  </div>
+                  {/* Quantity Input - Show for sell orders or buy orders when orderBy is quantity */}
+                  {(orderSide === 'sell' ||
+                    (orderSide === 'buy' && orderBy === 'quantity')) && (
+                    <div className="space-y-2">
+                      <Label>Quantity (Shares)</Label>
+                      <Input
+                        type="number"
+                        step="0.0001"
+                        placeholder="0"
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value)}
+                        disabled={orderSide === 'sell' && selectedAsset && !selectedPosition}
+                      />
+                      {orderSide === 'sell' && selectedAsset && !selectedPosition && (
+                        <p className="text-xs text-destructive">
+                          You don't have a position in {selectedAsset.symbol}. You can only
+                          sell assets you own.
+                        </p>
+                      )}
+                      {orderSide === 'sell' && selectedPosition && (
+                        <p className="text-xs text-muted-foreground">
+                          You own {selectedPosition.shares} shares
+                        </p>
+                      )}
+                      {orderSide === 'buy' && orderBy === 'quantity' && quantity && (
+                        <p className="text-xs text-muted-foreground">
+                          {calculatedTotal > 0
+                            ? `≈ $${calculatedTotal.toFixed(2)} total`
+                            : 'Total will be calculated at execution'}
+                        </p>
+                      )}
+                      {orderSide === 'sell' && quantity && assetPrice && (
+                        <p className="text-xs text-muted-foreground">
+                          ≈ ${(parseFloat(quantity) * assetPrice).toFixed(2)} total
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   <Separator />
 
