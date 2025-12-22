@@ -61,14 +61,7 @@ export default function TradeStock() {
     const loadAccount = async () => {
       try {
         const user = getAuth();
-        let accId = user?.externalAccountId;
-
-        if (!accId) {
-          const accounts = await AccountService.getAccounts();
-          if (accounts && accounts.length > 0) {
-            accId = accounts[0].id;
-          }
-        }
+        const accId = user?.externalAccountId;
 
         if (!accId) {
           toast.error('No investment account found. Please create an account first.');
@@ -77,7 +70,6 @@ export default function TradeStock() {
         }
 
         setAccountId(accId);
-
         // Load positions for sell orders
         if (orderSide === 'sell') {
           try {

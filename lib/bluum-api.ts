@@ -42,11 +42,6 @@ class BluumApiClient {
     return response.data;
   }
 
-  async listAccounts() {
-    const response = await this.client.get('/accounts');
-    return response.data;
-  }
-
   async getAccount(accountId: string) {
     const response = await this.client.get(`/accounts/${accountId}`);
     return response.data;

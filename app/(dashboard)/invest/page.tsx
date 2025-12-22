@@ -42,25 +42,23 @@ export default function Invest() {
 
       // Get account ID from user object
       const user = getAuth();
-      let accountId = user?.externalAccountId;
+      const accountId = user?.externalAccountId;
 
       if (!accountId) {
-        // Try to get existing accounts first
-        try {
-          const accounts = await AccountService.getAccounts();
-          if (accounts && accounts.length > 0) {
-            accountId = accounts[0].id;
-          } else {
-            // No account exists yet - user needs to create one
-            setError('No investment account found. Please create an account first.');
-            setLoading(false);
-            return;
-          }
-        } catch (err) {
-          setError('Failed to load accounts. Please try again later.');
-          setLoading(false);
-          return;
-        }
+        // No account ID found - user needs to create one
+        setError('No investment account found. Please create an account first.');
+        setLoading(false);
+        return;
+      }
+
+      // Verify account exists by fetching it
+      try {
+        await AccountService.getAccount(accountId);
+      } catch (err) {
+        // Account doesn't exist or is invalid
+        setError('Investment account not found. Please create an account first.');
+        setLoading(false);
+        return;
       }
 
       // Store account ID

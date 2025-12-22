@@ -16,18 +16,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-export async function GET() {
-  try {
-    const accounts = await bluumApi.listAccounts();
-    return NextResponse.json(accounts);
-  } catch (error: any) {
-    return NextResponse.json(
-      {
-        error: error.response?.data || error.message,
-      },
-      { status: error.response?.status || 500 }
-    );
-  }
-}
-

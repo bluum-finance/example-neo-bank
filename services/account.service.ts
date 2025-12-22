@@ -27,14 +27,6 @@ export interface Account {
 // Account Service
 export class AccountService {
   /**
-   * Get all accounts for the authenticated user
-   */
-  static async getAccounts(): Promise<Account[]> {
-    const response = await fetch('/api/investment/accounts');
-    return handleResponse<Account[]>(response);
-  }
-
-  /**
    * Get a specific account by ID
    */
   static async getAccount(accountId: string): Promise<Account> {
