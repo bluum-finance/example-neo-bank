@@ -366,6 +366,7 @@ export default function TradeStock() {
                 </div>
                 <Button
                   type="button"
+                  className="w-24"
                   onClick={() => handleLookupAsset(symbolQuery)}
                   disabled={loading || !symbolQuery.trim()}
                 >

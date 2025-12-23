@@ -59,8 +59,7 @@ export default function Invest() {
       try {
         account = await AccountService.getAccount(accountId);
       } catch (err) {
-        // Account doesn't exist or is invalid
-        setError('Investment account not found. Please create an account first.');
+        setError('Error fetching account. Please try again later.');
         setLoading(false);
         return;
       }
