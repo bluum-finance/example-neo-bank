@@ -1,6 +1,6 @@
 // User account data
 
-export interface UserAccount {
+export interface UserData {
   balance: number;
   accountNumber: string;
   name: string;
@@ -20,12 +20,11 @@ export interface UserAccount {
   countryOfBirth?: string;
 }
 
-export const userAccount: UserAccount = {
+export const userData: UserData = {
   balance: 125000.5,
   accountNumber: '1234567890',
   name: 'John Doe',
   email: 'demo@neobank.com',
-  externalAccountId: '3c239cde-43c5-47c1-9223-884b17b9ab2e',
   // Contact information
   phoneNumber: '+15555555555',
   streetAddress: ['123 Main St'],

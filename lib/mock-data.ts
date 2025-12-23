@@ -1,15 +1,9 @@
 // Mock data service - re-exports from centralized data folder
 
-export type {
-  Transaction,
-  Stock,
-  SavingsPlan,
-  Card,
-  UserAccount,
-} from '@/data';
+export type { Transaction, Stock, SavingsPlan, Card, UserData } from '@/data';
 
 export {
-  userAccount as mockUserAccount,
+  userData as mockUserAccount,
   transactions as mockTransactions,
   stocks as mockStocks,
   savingsPlans as mockSavingsPlans,
@@ -47,4 +41,3 @@ export async function getCards(): Promise<Card[]> {
     setTimeout(() => resolve(cards), 500);
   });
 }
-

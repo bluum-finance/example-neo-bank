@@ -277,7 +277,6 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
       };
 
       const account = await AccountService.createAccount(accountPayload);
-
       toast.success('Investment account created successfully!');
       onAccept(account.id);
     } catch (error) {

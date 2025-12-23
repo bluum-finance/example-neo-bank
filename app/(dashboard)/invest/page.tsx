@@ -12,12 +12,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { InvestOnboarding } from '@/components/invest/onboarding';
 import { InvestmentService, type Position } from '@/services/investment.service';
 import { AccountService } from '@/services/account.service';
-import { hasAcceptedInvestTerms, acceptInvestTerms, getAuth, setAuth } from '@/lib/auth';
+import { getAuth, setExternalAccountId } from '@/lib/auth';
 import { toast } from 'sonner';
 
 export default function Invest() {
   const router = useRouter();
-  const [hasAccepted, setHasAccepted] = useState(hasAcceptedInvestTerms());
   const [positions, setPositions] = useState<Position[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -29,14 +28,7 @@ export default function Invest() {
     totalGain: 0,
     totalGainPercent: 0,
   });
-
-  useEffect(() => {
-    if (hasAccepted) {
-      loadPortfolio();
-    } else {
-      setLoading(false);
-    }
-  }, [hasAccepted]);
+  const [hasAccountId, setHasAccountId] = useState<boolean>(false);
 
   const loadPortfolio = async () => {
     try {
@@ -45,19 +37,19 @@ export default function Invest() {
 
       // Get account ID from user object
       const user = getAuth();
-      const accountId = user?.externalAccountId;
+      const userAccountId = user?.externalAccountId;
 
-      if (!accountId) {
+      if (!userAccountId) {
         // No account ID found - user needs to create one
         setError('No investment account found. Please create an account first.');
         setLoading(false);
         return;
       }
 
-      setAccountId(accountId);
+      setAccountId(userAccountId);
       let account;
       try {
-        account = await AccountService.getAccount(accountId);
+        account = await AccountService.getAccount(userAccountId);
       } catch (err) {
         setError('Error fetching account. Please try again later.');
         setLoading(false);
@@ -69,9 +61,9 @@ export default function Invest() {
 
       // Fetch positions, orders, and transactions in parallel
       const [positionsData, ordersData, transactionsData] = await Promise.all([
-        InvestmentService.getPositions(accountId),
-        InvestmentService.getOrders(accountId, { limit: 50 }),
-        InvestmentService.getTransactions(accountId, { limit: 50 }),
+        InvestmentService.getPositions(userAccountId),
+        InvestmentService.getOrders(userAccountId, { limit: 50 }),
+        InvestmentService.getTransactions(userAccountId, { limit: 50 }),
       ]);
 
       setPositions(positionsData);
@@ -93,21 +85,29 @@ export default function Invest() {
     }
   };
 
-  const handleAcceptTerms = (accountId?: string) => {
-    acceptInvestTerms();
-    setHasAccepted(true);
+  useEffect(() => {
+    // Check if user has externalAccountId
+    const user = getAuth();
+    const userAccountId = user?.externalAccountId;
 
-    // Update user with account ID if provided
-    if (accountId) {
-      const user = getAuth();
-      if (user) {
-        setAuth({
-          ...user,
-          externalAccountId: accountId,
-        });
-      }
+    if (userAccountId) {
+      setHasAccountId(true);
+      setAccountId(userAccountId);
+      loadPortfolio();
+    } else {
+      setHasAccountId(false);
+      setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  const handleAccountCreated = (newAccountId?: string) => {
+    if (!newAccountId) return;
+
+    setExternalAccountId(newAccountId);
+    setAccountId(newAccountId);
+    setHasAccountId(true);
+    loadPortfolio();
     toast.success('Welcome to investing!');
   };
 
@@ -123,11 +123,11 @@ export default function Invest() {
     loadPortfolio();
   };
 
-  // Show onboarding if terms not accepted
-  if (!hasAccepted) {
+  // Show onboarding if no externalAccountId
+  if (!hasAccountId) {
     return (
       <div className="">
-        <InvestOnboarding onAccept={handleAcceptTerms} />
+        <InvestOnboarding onAccept={handleAccountCreated} />
       </div>
     );
   }

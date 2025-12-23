@@ -15,7 +15,6 @@ export interface User {
   lastName?: string;
   dateOfBirth?: string;
   countryOfBirth?: string;
-  hasAcceptedInvestTerms?: boolean;
 }
 
 // Helper to check if localStorage is available (client-side only)
@@ -47,18 +46,12 @@ export function isAuthenticated(): boolean {
   return getAuth() !== null;
 }
 
-// Investment terms acceptance
-export function hasAcceptedInvestTerms(): boolean {
-  const user = getAuth();
-  return user?.hasAcceptedInvestTerms === true;
-}
-
-export function acceptInvestTerms() {
+export function setExternalAccountId(accountId: string) {
   const user = getAuth();
   if (user) {
     setAuth({
       ...user,
-      hasAcceptedInvestTerms: true,
+      externalAccountId: accountId,
     });
   }
 }

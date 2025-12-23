@@ -66,8 +66,6 @@ export default function SignIn() {
         lastName: mockUserAccount.lastName,
         dateOfBirth: mockUserAccount.dateOfBirth,
         countryOfBirth: mockUserAccount.countryOfBirth,
-        // Reset onboarding on new signin
-        hasAcceptedInvestTerms: false,
       });
       toast.success('Signed in successfully!');
       router.push('/dashboard');
