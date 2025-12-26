@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CreditCard, Building2, ArrowRight, ArrowLeft, Loader2, X, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { InvestmentService } from '@/services/investment.service';
+import { PlaidLink } from '@/components/plaid/plaid-link';
+import { PlaidService, type ConnectedAccount } from '@/services/plaid.service';
 import { toast } from 'sonner';
 
 interface DepositProps {
@@ -15,7 +17,7 @@ interface DepositProps {
   onCancel?: () => void;
 }
 
-type PaymentMethod = 'card' | 'ach' | 'wire';
+type PaymentMethod = 'card' | 'plaid';
 type Step = 1 | 2;
 
 export function Deposit({ accountId, onSuccess, onCancel }: DepositProps) {
@@ -30,11 +32,11 @@ export function Deposit({ accountId, onSuccess, onCancel }: DepositProps) {
   const [cvv, setCvv] = useState('');
   const [cardholderName, setCardholderName] = useState('');
 
-  // Bank transfer fields
-  const [bankName, setBankName] = useState('');
-  const [routingNumber, setRoutingNumber] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
-  const [accountHolderName, setAccountHolderName] = useState('');
+  // Plaid fields
+  const [publicToken, setPublicToken] = useState<string | null>(null);
+  const [selectedPlaidAccount, setSelectedPlaidAccount] = useState<string | null>(null);
+  const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
 
   const formatCardNumber = (value: string) => {
     const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
@@ -59,12 +61,61 @@ export function Deposit({ accountId, onSuccess, onCancel }: DepositProps) {
     return v;
   };
 
-  const formatRoutingNumber = (value: string) => {
-    return value.replace(/\D/g, '').substring(0, 9);
-  };
+  // Load connected Plaid accounts
+  useEffect(() => {
+    const loadConnectedAccounts = async () => {
+      if (paymentMethod === 'plaid') {
+        setLoadingAccounts(true);
+        try {
+          const accounts = await PlaidService.getConnectedAccounts(accountId);
+          setConnectedAccounts(accounts || []);
+        } catch (error: any) {
+          console.error('Failed to load connected accounts:', error);
+          setConnectedAccounts([]);
+          // Don't show error toast, just allow new connection
+        } finally {
+          setLoadingAccounts(false);
+        }
+      }
+    };
 
-  const formatAccountNumber = (value: string) => {
-    return value.replace(/\D/g, '');
+    loadConnectedAccounts();
+  }, [accountId, paymentMethod, step]);
+
+  const handlePlaidSuccess = async (token: string, metadata: any) => {
+    setPublicToken(token);
+    // If multiple accounts, select the first one
+    if (metadata.accounts && metadata.accounts.length > 0) {
+      setSelectedPlaidAccount(metadata.accounts[0].id);
+    }
+
+    // Save the connection to the backend
+    setLoadingAccounts(true);
+    try {
+      await PlaidService.connectAccount(accountId, token);
+
+      const accounts = await PlaidService.getConnectedAccounts(accountId);
+      setConnectedAccounts(accounts);
+
+      // Auto-select the newly connected account if available
+      if (metadata.accounts && metadata.accounts.length > 0 && accounts.length > 0) {
+        const newAccountId = metadata.accounts[0].id;
+        // Find the account in the loaded accounts
+        const accountExists = accounts.some((item) =>
+          item.accounts.some((acc) => acc.accountId === newAccountId)
+        );
+        if (accountExists) {
+          setSelectedPlaidAccount(newAccountId);
+        }
+      }
+
+      toast.success('Bank account connected successfully!');
+    } catch (error: any) {
+      console.error('Failed to connect or reload accounts:', error);
+      toast.error(error.message || 'Failed to connect bank account');
+    } finally {
+      setLoadingAccounts(false);
+    }
   };
 
   const validateStep1 = () => {
@@ -80,6 +131,14 @@ export function Deposit({ accountId, onSuccess, onCancel }: DepositProps) {
   };
 
   const validateStep2 = () => {
+    if (paymentMethod === 'plaid') {
+      // For Plaid, we need either a public token (new connection) or a selected stored account
+      if (!publicToken && connectedAccounts.length === 0) {
+        toast.error('Please connect a bank account');
+        return false;
+      }
+      return true;
+    }
     if (paymentMethod === 'card') {
       const cardNumberDigits = cardNumber.replace(/\s/g, '');
       if (cardNumberDigits.length < 13 || cardNumberDigits.length > 19) {
@@ -112,25 +171,9 @@ export function Deposit({ accountId, onSuccess, onCancel }: DepositProps) {
         toast.error('Please enter the cardholder name');
         return false;
       }
-    } else if (paymentMethod === 'ach' || paymentMethod === 'wire') {
-      if (!bankName || bankName.trim().length < 2) {
-        toast.error('Please enter the bank name');
-        return false;
-      }
-      if (!routingNumber || routingNumber.length !== 9) {
-        toast.error('Please enter a valid 9-digit routing number');
-        return false;
-      }
-      if (!accountNumber || accountNumber.length < 4) {
-        toast.error('Please enter a valid account number');
-        return false;
-      }
-      if (!accountHolderName || accountHolderName.trim().length < 2) {
-        toast.error('Please enter the account holder name');
-        return false;
-      }
+      return true;
     }
-    return true;
+    return false;
   };
 
   const handleNext = () => {
@@ -155,38 +198,64 @@ export function Deposit({ accountId, onSuccess, onCancel }: DepositProps) {
     setProcessing(true);
     try {
       const amountStr = parseFloat(amount).toFixed(2);
-      let fundingDetails: any;
 
-      if (paymentMethod === 'card') {
-        fundingDetails = {
-          funding_type: 'fiat',
-          fiat_currency: 'USD',
-          bank_account_id: `card_${cardNumber.replace(/\s/g, '').slice(-4)}`,
-          method: 'ach', // Using ACH as the method, but in reality this would be 'card'
+      // Handle Plaid transfers
+      if (paymentMethod === 'plaid') {
+        const request: any = {
+          amount: amountStr,
+          currency: 'USD',
+          description: `Plaid ACH deposit of $${amountStr}`,
         };
-      } else {
-        const bankAccountId = `bank_${routingNumber.slice(-4)}_${accountNumber.slice(-4)}`;
-        fundingDetails = {
-          funding_type: 'fiat',
-          fiat_currency: 'USD',
-          bank_account_id: bankAccountId,
-          method: paymentMethod,
-        };
+
+        // Use stored account if available, otherwise use new connection
+        if (connectedAccounts.length > 0 && !publicToken) {
+          // Find selected account or use first available
+          const selectedItem =
+            connectedAccounts.find((item) =>
+              item.accounts.some((acc) => acc.accountId === selectedPlaidAccount)
+            ) || connectedAccounts[0];
+
+          request.item_id = selectedItem.itemId;
+          if (selectedPlaidAccount) {
+            request.plaid_account_id = selectedPlaidAccount;
+          } else if (selectedItem.accounts.length > 0) {
+            request.plaid_account_id = selectedItem.accounts[0].accountId;
+          }
+        } else if (publicToken) {
+          request.public_token = publicToken;
+          if (selectedPlaidAccount) {
+            request.plaid_account_id = selectedPlaidAccount;
+          }
+        }
+
+        const response = await PlaidService.initiateTransfer(accountId, request);
+        toast.success(
+          'Deposit initiated successfully! Funds will be available once the transfer completes.'
+        );
+        onSuccess?.();
+        return;
       }
+
+      // Handle card payment
+      const fundingDetails = {
+        funding_type: 'fiat' as const,
+        fiat_currency: 'USD' as const,
+        bank_account_id: `card_${cardNumber.replace(/\s/g, '').slice(-4)}`,
+        method: 'ach' as const, // Using ACH as the method, but in reality this would be 'card'
+      };
 
       await InvestmentService.fundAccount({
         account_id: accountId,
         amount: amountStr,
         funding_details: fundingDetails,
-        description: `${
-          paymentMethod === 'card' ? 'Card' : paymentMethod?.toUpperCase()
-        } deposit of $${amountStr}`,
-        external_reference_id: `${paymentMethod}_${Date.now()}`,
+        description: `Card deposit of $${amountStr}`,
+        external_reference_id: `card_${Date.now()}`,
       });
 
       toast.success('Deposit successful!');
       onSuccess?.();
     } catch (error: any) {
+      // Error message is already extracted by apiClient interceptor
       const errorMessage = error.message || 'Failed to process deposit';
       toast.error(errorMessage);
       setProcessing(false);
@@ -235,22 +304,17 @@ export function Deposit({ accountId, onSuccess, onCancel }: DepositProps) {
               disabled={processing}
             >
               <option value="">Select payment method</option>
+              <option value="plaid">Bank Transfer (ACH) via Plaid</option>
               <option value="card">Card Payment - Instant deposit</option>
-              <option value="ach" disabled>
-                Bank Transfer (ACH) - Not available
-              </option>
-              <option value="wire" disabled>
-                Wire Transfer - Not available
-              </option>
             </Select>
+            {paymentMethod === 'plaid' && (
+              <p className="text-xs text-muted-foreground">
+                Securely connect your bank account for ACH transfers
+              </p>
+            )}
             {paymentMethod === 'card' && (
               <p className="text-xs text-muted-foreground">
                 Instant deposit with credit or debit card
-              </p>
-            )}
-            {(paymentMethod === 'ach' || paymentMethod === 'wire') && (
-              <p className="text-xs text-destructive">
-                This payment method is not available at the moment
               </p>
             )}
           </div>
@@ -260,7 +324,80 @@ export function Deposit({ accountId, onSuccess, onCancel }: DepositProps) {
       {/* Step 2: Payment Details */}
       {step === 2 && (
         <div className="space-y-4">
-          {paymentMethod === 'card' ? (
+          {paymentMethod === 'plaid' ? (
+            <>
+              {loadingAccounts ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : connectedAccounts.length > 0 ? (
+                <div className="space-y-3">
+                  <Label>Select Bank Account</Label>
+                  {connectedAccounts.map((item) =>
+                    item.accounts.map((account) => (
+                      <div
+                        key={account.accountId}
+                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                          selectedPlaidAccount === account.accountId
+                            ? 'border-primary bg-primary/5'
+                            : 'hover:bg-muted'
+                        }`}
+                        onClick={() => setSelectedPlaidAccount(account.accountId)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex-1">
+                            <div className="font-medium">{item.institutionName}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {account.accountName} •••• {account.mask}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <div className="pt-2">
+                    <PlaidLink
+                      accountId={accountId}
+                      onSuccess={handlePlaidSuccess}
+                      onExit={(error) => {
+                        if (error) {
+                          toast.error('Failed to connect bank account');
+                        }
+                      }}
+                      className="w-full"
+                    >
+                      Connect Another Bank Account
+                    </PlaidLink>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {publicToken && connectedAccounts.length === 0 && (
+                    <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+                        ✓ Bank account connected successfully
+                      </p>
+                      <p className="text-xs text-green-600/80 dark:text-green-400/80 mt-1">
+                        You can proceed with this account or connect another one below.
+                      </p>
+                    </div>
+                  )}
+                  <Label>Connect Bank Account</Label>
+                  <PlaidLink
+                    accountId={accountId}
+                    onSuccess={handlePlaidSuccess}
+                    onExit={(error) => {
+                      if (error) {
+                        toast.error('Failed to connect bank account');
+                      }
+                    }}
+                    className="w-full"
+                  />
+                </div>
+              )}
+            </>
+          ) : paymentMethod === 'card' ? (
             <>
               <div className="space-y-2">
                 <Label htmlFor="cardNumber">Card Number</Label>
@@ -325,66 +462,14 @@ export function Deposit({ accountId, onSuccess, onCancel }: DepositProps) {
               </div>
 
               <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-md">
-                <Lock className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <Lock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                 <p className="text-xs text-muted-foreground">
                   Your payment information is encrypted and secure. We never store your full
                   card details.
                 </p>
               </div>
             </>
-          ) : (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="bankName">Bank Name</Label>
-                <Input
-                  id="bankName"
-                  type="text"
-                  placeholder="Enter bank name"
-                  value={bankName}
-                  onChange={(e) => setBankName(e.target.value)}
-                  disabled={processing}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="accountHolderName">Account Holder Name</Label>
-                <Input
-                  id="accountHolderName"
-                  type="text"
-                  placeholder="John Doe"
-                  value={accountHolderName}
-                  onChange={(e) => setAccountHolderName(e.target.value)}
-                  disabled={processing}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="routingNumber">Routing Number</Label>
-                <Input
-                  id="routingNumber"
-                  type="text"
-                  placeholder="123456789"
-                  value={routingNumber}
-                  onChange={(e) => setRoutingNumber(formatRoutingNumber(e.target.value))}
-                  disabled={processing}
-                  maxLength={9}
-                />
-                <p className="text-xs text-muted-foreground">9-digit routing number</p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="accountNumber">Account Number</Label>
-                <Input
-                  id="accountNumber"
-                  type="text"
-                  placeholder="Enter account number"
-                  value={accountNumber}
-                  onChange={(e) => setAccountNumber(formatAccountNumber(e.target.value))}
-                  disabled={processing}
-                />
-              </div>
-            </>
-          )}
+          ) : null}
         </div>
       )}
 
@@ -424,7 +509,7 @@ export function Deposit({ accountId, onSuccess, onCancel }: DepositProps) {
                 Processing...
               </>
             ) : (
-              'Confirm Deposit'
+              `Deposit $${parseFloat(amount || '0').toFixed(2)}`
             )}
           </Button>
         )}

@@ -415,13 +415,18 @@ export default function Invest() {
                                 </Badge>
                                 <Badge
                                   variant={
-                                    transaction.status === 'settled'
-                                      ? 'default'
-                                      : transaction.status === 'failed'
+                                    transaction.status === 'settled' ||
+                                    transaction.status === 'completed'
+                                      ? 'success'
+                                      : transaction.status === 'failed' ||
+                                        transaction.status === 'canceled'
                                       ? 'destructive'
-                                      : 'outline'
+                                      : transaction.status === 'pending' ||
+                                        transaction.status === 'processing'
+                                      ? 'warning'
+                                      : 'secondary'
                                   }
-                                  className="text-xs"
+                                  className="text-xs capitalize"
                                 >
                                   {transaction.status}
                                 </Badge>

@@ -49,11 +49,13 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
           variant={
             transaction.status === 'completed'
               ? 'success'
+              : transaction.status === 'failed'
+              ? 'destructive'
               : transaction.status === 'pending'
-                ? 'secondary'
-                : 'destructive'
+              ? 'warning'
+              : 'secondary'
           }
-          className="text-xs"
+          className="text-xs capitalize"
         >
           {transaction.status}
         </Badge>
@@ -61,4 +63,3 @@ export function TransactionItem({ transaction }: TransactionItemProps) {
     </div>
   );
 }
-

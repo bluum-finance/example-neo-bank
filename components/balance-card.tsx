@@ -33,13 +33,13 @@ export function BalanceCard({
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
 
   const handleDepositSuccess = () => {
-    setShowDepositModal(false);
-    onSuccess?.();
+      setShowDepositModal(false);
+      onSuccess?.();
   };
 
   const handleWithdrawSuccess = () => {
-    setShowWithdrawModal(false);
-    onSuccess?.();
+      setShowWithdrawModal(false);
+      onSuccess?.();
   };
 
   return (
@@ -120,7 +120,7 @@ export function BalanceCard({
       {/* Deposit Modal */}
       {showDepositModal && accountId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
             <CardContent className="p-6">
               <Deposit
                 accountId={accountId}
@@ -135,7 +135,7 @@ export function BalanceCard({
       {/* Withdraw Modal */}
       {showWithdrawModal && accountId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
             <CardContent className="p-6">
               <Withdrawal
                 accountId={accountId}

@@ -1,11 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Building2, ArrowRight, ArrowLeft, Loader2, X, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { InvestmentService } from '@/services/investment.service';
+import { PlaidLink } from '@/components/plaid/plaid-link';
+import { PlaidService, type ConnectedAccount } from '@/services/plaid.service';
 import { toast } from 'sonner';
 
 interface WithdrawalProps {
@@ -16,6 +19,7 @@ interface WithdrawalProps {
 }
 
 type Step = 1 | 2;
+type WithdrawalMethod = 'plaid' | 'manual';
 
 export function Withdrawal({
   accountId,
@@ -26,13 +30,19 @@ export function Withdrawal({
   const [step, setStep] = useState<Step>(1);
   const [amount, setAmount] = useState('');
   const [processing, setProcessing] = useState(false);
-  const withdrawalMethod = 'ach'; // Only bank transfer is available
+  const [withdrawalMethod, setWithdrawalMethod] = useState<WithdrawalMethod>('plaid');
 
-  // Bank transfer fields
+  // Bank transfer fields (for manual entry)
   const [bankName, setBankName] = useState('');
   const [routingNumber, setRoutingNumber] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [accountHolderName, setAccountHolderName] = useState('');
+
+  // Plaid fields
+  const [publicToken, setPublicToken] = useState<string | null>(null);
+  const [selectedPlaidAccount, setSelectedPlaidAccount] = useState<string | null>(null);
+  const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
 
   const formatRoutingNumber = (value: string) => {
     return value.replace(/\D/g, '').substring(0, 9);
@@ -40,6 +50,34 @@ export function Withdrawal({
 
   const formatAccountNumber = (value: string) => {
     return value.replace(/\D/g, '');
+  };
+
+  // Load connected Plaid accounts
+  useEffect(() => {
+    const loadConnectedAccounts = async () => {
+      if (withdrawalMethod === 'plaid') {
+        setLoadingAccounts(true);
+        try {
+          const accounts = await PlaidService.getConnectedAccounts(accountId);
+          setConnectedAccounts(accounts);
+        } catch (error: any) {
+          console.error('Failed to load connected accounts:', error);
+          // Don't show error toast, just allow new connection
+        } finally {
+          setLoadingAccounts(false);
+        }
+      }
+    };
+
+    loadConnectedAccounts();
+  }, [accountId, withdrawalMethod]);
+
+  const handlePlaidSuccess = (token: string, metadata: any) => {
+    setPublicToken(token);
+    // If multiple accounts, select the first one
+    if (metadata.accounts && metadata.accounts.length > 0) {
+      setSelectedPlaidAccount(metadata.accounts[0].id);
+    }
   };
 
   const validateStep1 = () => {
@@ -56,23 +94,33 @@ export function Withdrawal({
   };
 
   const validateStep2 = () => {
-    if (!bankName || bankName.trim().length < 2) {
-      toast.error('Please enter the bank name');
-      return false;
+    if (withdrawalMethod === 'plaid') {
+      // For Plaid, we need either a public token (new connection) or a selected stored account
+      if (!publicToken && connectedAccounts.length === 0) {
+        toast.error('Please connect a bank account');
+        return false;
+      }
+      return true;
+    } else {
+      // Manual bank transfer validation
+      if (!bankName || bankName.trim().length < 2) {
+        toast.error('Please enter the bank name');
+        return false;
+      }
+      if (!routingNumber || routingNumber.length !== 9) {
+        toast.error('Please enter a valid 9-digit routing number');
+        return false;
+      }
+      if (!accountNumber || accountNumber.length < 4) {
+        toast.error('Please enter a valid account number');
+        return false;
+      }
+      if (!accountHolderName || accountHolderName.trim().length < 2) {
+        toast.error('Please enter the account holder name');
+        return false;
+      }
+      return true;
     }
-    if (!routingNumber || routingNumber.length !== 9) {
-      toast.error('Please enter a valid 9-digit routing number');
-      return false;
-    }
-    if (!accountNumber || accountNumber.length < 4) {
-      toast.error('Please enter a valid account number');
-      return false;
-    }
-    if (!accountHolderName || accountHolderName.trim().length < 2) {
-      toast.error('Please enter the account holder name');
-      return false;
-    }
-    return true;
   };
 
   const handleNext = () => {
@@ -97,6 +145,45 @@ export function Withdrawal({
     setProcessing(true);
     try {
       const amountStr = parseFloat(amount).toFixed(2);
+
+      // Handle Plaid withdrawals
+      if (withdrawalMethod === 'plaid') {
+        const request: any = {
+          amount: amountStr,
+          currency: 'USD',
+          description: `Plaid ACH withdrawal of $${amountStr}`,
+        };
+
+        // Use stored account if available, otherwise use new connection
+        if (connectedAccounts.length > 0 && !publicToken) {
+          // Find selected account or use first available
+          const selectedItem =
+            connectedAccounts.find((item) =>
+              item.accounts.some((acc) => acc.accountId === selectedPlaidAccount)
+            ) || connectedAccounts[0];
+
+          request.item_id = selectedItem.itemId;
+          if (selectedPlaidAccount) {
+            request.plaid_account_id = selectedPlaidAccount;
+          } else if (selectedItem.accounts.length > 0) {
+            request.plaid_account_id = selectedItem.accounts[0].accountId;
+          }
+        } else if (publicToken) {
+          request.public_token = publicToken;
+          if (selectedPlaidAccount) {
+            request.plaid_account_id = selectedPlaidAccount;
+          }
+        }
+
+        const response = await PlaidService.initiateWithdrawal(accountId, request);
+        toast.success(
+          'Withdrawal initiated successfully! Funds will be transferred once the ACH completes.'
+        );
+        onSuccess?.();
+        return;
+      }
+
+      // Handle manual bank transfer
       const bankAccountId = `bank_${routingNumber.slice(-4)}_${accountNumber.slice(-4)}`;
 
       await InvestmentService.withdrawFunds({
@@ -106,7 +193,7 @@ export function Withdrawal({
           funding_type: 'fiat',
           fiat_currency: 'USD',
           bank_account_id: bankAccountId,
-          method: withdrawalMethod,
+          method: 'ach',
         },
         description: `Bank transfer withdrawal of $${amountStr} to ${bankName}`,
         external_reference_id: `withdrawal_${Date.now()}`,
@@ -115,6 +202,7 @@ export function Withdrawal({
       toast.success('Withdrawal request submitted successfully!');
       onSuccess?.();
     } catch (error: any) {
+      // Error message is already extracted by apiClient interceptor
       const errorMessage = error.message || 'Failed to process withdrawal';
       toast.error(errorMessage);
       setProcessing(false);
@@ -160,65 +248,160 @@ export function Withdrawal({
               })}
             </p>
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="withdrawalMethod">Withdrawal Method</Label>
+            <Select
+              id="withdrawalMethod"
+              value={withdrawalMethod}
+              onChange={(e) => setWithdrawalMethod(e.target.value as WithdrawalMethod)}
+              disabled={processing}
+            >
+              <option value="plaid">Bank Transfer (ACH) via Plaid</option>
+              <option value="manual">Manual Bank Transfer</option>
+            </Select>
+            {withdrawalMethod === 'plaid' && (
+              <p className="text-xs text-muted-foreground">
+                Securely connect your bank account for ACH transfers
+              </p>
+            )}
+            {withdrawalMethod === 'manual' && (
+              <p className="text-xs text-muted-foreground">
+                Enter your bank account details manually
+              </p>
+            )}
+          </div>
         </div>
       )}
 
       {/* Step 2: Bank Details */}
       {step === 2 && (
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="bankName">Bank Name</Label>
-            <Input
-              id="bankName"
-              type="text"
-              placeholder="Enter bank name"
-              value={bankName}
-              onChange={(e) => setBankName(e.target.value)}
-              disabled={processing}
-            />
-          </div>
+          {withdrawalMethod === 'plaid' ? (
+            <>
+              {loadingAccounts ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : connectedAccounts.length > 0 ? (
+                <div className="space-y-3">
+                  <Label>Select Bank Account</Label>
+                  {connectedAccounts.map((item) =>
+                    item.accounts.map((account) => (
+                      <div
+                        key={account.accountId}
+                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                          selectedPlaidAccount === account.accountId
+                            ? 'border-primary bg-primary/5'
+                            : 'hover:bg-muted'
+                        }`}
+                        onClick={() => setSelectedPlaidAccount(account.accountId)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-muted-foreground" />
+                          <div className="flex-1">
+                            <div className="font-medium">{item.institutionName}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {account.accountName} •••• {account.mask}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  <div className="pt-2">
+                    <PlaidLink
+                      accountId={accountId}
+                      onSuccess={handlePlaidSuccess}
+                      onExit={(error) => {
+                        if (error) {
+                          toast.error('Failed to connect bank account');
+                        }
+                      }}
+                      className="w-full"
+                    >
+                      Connect Another Bank Account
+                    </PlaidLink>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Label>Connect Bank Account</Label>
+                  <PlaidLink
+                    accountId={accountId}
+                    onSuccess={handlePlaidSuccess}
+                    onExit={(error) => {
+                      if (error) {
+                        toast.error('Failed to connect bank account');
+                      }
+                    }}
+                    className="w-full"
+                  />
+                  {publicToken && (
+                    <p className="text-sm text-green-600">
+                      ✓ Bank account connected successfully
+                    </p>
+                  )}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="bankName">Bank Name</Label>
+                <Input
+                  id="bankName"
+                  type="text"
+                  placeholder="Enter bank name"
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                  disabled={processing}
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="accountHolderName">Account Holder Name</Label>
-            <Input
-              id="accountHolderName"
-              type="text"
-              placeholder="John Doe"
-              value={accountHolderName}
-              onChange={(e) => setAccountHolderName(e.target.value)}
-              disabled={processing}
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="accountHolderName">Account Holder Name</Label>
+                <Input
+                  id="accountHolderName"
+                  type="text"
+                  placeholder="John Doe"
+                  value={accountHolderName}
+                  onChange={(e) => setAccountHolderName(e.target.value)}
+                  disabled={processing}
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="routingNumber">Routing Number</Label>
-            <Input
-              id="routingNumber"
-              type="text"
-              placeholder="123456789"
-              value={routingNumber}
-              onChange={(e) => setRoutingNumber(formatRoutingNumber(e.target.value))}
-              disabled={processing}
-              maxLength={9}
-            />
-            <p className="text-xs text-muted-foreground">9-digit routing number</p>
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="routingNumber">Routing Number</Label>
+                <Input
+                  id="routingNumber"
+                  type="text"
+                  placeholder="123456789"
+                  value={routingNumber}
+                  onChange={(e) => setRoutingNumber(formatRoutingNumber(e.target.value))}
+                  disabled={processing}
+                  maxLength={9}
+                />
+                <p className="text-xs text-muted-foreground">9-digit routing number</p>
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="accountNumber">Account Number</Label>
-            <Input
-              id="accountNumber"
-              type="text"
-              placeholder="Enter account number"
-              value={accountNumber}
-              onChange={(e) => setAccountNumber(formatAccountNumber(e.target.value))}
-              disabled={processing}
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="accountNumber">Account Number</Label>
+                <Input
+                  id="accountNumber"
+                  type="text"
+                  placeholder="Enter account number"
+                  value={accountNumber}
+                  onChange={(e) => setAccountNumber(formatAccountNumber(e.target.value))}
+                  disabled={processing}
+                />
+              </div>
+            </>
+          )}
 
           {/* Info Notice */}
           <div className="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
-            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
             <div className="text-xs text-blue-700 dark:text-blue-300">
               <p className="font-medium mb-1">Transfer Information:</p>
               <ul className="list-disc list-inside space-y-1">

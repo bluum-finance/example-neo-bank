@@ -35,7 +35,9 @@ export async function GET(request: NextRequest) {
             // Value should be 0 when shares is 0, not null
             value: shares === 0 ? 0 : pos.market_value ? parseFloat(pos.market_value) : null,
             gain: pos.unrealized_pl ? parseFloat(pos.unrealized_pl) : null,
-            gainPercent: pos.unrealized_pl_percent ? parseFloat(pos.unrealized_pl_percent) : null,
+            gainPercent: pos.unrealized_pl_percent
+              ? parseFloat(pos.unrealized_pl_percent)
+              : null,
           };
         })
       : [];
@@ -50,4 +52,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

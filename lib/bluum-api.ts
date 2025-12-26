@@ -1,5 +1,11 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
+/**
+ * Bluum API Client
+ *
+ * - Use in: app/api route.ts files (server-side only)
+ * - Never import this module in client components or client-side code
+ */
 const BLUUM_API_BASE_URL =
   process.env.BLUUM_API_BASE_URL || 'https://test-service.bluumfinance.com/v1';
 const BLUUM_API_KEY = process.env.BLUUM_API_KEY || '';
@@ -192,6 +198,65 @@ class BluumApiClient {
     external_reference_id?: string;
   }) {
     const response = await this.client.post('/wallet/withdrawals', withdrawalData);
+    return response.data;
+  }
+
+  // Plaid Integration
+  async getPlaidLinkToken(accountId: string) {
+    const response = await this.client.post(`/plaid/accounts/${accountId}/link-token`, {});
+    return response.data;
+  }
+
+  async initiatePlaidTransfer(
+    accountId: string,
+    transferData: {
+      public_token?: string;
+      item_id?: string;
+      account_id?: string;
+      amount: string;
+      currency?: string;
+      description?: string;
+    }
+  ) {
+    const response = await this.client.post(
+      `/plaid/accounts/${accountId}/initiate-transfer`,
+      transferData
+    );
+    return response.data;
+  }
+
+  async initiatePlaidWithdrawal(
+    accountId: string,
+    withdrawalData: {
+      public_token?: string;
+      item_id?: string;
+      account_id?: string;
+      amount: string;
+      currency?: string;
+      description?: string;
+    }
+  ) {
+    const response = await this.client.post(
+      `/plaid/accounts/${accountId}/initiate-withdrawal`,
+      withdrawalData
+    );
+    return response.data;
+  }
+
+  async connectPlaidAccount(accountId: string, publicToken: string) {
+    const response = await this.client.post(`/plaid/accounts/${accountId}/connect`, {
+      public_token: publicToken,
+    });
+    return response.data;
+  }
+
+  async getConnectedPlaidAccounts(accountId: string) {
+    const response = await this.client.get(`/plaid/accounts/${accountId}/connected`);
+    return response.data;
+  }
+
+  async disconnectPlaidItem(itemId: string) {
+    const response = await this.client.delete(`/plaid/items/${itemId}`);
     return response.data;
   }
 }
