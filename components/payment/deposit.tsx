@@ -1,7 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CreditCard, Building2, ArrowRight, ArrowLeft, Loader2, X, Lock } from 'lucide-react';
+import {
+  CreditCard,
+  Building2,
+  ArrowRight,
+  ArrowLeft,
+  Loader2,
+  X,
+  Lock,
+  Trash2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -113,6 +122,39 @@ export function Deposit({ accountId, onSuccess, onCancel }: DepositProps) {
     } catch (error: any) {
       console.error('Failed to connect or reload accounts:', error);
       toast.error(error.message || 'Failed to connect bank account');
+    } finally {
+      setLoadingAccounts(false);
+    }
+  };
+
+  const handleDeleteAccount = async (itemId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent account selection when clicking delete
+    if (!confirm('Are you sure you want to disconnect this bank account?')) {
+      return;
+    }
+
+    setLoadingAccounts(true);
+    try {
+      await PlaidService.disconnectItem(itemId);
+      // Reload accounts after deletion
+      const accounts = await PlaidService.getConnectedAccounts(accountId);
+      setConnectedAccounts(accounts);
+
+      // Clear selection if deleted account was selected
+      if (
+        connectedAccounts.some(
+          (item) =>
+            item.itemId === itemId &&
+            item.accounts.some((acc) => acc.accountId === selectedPlaidAccount)
+        )
+      ) {
+        setSelectedPlaidAccount(null);
+      }
+
+      toast.success('Bank account disconnected successfully');
+    } catch (error: any) {
+      console.error('Failed to disconnect account:', error);
+      toast.error(error.message || 'Failed to disconnect bank account');
     } finally {
       setLoadingAccounts(false);
     }
@@ -352,6 +394,14 @@ export function Deposit({ accountId, onSuccess, onCancel }: DepositProps) {
                               {account.accountName} •••• {account.mask}
                             </div>
                           </div>
+                          <button
+                            onClick={(e) => handleDeleteAccount(item.itemId, e)}
+                            className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive hover:text-destructive/80 transition-colors"
+                            title="Disconnect account"
+                            disabled={loadingAccounts}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </div>
                     ))
