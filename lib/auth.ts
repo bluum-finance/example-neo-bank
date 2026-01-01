@@ -15,6 +15,7 @@ export interface User {
   lastName?: string;
   dateOfBirth?: string;
   countryOfBirth?: string;
+  investingChoice?: 'self-directed' | 'ai-wealth';
 }
 
 // Helper to check if localStorage is available (client-side only)
@@ -64,4 +65,19 @@ export function clearExternalAccountId() {
       externalAccountId: undefined,
     });
   }
+}
+
+export function setInvestingChoice(choice: 'self-directed' | 'ai-wealth') {
+  const user = getAuth();
+  if (user) {
+    setAuth({
+      ...user,
+      investingChoice: choice,
+    });
+  }
+}
+
+export function getInvestingChoice(): 'self-directed' | 'ai-wealth' | null {
+  const user = getAuth();
+  return user?.investingChoice || null;
 }

@@ -11,9 +11,11 @@ import { BalanceCard } from '@/components/balance-card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { InvestOnboarding } from '@/components/invest/onboarding';
+import { InvestingChoiceModal, type InvestingChoice } from '@/components/invest/investing-choice-modal';
+import { AIWealthLanding } from '@/components/invest/ai-wealth-landing';
 import { InvestmentService, type Position } from '@/services/investment.service';
 import { AccountService } from '@/services/account.service';
-import { getAuth, setExternalAccountId, clearExternalAccountId } from '@/lib/auth';
+import { getAuth, setExternalAccountId, clearExternalAccountId, getInvestingChoice } from '@/lib/auth';
 import { toast } from 'sonner';
 
 export default function Invest() {
@@ -30,6 +32,8 @@ export default function Invest() {
     totalGainPercent: 0,
   });
   const [hasAccountId, setHasAccountId] = useState<boolean>(false);
+  const [showChoiceModal, setShowChoiceModal] = useState<boolean>(false);
+  const [showAIOnboarding, setShowAIOnboarding] = useState<boolean>(false);
 
   const loadPortfolio = async () => {
     try {
@@ -110,6 +114,13 @@ export default function Invest() {
     } else {
       setHasAccountId(false);
       setLoading(false);
+      
+      // Check if user has made a choice
+      const choice = getInvestingChoice();
+      if (!choice) {
+        // Show choice modal if no choice has been made
+        setShowChoiceModal(true);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -136,20 +147,69 @@ export default function Invest() {
     loadPortfolio();
   };
 
-  // Show onboarding if no externalAccountId
-  if (!hasAccountId) {
+  const handleChoiceSelect = (choice: InvestingChoice) => {
+    setShowChoiceModal(false);
+    // Choice is already stored by the modal component
+    // Proceed to onboarding (component will re-render and show onboarding)
+  };
+
+  const handleChoiceModalClose = (open: boolean) => {
+    if (!open) {
+      // If modal is being closed, check if user has made a choice
+      const choice = getInvestingChoice();
+      if (!choice) {
+        // No choice made, redirect back to dashboard
+        router.push('/dashboard');
+        return;
+      }
+    }
+    setShowChoiceModal(open);
+  };
+
+  // Show choice modal if no choice has been made and no account
+  if (!hasAccountId && showChoiceModal) {
     return (
-      <div className="">
-        <InvestOnboarding onAccept={handleAccountCreated} />
-      </div>
+      <InvestingChoiceModal
+        open={showChoiceModal}
+        onOpenChange={handleChoiceModalClose}
+        onSelect={handleChoiceSelect}
+      />
     );
+  }
+
+  // Show AI Wealth Landing or Self-Directed Onboarding based on choice
+  if (!hasAccountId) {
+    const user = getAuth();
+    const choice = user?.investingChoice || getInvestingChoice();
+
+    if (choice === 'ai-wealth') {
+      // If user clicked "Get Started", show onboarding directly
+      if (showAIOnboarding) {
+        return <InvestOnboarding onAccept={handleAccountCreated} />;
+      }
+      // Otherwise show the landing page
+      return (
+        <AIWealthLanding
+          onStartOnboarding={() => setShowAIOnboarding(true)}
+          showOnboarding={false}
+          onAccountCreated={handleAccountCreated}
+        />
+      );
+    } else {
+      // Self-directed onboarding
+      return (
+        <div className="">
+          <InvestOnboarding onAccept={handleAccountCreated} />
+        </div>
+      );
+    }
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">Invest</h1>
+        <h1 className="text-3xl font-bold" style={{ color: '#081c14' }}>Invest</h1>
         <p className="text-muted-foreground mt-1">Manage your investment portfolio</p>
       </div>
 
@@ -167,12 +227,21 @@ export default function Invest() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-4">
-        <Button onClick={handleBuy} className="h-auto flex-col gap-2 py-4">
+        <Button 
+          onClick={handleBuy} 
+          className="h-auto flex-col gap-2 py-4"
+          style={{ backgroundColor: '#081c14', color: 'white' }}
+        >
           <TrendingUp className="h-5 w-5" />
           <span className="text-sm">Buy</span>
         </Button>
-        <Button onClick={handleSell} variant="outline" className="h-auto flex-col gap-2 py-4">
-          <TrendingUp className="h-5 w-5 rotate-180" />
+        <Button 
+          onClick={handleSell} 
+          variant="outline" 
+          className="h-auto flex-col gap-2 py-4"
+          style={{ borderColor: '#081c14', color: '#081c14' }}
+        >
+          <TrendingUp className="h-5 w-5 rotate-180" style={{ color: '#081c14' }} />
           <span className="text-sm">Sell</span>
         </Button>
       </div>
@@ -191,10 +260,28 @@ export default function Invest() {
             </div>
           ) : (
             <Tabs defaultValue="positions" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="positions">Positions</TabsTrigger>
-                <TabsTrigger value="orders">Orders</TabsTrigger>
-                <TabsTrigger value="transactions">Transactions</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3" style={{ backgroundColor: '#edf9cd' }}>
+                <TabsTrigger 
+                  value="positions" 
+                  className="hover:bg-[#081c14]/10 [&.bg-background]:bg-[#081c14]/20 [&.bg-background]:text-[#081c14]"
+                  style={{ color: '#081c14' }}
+                >
+                  Positions
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="orders"
+                  className="hover:bg-[#081c14]/10 [&.bg-background]:bg-[#081c14]/20 [&.bg-background]:text-[#081c14]"
+                  style={{ color: '#081c14' }}
+                >
+                  Orders
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="transactions"
+                  className="hover:bg-[#081c14]/10 [&.bg-background]:bg-[#081c14]/20 [&.bg-background]:text-[#081c14]"
+                  style={{ color: '#081c14' }}
+                >
+                  Transactions
+                </TabsTrigger>
               </TabsList>
 
               {/* Positions Tab */}
@@ -212,7 +299,8 @@ export default function Invest() {
                             <div className="flex items-center gap-2 mb-1">
                               <Link
                                 href={`/invest/assets/${position.symbol}`}
-                                className="font-semibold hover:text-primary hover:underline cursor-pointer"
+                                className="font-semibold hover:underline cursor-pointer"
+                                style={{ color: '#081c14' }}
                               >
                                 {position.symbol}
                               </Link>
@@ -313,7 +401,8 @@ export default function Invest() {
                               <div className="flex items-center gap-2 mb-1">
                                 <Link
                                   href={`/invest/assets/${order.symbol}`}
-                                  className="font-semibold hover:text-primary hover:underline cursor-pointer"
+                                  className="font-semibold hover:underline cursor-pointer"
+                                  style={{ color: '#081c14' }}
                                 >
                                   {order.symbol}
                                 </Link>

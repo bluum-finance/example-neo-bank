@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeftRight, Plus, Receipt, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,50 +14,102 @@ import {
   getTransactions,
   type Transaction,
 } from '@/lib/mock-data';
+import { InvestingAnnouncementPopup } from '@/components/invest/announcement-popup';
+import { InvestingInvitation } from '@/components/invest/investing-invitation';
+import { InvestingChoiceModal, type InvestingChoice } from '@/components/invest/investing-choice-modal';
+import { getAuth } from '@/lib/auth';
 
 export default function Dashboard() {
+  const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showChoiceModal, setShowChoiceModal] = useState(false);
+  const [hasInvestmentAccount, setHasInvestmentAccount] = useState(false);
 
   useEffect(() => {
     getTransactions().then((data) => {
       setTransactions(data);
       setLoading(false);
     });
+
+    // Check if user has an investment account
+    const user = getAuth();
+    setHasInvestmentAccount(!!user?.externalAccountId);
   }, []);
 
   const recentTransactions = transactions.slice(0, 5);
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">Welcome back!</h1>
-        <p className="text-muted-foreground mt-1">
-          Here's what's happening with your account
-        </p>
-      </div>
+  const handleGetStarted = () => {
+    setShowChoiceModal(true);
+  };
 
-      {/* Balance Card */}
-      <BalanceCard
-        balance={mockUserAccount.balance}
-        accountNumber={mockUserAccount.accountNumber}
+  const handleInvestClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const user = getAuth();
+    if (user?.externalAccountId) {
+      // User already has account, go directly to invest page
+      router.push('/invest');
+    } else {
+      // Show choice modal
+      setShowChoiceModal(true);
+    }
+  };
+
+  const handleChoiceSelect = (choice: InvestingChoice) => {
+    router.push('/invest');
+  };
+
+  return (
+    <>
+      {/* Announcement Popup */}
+      {!hasInvestmentAccount && (
+        <InvestingAnnouncementPopup onGetStarted={handleGetStarted} />
+      )}
+
+      {/* Choice Modal */}
+      <InvestingChoiceModal
+        open={showChoiceModal}
+        onOpenChange={setShowChoiceModal}
+        onSelect={handleChoiceSelect}
       />
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4">
-          <Link href="/transfers">
-            <ArrowLeftRight className="h-5 w-5" />
-            <span className="text-sm">Send Money</span>
-          </Link>
-        </Button>
-        <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4">
-          <Link href="/invest">
-            <TrendingUp className="h-5 w-5" />
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold">Welcome back!</h1>
+          <p className="text-muted-foreground mt-1">
+            Here's what's happening with your account
+          </p>
+        </div>
+
+        {/* Balance Card */}
+        <BalanceCard
+          balance={mockUserAccount.balance}
+          accountNumber={mockUserAccount.accountNumber}
+        />
+
+        {/* Investing Invitation Section */}
+        {!hasInvestmentAccount && (
+          <InvestingInvitation onClick={handleGetStarted} />
+        )}
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4">
+            <Link href="/transfers">
+              <ArrowLeftRight className="h-5 w-5" />
+              <span className="text-sm">Send Money</span>
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            className="h-auto flex-col gap-2 py-4"
+            onClick={handleInvestClick}
+            style={{ backgroundColor: '#edf9cd', borderColor: '#edf9cd', color: '#081c14' }}
+          >
+            <TrendingUp className="h-5 w-5" style={{ color: '#081c14' }} />
             <span className="text-sm">Invest</span>
-          </Link>
-        </Button>
+          </Button>
         <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4">
           <Link href="/savings">
             <Plus className="h-5 w-5" />
@@ -103,6 +156,7 @@ export default function Dashboard() {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }
 

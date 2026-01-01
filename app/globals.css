@@ -56,6 +56,7 @@ body {
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-invest-primary: #061c13;
 }
 
 :root {
@@ -133,5 +134,23 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  /* Glassmorphism utility classes */
+  .glass-card {
+    @apply bg-white/10 dark:bg-black/10 backdrop-blur-md;
+    @apply border border-white/20 dark:border-white/10;
+    @apply shadow-lg shadow-black/5 dark:shadow-black/20;
+  }
+  
+  .glass-blur {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  
+  .glass-border {
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 }
