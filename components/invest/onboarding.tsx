@@ -1,13 +1,5 @@
 import { useState } from 'react';
-import {
-  FileText,
-  TrendingUp,
-  ArrowRight,
-  ArrowLeft,
-  DollarSign,
-  Shield,
-  CheckCircle2,
-} from 'lucide-react';
+import { FileText, TrendingUp, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Input } from '../ui/input';
@@ -57,7 +49,7 @@ interface Agreements {
 }
 
 export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(0); // Step 0 = Financial Profile, Step 1 = Tax, Step 2 = Employment, Step 3 = Disclosures
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [financialProfile, setFinancialProfile] = useState<FinancialProfile>({
     annualIncome: '',
@@ -93,7 +85,7 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
   const validateStep = (stepNum: number): boolean => {
     const newErrors: Record<string, string | undefined> = {};
 
-    if (stepNum === 1) {
+    if (stepNum === 0) {
       // Financial Profile
       if (!financialProfile.annualIncome.trim()) {
         newErrors.annualIncome = 'Annual Income is required';
@@ -107,7 +99,7 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
       if (!financialProfile.fundingSource) {
         newErrors.fundingSource = 'Account Funding Source is required';
       }
-    } else if (stepNum === 2) {
+    } else if (stepNum === 1) {
       // Tax Information
       if (!taxInfo.taxId.trim()) {
         newErrors.taxId = 'Tax ID is required';
@@ -121,7 +113,7 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
       if (!taxInfo.countryOfTaxResidence) {
         newErrors.countryOfTaxResidence = 'Country of Tax Residence is required';
       }
-    } else if (stepNum === 3) {
+    } else if (stepNum === 2) {
       // Employment Information
       if (!employmentInfo.employmentStatus) {
         newErrors.employmentStatus = 'Employment Status is required';
@@ -140,7 +132,7 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
           newErrors.employerAddress = 'Employer Address is required';
         }
       }
-    } else if (stepNum === 4) {
+    } else if (stepNum === 3) {
       // Disclosures and Agreements
       if (!agreements.accountAgreement) {
         newErrors.accountAgreement = 'You must agree to the Account Agreement';
@@ -152,13 +144,11 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
   };
 
   const handleNext = () => {
-    if (step === 0) {
-      setStep(1);
-    } else if (step >= 1 && step < 4) {
+    if (step >= 0 && step < 3) {
       if (validateStep(step)) {
         setStep(step + 1);
       }
-    } else if (step === 4) {
+    } else if (step === 3) {
       handleCreateAccount();
     }
   };
@@ -288,79 +278,40 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
     }
   };
 
-  const totalSteps = 5; // Welcome (0), Financial (1), Tax (2), Employment (3), Disclosures & Agreements (4)
+  const totalSteps = 4; // Financial (0), Tax (1), Employment (2), Disclosures & Agreements (3)
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
       <Card className="w-full max-w-2xl">
-        <CardHeader className={step === 0 ? 'text-center' : ''}>
-          {step === 0 ? (
-            <div className="space-y-4">
-              <div className="flex justify-center mb-4">
-                <div className="rounded-full bg-primary/10 p-4">
-                  <TrendingUp className="h-12 w-12 text-primary" />
-                </div>
+        <CardHeader>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="rounded-full bg-primary/10 p-2">
+                <TrendingUp className="h-6 w-6 text-primary" />
               </div>
-              <CardTitle className="text-3xl">Start Investing</CardTitle>
-              <CardDescription className="text-base mt-2">
-                Invest in U.S. and Nigerian stocks and grow your wealth. <br /> Powered by
-                Bluum Finance
-              </CardDescription>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="rounded-full bg-primary/10 p-2">
-                  <TrendingUp className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="text-2xl">Start Investing</CardTitle>
-                  <CardDescription className="text-sm">
-                    Step {step} of {totalSteps - 1}
-                  </CardDescription>
-                </div>
-              </div>
-              <div className="flex gap-1">
-                {Array.from({ length: totalSteps - 1 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={`h-2 w-8 rounded-full transition-colors ${
-                      i + 1 <= step ? 'bg-primary' : 'bg-muted'
-                    }`}
-                  />
-                ))}
+              <div>
+                <CardTitle className="text-2xl">Start Investing</CardTitle>
+                <CardDescription className="text-sm">
+                  Step {step + 1} of {totalSteps}
+                </CardDescription>
               </div>
             </div>
-          )}
+            <div className="flex gap-1">
+              {Array.from({ length: totalSteps }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-2 w-8 rounded-full transition-colors ${
+                    i <= step ? 'bg-primary' : 'bg-muted'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Step 0: Welcome/Splash Screen */}
-          {step === 0 && (
-            <div className="space-y-6">
-              <div className="grid md:grid-cols-3 gap-4">
-                <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
-                  <Shield className="h-8 w-8 text-primary mb-2" />
-                  <h3 className="font-semibold mb-1">Secure</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Your investments are protected
-                  </p>
-                </div>
-                <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
-                  <TrendingUp className="h-8 w-8 text-primary mb-2" />
-                  <h3 className="font-semibold mb-1">Diversified</h3>
-                  <p className="text-sm text-muted-foreground">Access to U.S. stock market</p>
-                </div>
-                <div className="flex flex-col items-center text-center p-4 rounded-lg bg-muted/50">
-                  <CheckCircle2 className="h-8 w-8 text-primary mb-2" />
-                  <h3 className="font-semibold mb-1">Easy</h3>
-                  <p className="text-sm text-muted-foreground">Start with as little as $20</p>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {/* Step 1: Financial Profile */}
-          {step === 1 && (
+        <CardContent className="space-y-6">
+          {/* Step 0: Financial Profile */}
+          {step === 0 && (
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold mb-2">Financial Profile</h2>
@@ -480,8 +431,8 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
             </div>
           )}
 
-          {/* Step 2: Tax Information */}
-          {step === 2 && (
+          {/* Step 1: Tax Information */}
+          {step === 1 && (
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold mb-2">Tax Information</h2>
@@ -581,8 +532,8 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
             </div>
           )}
 
-          {/* Step 3: Employment Information */}
-          {step === 3 && (
+          {/* Step 2: Employment Information */}
+          {step === 2 && (
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold mb-2">Employment Status</h2>
@@ -715,8 +666,8 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
             </div>
           )}
 
-          {/* Step 4: Disclosures & Agreements */}
-          {step === 4 && (
+          {/* Step 3: Disclosures & Agreements */}
+          {step === 3 && (
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-semibold mb-2">Disclosures & Agreements</h2>
@@ -859,50 +810,36 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
 
           {/* Navigation Buttons */}
           <div className="flex items-center justify-between pt-4 border-t">
-            {step === 0 ? (
-              <div className="w-full">
-                <Button
-                  onClick={handleNext}
-                  size="lg"
-                  className="w-full flex items-center gap-2"
-                >
-                  Get Started
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
+            <Button
+              variant="outline"
+              onClick={handleBack}
+              className="flex items-center gap-2"
+              disabled={step === 0}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+            {step < totalSteps - 1 ? (
+              <Button onClick={handleNext} className="flex items-center gap-2">
+                Next
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             ) : (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={handleBack}
-                  className="flex items-center gap-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back
-                </Button>
-                {step < totalSteps - 1 ? (
-                  <Button onClick={handleNext} className="flex items-center gap-2">
-                    Next
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
+              <Button
+                onClick={handleCreateAccount}
+                size="lg"
+                className="flex items-center gap-2"
+                disabled={isCreatingAccount}
+              >
+                {isCreatingAccount ? (
+                  <>
+                    <span className="animate-spin">⏳</span>
+                    Creating Account...
+                  </>
                 ) : (
-                  <Button
-                    onClick={handleCreateAccount}
-                    size="lg"
-                    className="flex items-center gap-2"
-                    disabled={isCreatingAccount}
-                  >
-                    {isCreatingAccount ? (
-                      <>
-                        <span className="animate-spin">⏳</span>
-                        Creating Account...
-                      </>
-                    ) : (
-                      <>Continue</>
-                    )}
-                  </Button>
+                  <>Continue</>
                 )}
-              </>
+              </Button>
             )}
           </div>
         </CardContent>

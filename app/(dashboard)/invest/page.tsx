@@ -11,11 +11,23 @@ import { BalanceCard } from '@/components/balance-card';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { InvestOnboarding } from '@/components/invest/onboarding';
-import { InvestingChoiceModal, type InvestingChoice } from '@/components/invest/investing-choice-modal';
+import {
+  InvestingChoiceModal,
+  type InvestingChoice,
+} from '@/components/invest/investing-choice-modal';
 import { AIWealthLanding } from '@/components/invest/ai-wealth-landing';
+import { SelfDirectedLanding } from '@/components/invest/self-directed-landing';
+import { NetWorthChart } from '@/components/invest/net-worth-chart';
+import { PersonalizedInsights } from '@/components/invest/insights-cards';
+import { TrendingStocks } from '@/components/invest/trending-stocks';
 import { InvestmentService, type Position } from '@/services/investment.service';
 import { AccountService } from '@/services/account.service';
-import { getAuth, setExternalAccountId, clearExternalAccountId, getInvestingChoice } from '@/lib/auth';
+import {
+  getAuth,
+  setExternalAccountId,
+  clearExternalAccountId,
+  getInvestingChoice,
+} from '@/lib/auth';
 import { toast } from 'sonner';
 
 export default function Invest() {
@@ -34,6 +46,7 @@ export default function Invest() {
   const [hasAccountId, setHasAccountId] = useState<boolean>(false);
   const [showChoiceModal, setShowChoiceModal] = useState<boolean>(false);
   const [showAIOnboarding, setShowAIOnboarding] = useState<boolean>(false);
+  const [showSelfDirectedOnboarding, setShowSelfDirectedOnboarding] = useState<boolean>(false);
 
   const loadPortfolio = async () => {
     try {
@@ -114,7 +127,7 @@ export default function Invest() {
     } else {
       setHasAccountId(false);
       setLoading(false);
-      
+
       // Check if user has made a choice
       const choice = getInvestingChoice();
       if (!choice) {
@@ -196,20 +209,34 @@ export default function Invest() {
         />
       );
     } else {
-      // Self-directed onboarding
+      // Self-directed flow
+      // If user clicked "Get Started", show onboarding directly
+      if (showSelfDirectedOnboarding) {
+        return <InvestOnboarding onAccept={handleAccountCreated} />;
+      }
+      // Otherwise show the landing page
       return (
-        <div className="">
-          <InvestOnboarding onAccept={handleAccountCreated} />
-        </div>
+        <SelfDirectedLanding
+          onStartOnboarding={() => setShowSelfDirectedOnboarding(true)}
+          showOnboarding={false}
+          onAccountCreated={handleAccountCreated}
+        />
       );
     }
   }
+
+  // Get user's investing choice
+  const user = getAuth();
+  const investingChoice = user?.investingChoice || getInvestingChoice();
+  const isAIWealth = investingChoice === 'ai-wealth';
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold" style={{ color: '#083423' }}>Invest</h1>
+        <h1 className="text-3xl font-bold" style={{ color: '#083423' }}>
+          Invest
+        </h1>
         <p className="text-muted-foreground mt-1">Manage your investment portfolio</p>
       </div>
 
@@ -225,19 +252,26 @@ export default function Invest() {
         onSuccess={loadPortfolio}
       />
 
+      {isAIWealth && (
+        <>
+          {/* Net Worth Growth Chart */}
+          <NetWorthChart />
+        </>
+      )}
+
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-4">
-        <Button 
-          onClick={handleBuy} 
+        <Button
+          onClick={handleBuy}
           className="h-auto flex-col gap-2 py-4"
           style={{ backgroundColor: '#083423', color: 'white' }}
         >
           <TrendingUp className="h-5 w-5" />
           <span className="text-sm">Buy</span>
         </Button>
-        <Button 
-          onClick={handleSell} 
-          variant="outline" 
+        <Button
+          onClick={handleSell}
+          variant="outline"
           className="h-auto flex-col gap-2 py-4"
           style={{ borderColor: '#083423', color: '#083423' }}
         >
@@ -260,22 +294,25 @@ export default function Invest() {
             </div>
           ) : (
             <Tabs defaultValue="positions" className="w-full">
-              <TabsList className="grid w-full grid-cols-3" style={{ backgroundColor: '#edf9cd' }}>
-                <TabsTrigger 
-                  value="positions" 
+              <TabsList
+                className="grid w-full grid-cols-3"
+                style={{ backgroundColor: '#edf9cd' }}
+              >
+                <TabsTrigger
+                  value="positions"
                   className="hover:bg-[#083423]/10 [&.bg-background]:bg-[#083423]/20 [&.bg-background]:text-[#083423]"
                   style={{ color: '#083423' }}
                 >
                   Positions
                 </TabsTrigger>
-                <TabsTrigger 
+                <TabsTrigger
                   value="orders"
                   className="hover:bg-[#083423]/10 [&.bg-background]:bg-[#083423]/20 [&.bg-background]:text-[#083423]"
                   style={{ color: '#083423' }}
                 >
                   Orders
                 </TabsTrigger>
-                <TabsTrigger 
+                <TabsTrigger
                   value="transactions"
                   className="hover:bg-[#083423]/10 [&.bg-background]:bg-[#083423]/20 [&.bg-background]:text-[#083423]"
                   style={{ color: '#083423' }}
@@ -593,6 +630,17 @@ export default function Invest() {
           )}
         </CardContent>
       </Card>
+
+      {/* AI Features for AI Wealth Management */}
+      {isAIWealth && (
+        <>
+          {/* Trending Stocks */}
+          <TrendingStocks />
+
+          {/* Personalized Insights */}
+          <PersonalizedInsights />
+        </>
+      )}
     </div>
   );
 }
