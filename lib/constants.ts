@@ -1,5 +1,5 @@
 // App constants
-export const APP_NAME = 'XYZ Bank';
+export const APP_NAME = 'Neo Bank';
 
 // Authentication constants
 export const DEFAULT_EMAIL = 'demo@xyzbank.com';
@@ -7,8 +7,7 @@ export const INVESTOR_EMAIL = 'investor@xyzbank.com';
 
 // Demo user constants
 export const DEMO_INVESTOR_ACCOUNT_ID =
-  process.env.NEXT_PUBLIC_DEMO_INVESTOR_ACCOUNT_ID ||
-  'a975cd7c-ff3b-4f93-9263-27421bb56ed8';
+  process.env.NEXT_PUBLIC_DEMO_INVESTOR_ACCOUNT_ID || 'a975cd7c-ff3b-4f93-9263-27421bb56ed8';
 export const DEMO_INVESTOR_INVESTING_CHOICE = 'ai-wealth';
 
 // API constants

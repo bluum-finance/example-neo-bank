@@ -6,7 +6,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'XYZ Bank',
+  title: 'Neo Bank By Bluum Finance',
   description: 'Modern banking experience',
   icons: {
     icon: '/favicon.svg',

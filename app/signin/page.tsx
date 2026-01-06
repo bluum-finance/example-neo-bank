@@ -124,7 +124,7 @@ export default function SignIn() {
                   fill="currentColor"
                 />
               </svg>
-              <span className="text-2xl font-bold">XYZ Bank</span>
+              <span className="text-2xl font-bold">Neo Bank</span>
             </div>
           </div>
           <CardTitle>Sign In</CardTitle>

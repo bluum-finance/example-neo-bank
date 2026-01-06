@@ -7,6 +7,7 @@ import { clearAuth, getAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '../ui/avatar';
+import Image from 'next/image';
 
 const navItems = [
   { path: '/dashboard', icon: Home, label: 'Dashboard' },
@@ -41,23 +42,10 @@ export function SidebarNav() {
       <div className="flex flex-col h-full">
         {/* Logo/Brand */}
         <div className="flex items-center gap-2 px-6 py-6 border-b">
-          <div className="flex items-center gap-2">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 40 40"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              style={{ color: '#083423' }}
-            >
-              <rect width="40" height="40" rx="8" fill="currentColor" opacity="0.1" />
-              <path
-                d="M20 10L12 14V16H28V14L20 10ZM12 18V28H28V18H12ZM14 20H26V26H14V20Z"
-                fill="currentColor"
-              />
-            </svg>
-            <span className="text-xl font-bold">XYZ Bank</span>
-          </div>
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <Image src="/favicon.svg" alt="Neo Bank" width={32} height={32} />
+            <span className="text-xl font-bold">Neo Bank</span>
+          </Link>
         </div>
 
         {/* Navigation */}
