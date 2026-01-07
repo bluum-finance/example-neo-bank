@@ -18,7 +18,6 @@ import {
 import { AIWealthLanding } from '@/components/invest/ai-wealth-landing';
 import { SelfDirectedLanding } from '@/components/invest/self-directed-landing';
 import { NetWorthChart } from '@/components/invest/net-worth-chart';
-import { AIWealthRecommendation } from '@/components/invest/ai-wealth-recommendation';
 import { PersonalizedInsights } from '@/components/invest/insights-cards';
 import { TrendingStocks } from '@/components/invest/trending-stocks';
 import { InvestmentService, type Position } from '@/services/investment.service';
@@ -259,9 +258,6 @@ export default function Invest() {
           <NetWorthChart accountBalance={accountBalance} />
         </>
       )}
-
-      {/* AI Wealth Recommendation for Self-Directed Users */}
-      {!isAIWealth && <AIWealthRecommendation />}
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-4">
