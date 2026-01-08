@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AI_WEALTH_MANAGEMENT_PRICE, AI_WEALTH_MANAGEMENT_FEATURES } from '@/lib/constants';
 import { setInvestingChoice } from '@/lib/auth';
+import Image from 'next/image';
 
 export type InvestingChoice = 'self-directed' | 'ai-wealth';
 
@@ -223,16 +224,16 @@ export function InvestingChoiceModal({
             <p className="text-xs text-muted-foreground">
               You can change your preference later in settings
             </p>
-            <p className="text-sm text-muted-foreground pt-1">
-              Powered by{' '}
+
+            <div className="flex gap-2 items-center justify-center pt-3">
+              <span className='text-sm text-muted-foreground'>Powered by</span>{' '}
               <a
                 href="https://bluumfinance.com"
                 target="_blank"
-                className="text-primary font-semibold"
               >
-                Bluum Finance
+               <Image src="/bluum-logo.svg" alt="Bluum Finance" width={75} height={75} />
               </a>
-            </p>
+            </div>
           </div>
         </div>
       </DialogContent>
