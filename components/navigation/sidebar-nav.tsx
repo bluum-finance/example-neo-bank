@@ -38,7 +38,7 @@ export function SidebarNav() {
   };
 
   return (
-    <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:left-0 md:border-r md:bg-card">
+    <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:border-r lg:bg-card">
       <div className="flex flex-col h-full">
         {/* Logo/Brand */}
         <div className="flex items-center gap-2 px-6 py-6 border-b">
