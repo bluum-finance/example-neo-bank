@@ -3,7 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowDown, ArrowUp, TrendingUp, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  TrendingUp,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  MessageCircle,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -156,6 +164,12 @@ export default function Invest() {
     router.push('/invest/trade?side=sell');
   };
 
+  const handleChat = () => {
+    // Navigate to chat page or open chat modal
+    // For now, we'll use a placeholder route
+    router.push('/invest/chat');
+  };
+
   const handleRetry = () => {
     loadPortfolio();
   };
@@ -260,24 +274,69 @@ export default function Invest() {
       )}
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-4">
-        <Button
-          onClick={handleBuy}
-          className="h-auto flex-col gap-2 py-4"
-          style={{ backgroundColor: '#083423', color: 'white' }}
+      <div>
+        <h2 className="text-lg font-semibold mb-3" style={{ color: '#083423' }}>
+          Quick Actions
+        </h2>
+        <div
+          className={`grid gap-3 ${
+            isAIWealth ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'
+          }`}
         >
-          <TrendingUp className="h-5 w-5" />
-          <span className="text-sm">Buy</span>
-        </Button>
-        <Button
-          onClick={handleSell}
-          variant="outline"
-          className="h-auto flex-col gap-2 py-4"
-          style={{ borderColor: '#083423', color: '#083423' }}
-        >
-          <TrendingUp className="h-5 w-5 rotate-180" style={{ color: '#083423' }} />
-          <span className="text-sm">Sell</span>
-        </Button>
+          <Card
+            className="cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] border"
+            style={{ borderColor: '#edf9cd' }}
+            onClick={handleBuy}
+          >
+            <CardContent className="py-0 px-4 flex flex-row items-center justify-center gap-3">
+              <div className="rounded-full p-2" style={{ backgroundColor: '#083423' }}>
+                <TrendingUp className="h-5 w-5 text-white" />
+              </div>
+              <div className="text-left">
+                <h3 className="font-semibold text-sm" style={{ color: '#083423' }}>
+                  Buy
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">Purchase stocks</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card
+            className="cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] border"
+            style={{ borderColor: '#edf9cd' }}
+            onClick={handleSell}
+          >
+            <CardContent className="py-0 px-4 flex flex-row items-center justify-center gap-3">
+              <div className="rounded-full p-2" style={{ backgroundColor: '#edf9cd' }}>
+                <TrendingUp className="h-5 w-5 rotate-180" style={{ color: '#083423' }} />
+              </div>
+              <div className="text-left">
+                <h3 className="font-semibold text-sm" style={{ color: '#083423' }}>
+                  Sell
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">Sell positions</p>
+              </div>
+            </CardContent>
+          </Card>
+          {isAIWealth && (
+            <Card
+              className="cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] border"
+              style={{ borderColor: '#edf9cd' }}
+              onClick={handleChat}
+            >
+              <CardContent className="py-0 px-4 flex flex-row items-center justify-center gap-3">
+                <div className="rounded-full p-2" style={{ backgroundColor: '#edf9cd' }}>
+                  <MessageCircle className="h-5 w-5" style={{ color: '#083423' }} />
+                </div>
+                <div className="text-left">
+                  <h3 className="font-semibold text-sm" style={{ color: '#083423' }}>
+                    Chat with Bluum AI
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">Get AI insights</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
 
       {/* Positions, Orders, and Transactions Tabs */}
