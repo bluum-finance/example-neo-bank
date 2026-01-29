@@ -11,6 +11,8 @@ import {
   CheckCircle2,
   XCircle,
   MessageCircle,
+  Link as LinkIcon,
+  FileText,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,6 +42,16 @@ import { toast } from 'sonner';
 
 export default function Invest() {
   const router = useRouter();
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const navTabs = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'accounts', label: 'Accounts' },
+    { id: 'flow', label: 'Flow' },
+    { id: 'transactions', label: 'Transactions' },
+    { id: 'services', label: 'Services' },
+    { id: 'markets', label: 'Markets' },
+  ];
+  const [activeTab, setActiveTab] = useState<string>('overview');
   const [positions, setPositions] = useState<Position[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -244,461 +256,737 @@ export default function Invest() {
   const investingChoice = user?.investingChoice || getInvestingChoice();
   const isAIWealth = investingChoice === 'ai-wealth';
 
+  // Get greeting based on time of day
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  // Get user's first name
+  const getUserFirstName = () => {
+    const user = getAuth();
+    if (user?.firstName) return user.firstName;
+    if (user?.name) return user.name.split(' ')[0];
+    return 'Jessie'; // Default fallback
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold" style={{ color: '#083423' }}>
-          Invest
-        </h1>
-        <p className="text-muted-foreground mt-1">Manage your investment portfolio</p>
-      </div>
+      {/* Top Navigation Bar */}
+      <nav className="w-full border-b border-gray-100 bg-white mb-6">
+        <ul className="flex flex-row gap-2 md:gap-6 px-4 py-3 md:py-4 md:px-8 overflow-x-auto">
+          {navTabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <li key={tab.id}>
+                <button
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`text-base font-medium px-2 py-1 transition-colors duration-150 whitespace-nowrap pb-3 ${isActive
+                    ? 'text-gray-900 border-b-2 border-gray-900' // active
+                    : 'text-gray-500 hover:text-gray-900'
+                    }`}
+                  style={isActive ? { fontWeight: 700 } : { fontWeight: 400 }}
+                >
+                  {tab.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
 
-      {/* Investment Balance Card */}
-      <BalanceCard
-        balance={accountBalance}
-        label="Investment Balance"
-        portfolioValue={{
-          totalGain: portfolioGains.totalGain,
-          totalGainPercent: portfolioGains.totalGainPercent,
-        }}
-        accountId={accountId || undefined}
-        onSuccess={loadPortfolio}
-      />
-
-      {isAIWealth && (
+      {/* Tab Content */}
+      {activeTab === 'overview' && (
         <>
-          {/* Net Worth Growth Chart */}
-          <NetWorthChart accountBalance={accountBalance} />
-        </>
-      )}
-
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-lg font-semibold mb-3" style={{ color: '#083423' }}>
-          Quick Actions
-        </h2>
-        <div
-          className={`grid gap-3 ${
-            isAIWealth ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'
-          }`}
-        >
-          <Card
-            className="cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] border"
-            style={{ borderColor: '#edf9cd' }}
-            onClick={handleBuy}
-          >
-            <CardContent className="py-0 px-4 flex flex-row items-center justify-center gap-3">
-              <div className="rounded-full p-2" style={{ backgroundColor: '#083423' }}>
-                <TrendingUp className="h-5 w-5 text-white" />
-              </div>
-              <div className="text-left">
-                <h3 className="font-semibold text-sm" style={{ color: '#083423' }}>
-                  Buy
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1">Purchase stocks</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card
-            className="cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] border"
-            style={{ borderColor: '#edf9cd' }}
-            onClick={handleSell}
-          >
-            <CardContent className="py-0 px-4 flex flex-row items-center justify-center gap-3">
-              <div className="rounded-full p-2" style={{ backgroundColor: '#edf9cd' }}>
-                <TrendingUp className="h-5 w-5 rotate-180" style={{ color: '#083423' }} />
-              </div>
-              <div className="text-left">
-                <h3 className="font-semibold text-sm" style={{ color: '#083423' }}>
-                  Sell
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1">Sell positions</p>
-              </div>
-            </CardContent>
-          </Card>
-          {isAIWealth && (
-            <Card
-              className="cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] border"
-              style={{ borderColor: '#edf9cd' }}
-              onClick={handleChat}
-            >
-              <CardContent className="py-0 px-4 flex flex-row items-center justify-center gap-3">
-                <div className="rounded-full p-2" style={{ backgroundColor: '#edf9cd' }}>
-                  <MessageCircle className="h-5 w-5" style={{ color: '#083423' }} />
-                </div>
-                <div className="text-left">
-                  <h3 className="font-semibold text-sm" style={{ color: '#083423' }}>
-                    Chat with Bluum AI
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1">Get AI insights</p>
+          {/* Main Content Area - Row 1: Greeting & Expert Consultation */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Greeting Card - Left (2/3 width) */}
+            <Card className="md:col-span-2 bg-white rounded-lg shadow-sm border-0">
+              <CardContent className="p-6">
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                  {getGreeting()}, {getUserFirstName()}
+                </h1>
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    variant="outline"
+                    className="border-gray-300 bg-white text-gray-700 hover:bg-gray-50 shadow-sm"
+                  >
+                    <LinkIcon className="h-4 w-4 mr-2" />
+                    Link New Account
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="border-gray-300 bg-white text-gray-700 hover:bg-gray-50 shadow-sm"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Upload Document
+                  </Button>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Chat with Bluum AI Card - Right (1/3 width) */}
+            <Card className="bg-gray-100 rounded-lg shadow-sm border-0">
+              <CardContent className="p-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-2">Chat with Bluum AI</h2>
+                <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                  Get personalized investment insights, market analysis, and financial guidance from our AI assistant, from simple questions to complex decisions.
+                </p>
+                <Button
+                  onClick={handleChat}
+                  className="w-full bg-white text-gray-900 hover:bg-gray-50 border border-gray-300 shadow-sm rounded-md"
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Start Chat
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Content Area - Row 2: Financial Summary */}
+          <Card className="bg-white rounded-lg shadow-sm border-0">
+            <CardContent className="py-2 px-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-0 md:divide-x md:divide-gray-100">
+                <div className="md:pr-6">
+                  <p className="text-sm text-gray-600 mb-2">Total Net Worth</p>
+                  <p className="text-3xl font-medium text-gray-900">
+                    ${accountBalance.toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </p>
+                </div>
+                <div className="md:pl-6">
+                  <p className="text-sm text-gray-600 mb-2">Cash & Equivalents</p>
+                  <p className="text-3xl font-medium text-gray-900">
+                    ${accountBalance.toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {isAIWealth && (
+            <>
+              {/* Net Worth Growth Chart */}
+              <NetWorthChart accountBalance={accountBalance} />
+            </>
           )}
-        </div>
-      </div>
 
-      {/* Positions, Orders, and Transactions Tabs */}
-      <Card>
-        <CardContent>
-          {loading ? (
-            <div className="py-8 text-center text-muted-foreground">Loading portfolio...</div>
-          ) : error ? (
-            <div className="py-8 text-center">
-              <p className="text-muted-foreground mb-4">{error}</p>
-              <Button onClick={handleRetry} variant="outline" size="sm">
-                Retry
-              </Button>
-            </div>
-          ) : (
-            <Tabs defaultValue="positions" className="w-full">
-              <TabsList
-                className="grid w-full grid-cols-3"
-                style={{ backgroundColor: '#edf9cd' }}
+          {/* Quick Actions */}
+          <div>
+            <h2 className="text-lg font-semibold mb-3" style={{ color: '#083423' }}>
+              Quick Actions
+            </h2>
+            <div
+              className={`grid gap-3 ${isAIWealth ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'
+                }`}
+            >
+              <Card
+                className="cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] border"
+                style={{ borderColor: '#edf9cd' }}
+                onClick={handleBuy}
               >
-                <TabsTrigger
-                  value="positions"
-                  className="hover:bg-[#083423]/10 [&.bg-background]:bg-[#083423]/20 [&.bg-background]:text-[#083423]"
-                  style={{ color: '#083423' }}
-                >
-                  Positions
-                </TabsTrigger>
-                <TabsTrigger
-                  value="orders"
-                  className="hover:bg-[#083423]/10 [&.bg-background]:bg-[#083423]/20 [&.bg-background]:text-[#083423]"
-                  style={{ color: '#083423' }}
-                >
-                  Orders
-                </TabsTrigger>
-                <TabsTrigger
-                  value="transactions"
-                  className="hover:bg-[#083423]/10 [&.bg-background]:bg-[#083423]/20 [&.bg-background]:text-[#083423]"
-                  style={{ color: '#083423' }}
-                >
-                  Transactions
-                </TabsTrigger>
-              </TabsList>
-
-              {/* Positions Tab */}
-              <TabsContent value="positions" className="mt-4">
-                {positions.length === 0 ? (
-                  <div className="py-8 text-center text-muted-foreground">
-                    No positions yet. Start investing!
+                <CardContent className="py-0 px-4 flex flex-row items-center justify-center gap-3">
+                  <div className="rounded-full p-2" style={{ backgroundColor: '#083423' }}>
+                    <TrendingUp className="h-5 w-5 text-white" />
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {positions.map((position, index) => (
-                      <div key={position.symbol}>
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Link
-                                href={`/invest/assets/${position.symbol}`}
-                                className="font-semibold hover:underline cursor-pointer"
-                                style={{ color: '#083423' }}
-                              >
-                                {position.symbol}
-                              </Link>
-                            </div>
-                            <div className="flex items-center gap-4 mt-2">
-                              <div>
-                                <p className="text-xs text-muted-foreground">Current Price</p>
-                                <p className="text-sm font-medium">
-                                  $
-                                  {position.currentPrice != null
-                                    ? position.currentPrice.toFixed(2)
-                                    : 'N/A'}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-muted-foreground">Value</p>
-                                <p className="text-sm font-medium">
-                                  ${position.value != null ? position.value.toFixed(2) : 'N/A'}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          {position.gain != null && (
-                            <div className="text-right">
-                              <div className="flex items-center gap-1 mb-1">
-                                {position.gain >= 0 ? (
-                                  <ArrowUp className="h-4 w-4 text-green-600" />
-                                ) : (
-                                  <ArrowDown className="h-4 w-4 text-red-600" />
-                                )}
-                                <span
-                                  className={`text-sm font-semibold ${
-                                    position.gain >= 0 ? 'text-green-600' : 'text-red-600'
-                                  }`}
-                                >
-                                  {position.gain >= 0 ? '+' : ''}$
-                                  {position.gain != null ? position.gain.toFixed(2) : 'N/A'}
-                                </span>
-                              </div>
-                              <p
-                                className={`text-xs ${
-                                  position.gainPercent >= 0 ? 'text-green-600' : 'text-red-600'
-                                }`}
-                              >
-                                {position.gainPercent >= 0 ? '+' : ''}
-                                {position.gainPercent != null
-                                  ? position.gainPercent.toFixed(2)
-                                  : 'N/A'}
-                                %
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                        {index < positions.length - 1 && <Separator className="mt-4" />}
+                  <div className="text-left">
+                    <h3 className="font-semibold text-sm" style={{ color: '#083423' }}>
+                      Buy
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">Purchase stocks</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card
+                className="cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] border"
+                style={{ borderColor: '#edf9cd' }}
+                onClick={handleSell}
+              >
+                <CardContent className="py-0 px-4 flex flex-row items-center justify-center gap-3">
+                  <div className="rounded-full p-2" style={{ backgroundColor: '#edf9cd' }}>
+                    <TrendingUp className="h-5 w-5 rotate-180" style={{ color: '#083423' }} />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-semibold text-sm" style={{ color: '#083423' }}>
+                      Sell
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">Sell positions</p>
+                  </div>
+                </CardContent>
+              </Card>
+              {isAIWealth && (
+                <Card
+                  className="cursor-pointer transition-all hover:shadow-md hover:scale-[1.01] border"
+                  style={{ borderColor: '#edf9cd' }}
+                  onClick={handleChat}
+                >
+                  <CardContent className="py-0 px-4 flex flex-row items-center justify-center gap-3">
+                    <div className="rounded-full p-2" style={{ backgroundColor: '#edf9cd' }}>
+                      <MessageCircle className="h-5 w-5" style={{ color: '#083423' }} />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="font-semibold text-sm" style={{ color: '#083423' }}>
+                        Chat with Bluum AI
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-1">Get AI insights</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+
+          {/* Positions, Orders, and Transactions Tabs */}
+          <Card>
+            <CardContent>
+              {loading ? (
+                <div className="py-8 text-center text-muted-foreground">Loading portfolio...</div>
+              ) : error ? (
+                <div className="py-8 text-center">
+                  <p className="text-muted-foreground mb-4">{error}</p>
+                  <Button onClick={handleRetry} variant="outline" size="sm">
+                    Retry
+                  </Button>
+                </div>
+              ) : (
+                <Tabs defaultValue="positions" className="w-full">
+                  <TabsList
+                    className="grid w-full grid-cols-3"
+                    style={{ backgroundColor: '#edf9cd' }}
+                  >
+                    <TabsTrigger
+                      value="positions"
+                      className="hover:bg-[#083423]/10 [&.bg-background]:bg-[#083423]/20 [&.bg-background]:text-[#083423]"
+                      style={{ color: '#083423' }}
+                    >
+                      Positions
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="orders"
+                      className="hover:bg-[#083423]/10 [&.bg-background]:bg-[#083423]/20 [&.bg-background]:text-[#083423]"
+                      style={{ color: '#083423' }}
+                    >
+                      Orders
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="transactions"
+                      className="hover:bg-[#083423]/10 [&.bg-background]:bg-[#083423]/20 [&.bg-background]:text-[#083423]"
+                      style={{ color: '#083423' }}
+                    >
+                      Transactions
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* Positions Tab */}
+                  <TabsContent value="positions" className="mt-4">
+                    {positions.length === 0 ? (
+                      <div className="py-8 text-center text-muted-foreground">
+                        No positions yet. Start investing!
                       </div>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-
-              {/* Orders Tab */}
-              <TabsContent value="orders" className="mt-4">
-                {orders.length === 0 ? (
-                  <div className="py-8 text-center text-muted-foreground">
-                    No orders yet. Place your first order!
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {orders.map((order, index) => {
-                      const getStatusIcon = () => {
-                        switch (order.status) {
-                          case 'filled':
-                            return <CheckCircle2 className="h-4 w-4 text-green-600" />;
-                          case 'canceled':
-                          case 'rejected':
-                            return <XCircle className="h-4 w-4 text-red-600" />;
-                          default:
-                            return <Clock className="h-4 w-4 text-yellow-600" />;
-                        }
-                      };
-
-                      const getStatusColor = () => {
-                        switch (order.status) {
-                          case 'filled':
-                            return 'text-green-600';
-                          case 'canceled':
-                          case 'rejected':
-                            return 'text-red-600';
-                          default:
-                            return 'text-yellow-600';
-                        }
-                      };
-
-                      return (
-                        <div key={order.id || index}>
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Link
-                                  href={`/invest/assets/${order.symbol}`}
-                                  className="font-semibold hover:underline cursor-pointer"
-                                  style={{ color: '#083423' }}
-                                >
-                                  {order.symbol}
-                                </Link>
-                                <Badge
-                                  variant={order.side === 'buy' ? 'default' : 'secondary'}
-                                  className="text-xs"
-                                >
-                                  {order.side.toUpperCase()}
-                                </Badge>
-                                <Badge variant="outline" className="text-xs">
-                                  {order.type}
-                                </Badge>
+                    ) : (
+                      <div className="space-y-4">
+                        {positions.map((position, index) => (
+                          <div key={position.symbol}>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Link
+                                    href={`/invest/assets/${position.symbol}`}
+                                    className="font-semibold hover:underline cursor-pointer"
+                                    style={{ color: '#083423' }}
+                                  >
+                                    {position.symbol}
+                                  </Link>
+                                </div>
+                                <div className="flex items-center gap-4 mt-2">
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Current Price</p>
+                                    <p className="text-sm font-medium">
+                                      $
+                                      {position.currentPrice != null
+                                        ? position.currentPrice.toFixed(2)
+                                        : 'N/A'}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-muted-foreground">Value</p>
+                                    <p className="text-sm font-medium">
+                                      ${position.value != null ? position.value.toFixed(2) : 'N/A'}
+                                    </p>
+                                  </div>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-4 mt-2">
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Quantity</p>
-                                  <p className="text-sm font-medium">
-                                    {order.qty || order.filled_qty || 'N/A'}
+                              {position.gain != null && (
+                                <div className="text-right">
+                                  <div className="flex items-center gap-1 mb-1">
+                                    {position.gain >= 0 ? (
+                                      <ArrowUp className="h-4 w-4 text-green-600" />
+                                    ) : (
+                                      <ArrowDown className="h-4 w-4 text-red-600" />
+                                    )}
+                                    <span
+                                      className={`text-sm font-semibold ${position.gain >= 0 ? 'text-green-600' : 'text-red-600'
+                                        }`}
+                                    >
+                                      {position.gain >= 0 ? '+' : ''}$
+                                      {position.gain != null ? position.gain.toFixed(2) : 'N/A'}
+                                    </span>
+                                  </div>
+                                  <p
+                                    className={`text-xs ${position.gainPercent >= 0 ? 'text-green-600' : 'text-red-600'
+                                      }`}
+                                  >
+                                    {position.gainPercent >= 0 ? '+' : ''}
+                                    {position.gainPercent != null
+                                      ? position.gainPercent.toFixed(2)
+                                      : 'N/A'}
+                                    %
                                   </p>
                                 </div>
-                                {order.average_price && (
-                                  <div>
-                                    <p className="text-xs text-muted-foreground">Avg Price</p>
-                                    <p className="text-sm font-medium">
-                                      $
-                                      {order.average_price != null &&
-                                      !isNaN(parseFloat(order.average_price))
-                                        ? parseFloat(order.average_price).toFixed(2)
-                                        : 'N/A'}
-                                    </p>
-                                  </div>
-                                )}
-                                {order.limit_price && (
-                                  <div>
-                                    <p className="text-xs text-muted-foreground">
-                                      Limit Price
-                                    </p>
-                                    <p className="text-sm font-medium">
-                                      $
-                                      {order.limit_price != null &&
-                                      !isNaN(parseFloat(order.limit_price))
-                                        ? parseFloat(order.limit_price).toFixed(2)
-                                        : 'N/A'}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                              {order.submitted_at && (
-                                <p className="text-xs text-muted-foreground mt-2">
-                                  {new Date(order.submitted_at).toLocaleString()}
-                                </p>
                               )}
                             </div>
-                            <div className="text-right">
-                              <div className="flex items-center gap-1 mb-1">
-                                {getStatusIcon()}
-                                <span className={`text-sm font-semibold ${getStatusColor()}`}>
-                                  {order.status.replace('_', ' ').toUpperCase()}
-                                </span>
-                              </div>
-                              {order.filled_qty && order.qty && (
-                                <p className="text-xs text-muted-foreground">
-                                  {order.filled_qty} / {order.qty} filled
-                                </p>
-                              )}
-                            </div>
+                            {index < positions.length - 1 && <Separator className="mt-4" />}
                           </div>
-                          {index < orders.length - 1 && <Separator className="mt-4" />}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </TabsContent>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
 
-              {/* Transactions Tab */}
-              <TabsContent value="transactions" className="mt-4">
-                {transactions.length === 0 ? (
-                  <div className="py-8 text-center text-muted-foreground">
-                    No transactions yet.
+                  {/* Orders Tab */}
+                  <TabsContent value="orders" className="mt-4">
+                    {orders.length === 0 ? (
+                      <div className="py-8 text-center text-muted-foreground">
+                        No orders yet. Place your first order!
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {orders.map((order, index) => {
+                          const getStatusIcon = () => {
+                            switch (order.status) {
+                              case 'filled':
+                                return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+                              case 'canceled':
+                              case 'rejected':
+                                return <XCircle className="h-4 w-4 text-red-600" />;
+                              default:
+                                return <Clock className="h-4 w-4 text-yellow-600" />;
+                            }
+                          };
+
+                          const getStatusColor = () => {
+                            switch (order.status) {
+                              case 'filled':
+                                return 'text-green-600';
+                              case 'canceled':
+                              case 'rejected':
+                                return 'text-red-600';
+                              default:
+                                return 'text-yellow-600';
+                            }
+                          };
+
+                          return (
+                            <div key={order.id || index}>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Link
+                                      href={`/invest/assets/${order.symbol}`}
+                                      className="font-semibold hover:underline cursor-pointer"
+                                      style={{ color: '#083423' }}
+                                    >
+                                      {order.symbol}
+                                    </Link>
+                                    <Badge
+                                      variant={order.side === 'buy' ? 'default' : 'secondary'}
+                                      className="text-xs"
+                                    >
+                                      {order.side.toUpperCase()}
+                                    </Badge>
+                                    <Badge variant="outline" className="text-xs">
+                                      {order.type}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center gap-4 mt-2">
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Quantity</p>
+                                      <p className="text-sm font-medium">
+                                        {order.qty || order.filled_qty || 'N/A'}
+                                      </p>
+                                    </div>
+                                    {order.average_price && (
+                                      <div>
+                                        <p className="text-xs text-muted-foreground">Avg Price</p>
+                                        <p className="text-sm font-medium">
+                                          $
+                                          {order.average_price != null &&
+                                            !isNaN(parseFloat(order.average_price))
+                                            ? parseFloat(order.average_price).toFixed(2)
+                                            : 'N/A'}
+                                        </p>
+                                      </div>
+                                    )}
+                                    {order.limit_price && (
+                                      <div>
+                                        <p className="text-xs text-muted-foreground">
+                                          Limit Price
+                                        </p>
+                                        <p className="text-sm font-medium">
+                                          $
+                                          {order.limit_price != null &&
+                                            !isNaN(parseFloat(order.limit_price))
+                                            ? parseFloat(order.limit_price).toFixed(2)
+                                            : 'N/A'}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {order.submitted_at && (
+                                    <p className="text-xs text-muted-foreground mt-2">
+                                      {new Date(order.submitted_at).toLocaleString()}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="text-right">
+                                  <div className="flex items-center gap-1 mb-1">
+                                    {getStatusIcon()}
+                                    <span className={`text-sm font-semibold ${getStatusColor()}`}>
+                                      {order.status.replace('_', ' ').toUpperCase()}
+                                    </span>
+                                  </div>
+                                  {order.filled_qty && order.qty && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {order.filled_qty} / {order.qty} filled
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              {index < orders.length - 1 && <Separator className="mt-4" />}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Transactions Tab */}
+                  <TabsContent value="transactions" className="mt-4">
+                    {transactions.length === 0 ? (
+                      <div className="py-8 text-center text-muted-foreground">
+                        No transactions yet.
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {transactions.map((transaction, index) => {
+                          const isDeposit = transaction.type === 'deposit';
+                          return (
+                            <div key={transaction.id || transaction.transaction_id || index}>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="font-semibold">
+                                      {isDeposit ? 'Deposit' : 'Withdrawal'}
+                                    </h3>
+                                    <Badge
+                                      variant={isDeposit ? 'default' : 'secondary'}
+                                      className="text-xs"
+                                    >
+                                      {transaction.type.toUpperCase()}
+                                    </Badge>
+                                    <Badge
+                                      variant={
+                                        transaction.status === 'settled' ||
+                                          transaction.status === 'completed'
+                                          ? 'success'
+                                          : transaction.status === 'failed' ||
+                                            transaction.status === 'canceled'
+                                            ? 'destructive'
+                                            : transaction.status === 'pending' ||
+                                              transaction.status === 'processing'
+                                              ? 'warning'
+                                              : 'secondary'
+                                      }
+                                      className="text-xs capitalize"
+                                    >
+                                      {transaction.status}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center gap-4 mt-2">
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Amount</p>
+                                      <p className="text-sm font-medium">
+                                        $
+                                        {transaction.amount != null &&
+                                          !isNaN(parseFloat(transaction.amount))
+                                          ? parseFloat(transaction.amount).toFixed(2)
+                                          : '0.00'}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-muted-foreground">Currency</p>
+                                      <p className="text-sm font-medium">
+                                        {transaction.currency || 'USD'}
+                                      </p>
+                                    </div>
+                                    {transaction.fee && parseFloat(transaction.fee) > 0 && (
+                                      <div>
+                                        <p className="text-xs text-muted-foreground">Fee</p>
+                                        <p className="text-sm font-medium">
+                                          $
+                                          {transaction.fee != null &&
+                                            !isNaN(parseFloat(transaction.fee))
+                                            ? parseFloat(transaction.fee).toFixed(2)
+                                            : 'N/A'}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {transaction.description && (
+                                    <p className="text-xs text-muted-foreground mt-2">
+                                      {transaction.description}
+                                    </p>
+                                  )}
+                                  {transaction.created_at && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {new Date(transaction.created_at).toLocaleString()}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="text-right">
+                                  <div className="flex items-center gap-1 mb-1">
+                                    {isDeposit ? (
+                                      <ArrowDown className="h-4 w-4 text-green-600" />
+                                    ) : (
+                                      <ArrowUp className="h-4 w-4 text-red-600" />
+                                    )}
+                                    <span
+                                      className={`text-sm font-semibold ${isDeposit ? 'text-green-600' : 'text-red-600'
+                                        }`}
+                                    >
+                                      {isDeposit ? '+' : '-'}$
+                                      {transaction.amount != null &&
+                                        !isNaN(parseFloat(transaction.amount))
+                                        ? parseFloat(transaction.amount).toFixed(2)
+                                        : '0.00'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              {index < transactions.length - 1 && <Separator className="mt-4" />}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* AI Features for AI Wealth Management */}
+          {isAIWealth && (
+            <>
+              {/* Personalized Insights */}
+              <PersonalizedInsights />
+
+              {/* Trending Stocks */}
+              <TrendingStocks />
+            </>
+          )}
+        </>
+      )}
+
+      {activeTab === 'accounts' && (
+        <>
+          {/* Investment Balance Card */}
+          <BalanceCard
+            balance={accountBalance}
+            label="Investment Balance"
+            portfolioValue={{
+              totalGain: portfolioGains.totalGain,
+              totalGainPercent: portfolioGains.totalGainPercent,
+            }}
+            accountId={accountId || undefined}
+            onSuccess={loadPortfolio}
+          />
+        </>
+      )}
+
+      {activeTab === 'flow' && (
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Flow</h2>
+            <p className="text-gray-600">View your cash flow and funding history.</p>
+            {transactions.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {transactions.slice(0, 5).map((transaction, index) => (
+                  <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                    <span className="text-sm">{transaction.type}</span>
+                    <span className="text-sm font-medium">
+                      ${transaction.amount ? parseFloat(transaction.amount).toFixed(2) : '0.00'}
+                    </span>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {transactions.map((transaction, index) => {
-                      const isDeposit = transaction.type === 'deposit';
-                      return (
-                        <div key={transaction.id || transaction.transaction_id || index}>
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-semibold">
-                                  {isDeposit ? 'Deposit' : 'Withdrawal'}
-                                </h3>
-                                <Badge
-                                  variant={isDeposit ? 'default' : 'secondary'}
-                                  className="text-xs"
-                                >
-                                  {transaction.type.toUpperCase()}
-                                </Badge>
-                                <Badge
-                                  variant={
-                                    transaction.status === 'settled' ||
-                                    transaction.status === 'completed'
-                                      ? 'success'
-                                      : transaction.status === 'failed' ||
-                                        transaction.status === 'canceled'
-                                      ? 'destructive'
-                                      : transaction.status === 'pending' ||
-                                        transaction.status === 'processing'
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === 'transactions' && (
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Transactions</h2>
+            {loading ? (
+              <div className="py-8 text-center text-muted-foreground">Loading transactions...</div>
+            ) : error ? (
+              <div className="py-8 text-center">
+                <p className="text-muted-foreground mb-4">{error}</p>
+                <Button onClick={handleRetry} variant="outline" size="sm">
+                  Retry
+                </Button>
+              </div>
+            ) : transactions.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground">
+                No transactions yet.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {transactions.map((transaction, index) => {
+                  const isDeposit = transaction.type === 'deposit';
+                  return (
+                    <div key={transaction.id || transaction.transaction_id || index}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold">
+                              {isDeposit ? 'Deposit' : 'Withdrawal'}
+                            </h3>
+                            <Badge
+                              variant={isDeposit ? 'default' : 'secondary'}
+                              className="text-xs"
+                            >
+                              {transaction.type.toUpperCase()}
+                            </Badge>
+                            <Badge
+                              variant={
+                                transaction.status === 'settled' ||
+                                  transaction.status === 'completed'
+                                  ? 'success'
+                                  : transaction.status === 'failed' ||
+                                    transaction.status === 'canceled'
+                                    ? 'destructive'
+                                    : transaction.status === 'pending' ||
+                                      transaction.status === 'processing'
                                       ? 'warning'
                                       : 'secondary'
-                                  }
-                                  className="text-xs capitalize"
-                                >
-                                  {transaction.status}
-                                </Badge>
-                              </div>
-                              <div className="flex items-center gap-4 mt-2">
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Amount</p>
-                                  <p className="text-sm font-medium">
-                                    $
-                                    {transaction.amount != null &&
-                                    !isNaN(parseFloat(transaction.amount))
-                                      ? parseFloat(transaction.amount).toFixed(2)
-                                      : '0.00'}
-                                  </p>
-                                </div>
-                                <div>
-                                  <p className="text-xs text-muted-foreground">Currency</p>
-                                  <p className="text-sm font-medium">
-                                    {transaction.currency || 'USD'}
-                                  </p>
-                                </div>
-                                {transaction.fee && parseFloat(transaction.fee) > 0 && (
-                                  <div>
-                                    <p className="text-xs text-muted-foreground">Fee</p>
-                                    <p className="text-sm font-medium">
-                                      $
-                                      {transaction.fee != null &&
-                                      !isNaN(parseFloat(transaction.fee))
-                                        ? parseFloat(transaction.fee).toFixed(2)
-                                        : 'N/A'}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                              {transaction.description && (
-                                <p className="text-xs text-muted-foreground mt-2">
-                                  {transaction.description}
-                                </p>
-                              )}
-                              {transaction.created_at && (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {new Date(transaction.created_at).toLocaleString()}
-                                </p>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <div className="flex items-center gap-1 mb-1">
-                                {isDeposit ? (
-                                  <ArrowDown className="h-4 w-4 text-green-600" />
-                                ) : (
-                                  <ArrowUp className="h-4 w-4 text-red-600" />
-                                )}
-                                <span
-                                  className={`text-sm font-semibold ${
-                                    isDeposit ? 'text-green-600' : 'text-red-600'
-                                  }`}
-                                >
-                                  {isDeposit ? '+' : '-'}$
-                                  {transaction.amount != null &&
+                              }
+                              className="text-xs capitalize"
+                            >
+                              {transaction.status}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4 mt-2">
+                            <div>
+                              <p className="text-xs text-muted-foreground">Amount</p>
+                              <p className="text-sm font-medium">
+                                $
+                                {transaction.amount != null &&
                                   !isNaN(parseFloat(transaction.amount))
-                                    ? parseFloat(transaction.amount).toFixed(2)
-                                    : '0.00'}
-                                </span>
-                              </div>
+                                  ? parseFloat(transaction.amount).toFixed(2)
+                                  : '0.00'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">Currency</p>
+                              <p className="text-sm font-medium">
+                                {transaction.currency || 'USD'}
+                              </p>
                             </div>
                           </div>
-                          {index < transactions.length - 1 && <Separator className="mt-4" />}
+                          {transaction.created_at && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {new Date(transaction.created_at).toLocaleString()}
+                            </p>
+                          )}
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          )}
-        </CardContent>
-      </Card>
+                        <div className="text-right">
+                          <div className="flex items-center gap-1 mb-1">
+                            {isDeposit ? (
+                              <ArrowDown className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <ArrowUp className="h-4 w-4 text-red-600" />
+                            )}
+                            <span
+                              className={`text-sm font-semibold ${isDeposit ? 'text-green-600' : 'text-red-600'
+                                }`}
+                            >
+                              {isDeposit ? '+' : '-'}$
+                              {transaction.amount != null &&
+                                !isNaN(parseFloat(transaction.amount))
+                                ? parseFloat(transaction.amount).toFixed(2)
+                                : '0.00'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {index < transactions.length - 1 && <Separator className="mt-4" />}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-      {/* AI Features for AI Wealth Management */}
-      {isAIWealth && (
-        <>
-          {/* Personalized Insights */}
-          <PersonalizedInsights />
+      {activeTab === 'services' && (
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Services</h2>
+            <p className="text-gray-600">Explore additional investment services and features.</p>
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className="cursor-pointer hover:shadow-md transition-all">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold mb-2">AI Wealth Management</h3>
+                  <p className="text-sm text-gray-600">
+                    Get AI-powered investment recommendations and portfolio management.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="cursor-pointer hover:shadow-md transition-all">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold mb-2">Self-Directed Trading</h3>
+                  <p className="text-sm text-gray-600">
+                    Take full control of your investments with advanced trading tools.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-          {/* Trending Stocks */}
-          <TrendingStocks />
-        </>
+      {activeTab === 'markets' && (
+        <Card>
+          <CardContent className="p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Markets</h2>
+            <p className="text-gray-600">View market data and explore investment opportunities.</p>
+            {isAIWealth && (
+              <div className="mt-6">
+                <TrendingStocks />
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

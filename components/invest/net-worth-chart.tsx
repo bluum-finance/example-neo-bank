@@ -92,20 +92,22 @@ export function NetWorthChart({ accountBalance }: { accountBalance?: number }) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Net Worth Growth</CardTitle>
-            <div className="mt-2">
-              <p className="text-3xl font-bold" style={{ color: '#083423' }}>
-                {formatCurrency(currentNetWorth)}
-              </p>
-              <p className="text-sm text-muted-foreground">Current Net Worth</p>
-            </div>
-          </div>
-
           {!accountId && (
-            <Badge variant="outline" style={{ borderColor: '#083423', color: '#083423' }}>
-              Example Portfolio
-            </Badge>
+            <>
+              <div>
+                <CardTitle>Net Worth Growth</CardTitle>
+                <div className="mt-2">
+                  <p className="text-3xl font-bold" style={{ color: '#083423' }}>
+                    {formatCurrency(currentNetWorth)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Current Net Worth</p>
+                </div>
+
+                <Badge variant="outline" style={{ borderColor: '#083423', color: '#083423' }}>
+                  Example Portfolio
+                </Badge>
+              </div>
+            </>
           )}
         </div>
       </CardHeader>
