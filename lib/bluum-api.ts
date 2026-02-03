@@ -240,6 +240,35 @@ class BluumApiClient {
     );
     return response.data;
   }
+
+  // Plaid Transfer (Deposit via Plaid)
+  async initiatePlaidTransfer(
+    accountId: string,
+    transferData: {
+      public_token?: string;
+      item_id?: string;
+      account_id?: string; // Plaid account ID
+      amount: string;
+      currency?: string;
+      description?: string;
+    }
+  ) {
+    // Transform to the deposits API format expected by bluum-web-api
+    const depositData = {
+      amount: transferData.amount,
+      currency: transferData.currency || 'USD',
+      method: 'ach_plaid',
+      description: transferData.description,
+      plaid_options: {
+        public_token: transferData.public_token,
+        item_id: transferData.item_id,
+        account_id: transferData.account_id,
+      },
+    };
+
+    const response = await this.client.post(`/accounts/${accountId}/deposits`, depositData);
+    return response.data;
+  }
 }
 
 export const bluumApi = new BluumApiClient();
