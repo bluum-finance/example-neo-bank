@@ -20,15 +20,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Structure withdrawal request according to backend API
-    const withdrawalData: WithdrawalRequest = {
-      account_id: accountId,
+    const withdrawalData: Omit<WithdrawalRequest, 'account_id'> = {
       amount: body.amount,
       funding_details: body.funding_details,
       description: body.description,
       external_reference_id: body.external_reference_id,
     };
 
-    const transaction = await bluumApi.withdrawFunds(withdrawalData);
+    const transaction = await bluumApi.withdrawFunds(accountId, withdrawalData);
     return NextResponse.json(transaction, { status: 202 });
   } catch (error: any) {
     return NextResponse.json(
