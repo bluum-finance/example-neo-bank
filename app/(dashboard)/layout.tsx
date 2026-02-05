@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { isAuthenticated } from '@/lib/auth';
 import { BottomNav } from '@/components/navigation/bottom-nav';
 import { SidebarNav } from '@/components/navigation/sidebar-nav';
+import { PageHeader } from '@/components/navigation/page-header';
 
 export default function DashboardLayout({
   children,
@@ -37,7 +38,8 @@ export default function DashboardLayout({
     <div className="flex min-h-screen bg-background">
       <SidebarNav />
       <main className="flex-1 lg:ml-64 pb-20 lg:pb-0">
-        <div className="container mx-auto px-4 py-6 max-w-7xl">
+        <PageHeader />
+        <div className="container mx-auto px-4 lg:px-8 py-6 max-w-8xl">
           {children}
         </div>
       </main>
