@@ -149,7 +149,7 @@ export function PortfolioPerformanceChart({
             return (
               <p
                 key={index}
-                className={`text-xs ${entry.dataKey === 'portfolio' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-muted-foreground'}`}
+                className={`text-xs ${entry.dataKey === 'portfolio' ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-muted-foreground'}`}
               >
                 {entry.dataKey === 'portfolio' ? 'Your Portfolio' : 'S&P 500'}:{' '}
                 {percent >= 0 ? '+' : ''}
@@ -188,7 +188,7 @@ export function PortfolioPerformanceChart({
                 key={range}
                 onClick={() => setSelectedRange(range)}
                 className={`px-3 py-1.5 text-[11px] font-semibold rounded-full transition-colors ${selectedRange === range
-                  ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
+                  ? 'bg-green-900 dark:bg-green-900 text-white shadow-sm'
                   : 'bg-gray-100 dark:bg-muted text-gray-600 dark:text-muted-foreground hover:bg-gray-200 dark:hover:bg-accent'
                   }`}
               >
@@ -205,8 +205,8 @@ export function PortfolioPerformanceChart({
             <ComposedChart data={chartData} margin={{ top: 12, right: 10, left: 0, bottom: 20 }}>
               <defs>
                 <linearGradient id="colorPortfolio" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.05} />
+                  <stop offset="5%" stopColor="#22C55E" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#22C55E" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
@@ -230,7 +230,7 @@ export function PortfolioPerformanceChart({
               <Area
                 type="monotone"
                 dataKey="portfolio"
-                stroke="#3B82F6"
+                stroke="#22C55E"
                 strokeWidth={2}
                 fill="url(#colorPortfolio)"
                 name="Your Portfolio"

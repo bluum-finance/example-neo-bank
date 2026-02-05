@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { type WidgetInsight } from '@/services/widget.service';
-import { Clock } from 'lucide-react';
+import { Receipt, TrendingUp, RotateCcw, BarChart3, AlertCircle } from 'lucide-react';
 
 interface InsightsWidgetProps {
   insights?: WidgetInsight[];
@@ -16,60 +16,30 @@ interface InsightsWidgetProps {
   accountBalance?: number;
 }
 
-// Custom icon components matching the design
-const ChartIcon = () => (
-  <div className="w-3.5 h-3.5 relative">
-    <div
-      className="absolute left-[1.17px] top-[1.17px] w-[11.67px] h-[11.67px]"
-      style={{
-        outline: '1.17px #5856D6 solid',
-        outlineOffset: '-0.58px',
-      }}
-    />
-    <div
-      className="absolute left-[5.30px] top-[4.08px] w-[3.40px] h-[3.50px]"
-      style={{
-        outline: '1.17px #5856D6 solid',
-        outlineOffset: '-0.58px',
-      }}
-    />
-  </div>
-);
+// Get icon component based on insight title or type
+const getIconComponent = (insight: WidgetInsight, index: number) => {
+  const title = insight.title?.toLowerCase() || '';
 
-const ChartIcon2 = () => (
-  <div className="w-3.5 h-3.5 relative">
-    <div
-      className="absolute left-[1.17px] top-[1.16px] w-[11.67px] h-[11.67px]"
-      style={{
-        outline: '1.17px #5856D6 solid',
-        outlineOffset: '-0.58px',
-      }}
-    />
-    <div
-      className="absolute left-[5.25px] top-[2.33px] w-[7.58px] h-[5.84px]"
-      style={{
-        outline: '1.17px #5856D6 solid',
-        outlineOffset: '-0.58px',
-      }}
-    />
-  </div>
-);
+  if (title.includes('tax') || title.includes('optimization')) {
+    return <Receipt className="w-3.5 h-3.5 text-green-800 dark:text-green-400" />;
+  }
+  if (title.includes('outperforming') || title.includes('benchmark') || title.includes('performance')) {
+    return <TrendingUp className="w-3.5 h-3.5 text-green-800 dark:text-green-400" />;
+  }
+  if (title.includes('rebalancing') || title.includes('rebalance')) {
+    return <RotateCcw className="w-3.5 h-3.5 text-green-800 dark:text-green-400" />;
+  }
+  if (title.includes('alert') || title.includes('warning')) {
+    return <AlertCircle className="w-3.5 h-3.5 text-green-800 dark:text-green-400" />;
+  }
 
-const ChartIcon3 = () => (
-  <div className="w-3.5 h-3.5 relative">
-    <div
-      className="absolute left-[1.17px] top-[1.17px] w-[11.67px] h-[11.67px]"
-      style={{
-        outline: '1.17px #5856D6 solid',
-        outlineOffset: '-0.58px',
-      }}
-    />
-  </div>
-);
-
-const getIconComponent = (index: number) => {
-  const icons = [ChartIcon, ChartIcon2, ChartIcon3];
-  return icons[index % icons.length];
+  // Default icons based on index
+  const defaultIcons = [
+    <BarChart3 className="w-3.5 h-3.5 text-green-800 dark:text-green-400" />,
+    <TrendingUp className="w-3.5 h-3.5 text-green-800 dark:text-green-400" />,
+    <Receipt className="w-3.5 h-3.5 text-green-800 dark:text-green-400" />,
+  ];
+  return defaultIcons[index % defaultIcons.length];
 };
 
 export function InsightsWidget({
@@ -105,7 +75,7 @@ export function InsightsWidget({
           {/* Insights List */}
           <div className="flex flex-col gap-0">
             {insights.map((insight, index) => {
-              const IconComponent = getIconComponent(index);
+              const iconElement = getIconComponent(insight, index);
               const showDivider = index < insights.length - 1;
 
               return (
@@ -116,13 +86,9 @@ export function InsightsWidget({
                     <div className="flex items-center gap-2">
                       {/* Icon Container */}
                       <div
-                        className="w-7 h-7 relative flex items-center justify-center shrink-0"
-                        style={{
-                          background: 'rgba(88, 86, 214, 0.10)',
-                          borderRadius: 6,
-                        }}
+                        className="w-7 h-7 relative flex items-center justify-center shrink-0 rounded-md bg-green-100 dark:bg-green-900/30"
                       >
-                        <IconComponent />
+                        {iconElement}
                       </div>
                       {/* Title */}
                       <div
@@ -159,7 +125,7 @@ export function InsightsWidget({
                       <div className="h-[19.50px] relative mt-1">
                         <button
                           onClick={() => handleActionClick(insight.actionLink)}
-                          className="h-4 flex items-center cursor-pointer hover:opacity-80 transition-opacity text-blue-600 dark:text-blue-400"
+                          className="h-4 flex items-center cursor-pointer hover:opacity-80 transition-opacity text-green-600 dark:text-green-400"
                           style={{
                             fontSize: 13,
                             fontFamily: 'Inter',

@@ -57,7 +57,7 @@ export function AIChatWidget({ onChatStart }: AIChatWidgetProps) {
             <div
               className="absolute left-0 top-0 w-32 h-32 rounded-full"
               style={{
-                background: 'rgba(79, 70, 229, 0.30)',
+                background: 'rgba(34, 197, 94, 0.30)',
                 boxShadow: '64px 64px 64px',
                 borderRadius: '9999px',
                 filter: 'blur(32px)',
@@ -67,18 +67,19 @@ export function AIChatWidget({ onChatStart }: AIChatWidgetProps) {
             <div
               className="relative w-32 h-32 rounded-full flex items-center justify-center overflow-hidden"
               style={{
-                boxShadow: '0px 0px 40px -10px rgba(79, 70, 229, 0.15)',
-                outline: '4px rgba(255, 255, 255, 0.10) solid',
+                boxShadow: '0px 0px 40px -10px rgba(34, 197, 94, 0.15)',
+                borderRadius: 9999,
+                outline: '4px rgba(255, 255, 255, 0.20) solid',
                 outlineOffset: '-4px',
-                background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.8), rgba(139, 92, 246, 0.8))',
+                background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.8), rgba(16, 185, 129, 0.8))',
               }}
             >
               {/* Letter "b" */}
               <div
-                className="flex flex-col items-start justify-center text-white text-[43.70px] font-bold italic leading-[60px]"
+                className="flex flex-col items-start justify-center text-[43.70px] font-bold italic leading-[60px]"
                 style={{
                   fontFamily: 'Inter',
-                  color: 'rgba(255, 255, 255, 0.20)',
+                  color: 'rgba(85.18, 85.18, 85.18, 0.3)',
                 }}
               >
                 b

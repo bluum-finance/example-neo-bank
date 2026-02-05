@@ -164,20 +164,19 @@ export function QuickActionsWidget() {
               <button
                 key={action.id}
                 onClick={() => handleActionClick(action)}
-                className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors text-left group"
+                className="w-full flex items-center gap-3 py-3 rounded-lg hover:bg-muted/50 transition-colors text-left group"
               >
-                <div
+                <div 
                   className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                  style={{
-                    backgroundColor: `${action.iconColor}15`,
-                    color: action.iconColor,
-                  }}
+                  style={{ backgroundColor: '#1A3A2C' }}
                 >
-                  {action.icon}
+                  <div className="text-white">
+                    {action.icon}
+                  </div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{action.title}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{action.description}</p>
+                  <p className="text-xs text-muted-foreground mt-1.5">{action.description}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
               </button>

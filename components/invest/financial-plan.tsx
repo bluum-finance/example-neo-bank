@@ -26,14 +26,14 @@ interface FinancialPlanProps {
 // Helper function to convert widget service goal to component goal
 const convertGoalToComponentFormat = (goal: WidgetFinancialGoal): FinancialGoal => {
   const iconMap: Record<string, React.ReactNode> = {
-    umbrella: <Umbrella className="h-6 w-6" style={{ color: goal.iconColor }} />,
-    shield: <Shield className="h-6 w-6" style={{ color: goal.iconColor }} />,
-    'trending-up': <TrendingUp className="h-6 w-6" style={{ color: goal.iconColor }} />,
+    umbrella: <Umbrella className="h-5 w-5 text-white" />,
+    shield: <Shield className="h-5 w-5 text-white" />,
+    'trending-up': <TrendingUp className="h-5 w-5 text-white" />,
   };
 
   return {
     ...goal,
-    icon: iconMap[goal.icon] || <Umbrella className="h-6 w-6" style={{ color: goal.iconColor }} />,
+    icon: iconMap[goal.icon] || <Umbrella className="h-5 w-5 text-white" />,
   };
 };
 
@@ -72,10 +72,7 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
     <div className="w-full flex flex-col gap-4">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <div
-          className="text-base font-semibold text-gray-900 dark:text-foreground"
-          style={{ fontSize: 16, fontFamily: 'Inter', fontWeight: 600, }}
-        >
+        <div className="text-base font-semibold leading-6 text-gray-900 dark:text-white">
           Financial Plan
         </div>
         {onViewDetails ? (
@@ -127,9 +124,9 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
                 <div
                   className="w-9 h-9 rounded-[10px] flex items-center justify-center"
                   style={{
-                    background: goal.iconBgColor || 'rgba(191, 90, 242, 0.12)',
-                    paddingLeft: 13,
-                    paddingRight: 13,
+                    background: "#1E3D2F",
+                    paddingLeft: 12,
+                    paddingRight: 12,
                   }}
                 >
                   <div style={{ color: goal.iconColor || '#9333EA' }}>{goal.icon}</div>
@@ -183,12 +180,12 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
 
               {/* Progress Bar and Amounts */}
               <div className="flex flex-col gap-2.5">
-                <div className="relative h-1.5 overflow-hidden rounded bg-gray-200 dark:bg-gray-700">
+                <div className="relative h-1.5 overflow-hidden rounded bg-gray-200 dark:bg-[#2A4D3C]">
                   <div
                     className="absolute left-0 top-0 h-full rounded"
                     style={{
                       width: `${progressBarWidth}%`,
-                      background: '#22C55E',
+                      background: '#57B75C',
                     }}
                   />
                 </div>
