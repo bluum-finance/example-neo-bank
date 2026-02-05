@@ -109,21 +109,22 @@ export function AIChatWidget({ onChatStart }: AIChatWidgetProps) {
                 onChange={handleInputChange}
                 onKeyPress={handleInputKeyPress}
                 placeholder="Ask AI"
-                className="w-full text-base h-full pl-14 pr-16 py-5 bg-white rounded-full outline outline-1 outline-gray-200 text-gray-700 font-light placeholder:text-gray-400 focus:outline-2 focus:outline-[#4F46E5] transition-all"
+                className="w-full text-base h-full pl-14 pr-16 py-5 bg-card rounded-full outline outline-1 outline-gray-200 dark:outline-border text-gray-700 dark:text-foreground font-light placeholder:text-gray-400 dark:placeholder:text-muted-foreground focus:outline-2 focus:outline-[#4F46E5] dark:focus:outline-[#6366F1] transition-all"
                 style={{
                   fontFamily: 'Inter',
                 }}
               />
               {/* Sparkles icon on left */}
               <div className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-gray-400" />
+                <Sparkles className="w-4 h-4 text-gray-400 dark:text-muted-foreground" />
               </div>
               {/* Send icon on right */}
               <button
                 onClick={handleSend}
+                disabled={!inputValue.trim()}
                 className="absolute cursor-pointer right-4 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-9 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80 transition-opacity"
               >
-                <Send className="w-5 h-5 text-gray-400 rotate-[-12deg]" />
+                <Send className="w-5 h-5 text-gray-400 dark:text-muted-foreground rotate-[-12deg]" />
               </button>
             </div>
           </div>
@@ -135,10 +136,10 @@ export function AIChatWidget({ onChatStart }: AIChatWidgetProps) {
                 <button
                   key={index}
                   onClick={() => handlePromptClick(prompt)}
-                  className="px-4 py-1.5 bg-white cursor-pointer rounded-full outline outline-1 outline-gray-200 outline-offset-[-1px] hover:bg-gray-50 transition-colors"
+                  className="px-4 py-1.5 bg-card cursor-pointer rounded-full outline outline-1 outline-gray-200 dark:outline-border outline-offset-[-1px] hover:bg-gray-50 dark:hover:bg-accent transition-colors"
                 >
                   <span
-                    className="text-center text-gray-700 text-xs font-normal leading-5"
+                    className="text-center text-gray-700 dark:text-foreground text-xs font-normal leading-5"
                     style={{
                       fontFamily: 'Inter',
                     }}

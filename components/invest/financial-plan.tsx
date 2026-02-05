@@ -73,8 +73,8 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
       {/* Header */}
       <div className="flex justify-between items-center">
         <div
-          className="text-base font-semibold"
-          style={{ color: '#1F2937', fontSize: 16, fontFamily: 'Inter', fontWeight: 600, }}
+          className="text-base font-semibold text-gray-900 dark:text-foreground"
+          style={{ fontSize: 16, fontFamily: 'Inter', fontWeight: 600, }}
         >
           Financial Plan
         </div>
@@ -84,12 +84,12 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
             className="flex items-center gap-0.5 hover:opacity-80 transition-opacity"
           >
             <span
-              className="text-xs font-normal"
-              style={{ color: '#5E9EFF', fontSize: 12, fontFamily: 'Inter', fontWeight: 400, }}
+              className="text-xs font-normal text-blue-500 dark:text-blue-400"
+              style={{ fontSize: 12, fontFamily: 'Inter', fontWeight: 400, }}
             >
               View all goals
             </span>
-            <ChevronRight className="w-3 h-3" style={{ color: '#5E9EFF' }} />
+            <ChevronRight className="w-3 h-3 text-blue-500 dark:text-blue-400" />
           </button>
         ) : (
           <Link
@@ -97,12 +97,12 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
             className="flex items-center gap-0.5 hover:opacity-80 transition-opacity"
           >
             <span
-              className="text-xs font-normal"
-              style={{ color: '#5E9EFF', fontSize: 12, fontFamily: 'Inter', fontWeight: 400, }}
+              className="text-xs font-normal text-blue-500 dark:text-blue-400"
+              style={{ fontSize: 12, fontFamily: 'Inter', fontWeight: 400, }}
             >
               View all goals
             </span>
-            <ChevronRight className="w-3 h-3" style={{ color: '#5E9EFF' }} />
+            <ChevronRight className="w-3 h-3 text-blue-500 dark:text-blue-400" />
           </Link>
         )}
       </div>
@@ -117,7 +117,7 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
           return (
             <div
               key={goal.id}
-              className="p-4 rounded-xl flex flex-col gap-3.5 bg-white border border-gray-200"
+              className="p-4 rounded-xl flex flex-col gap-3.5 bg-card border border-gray-200 dark:border-border"
               style={{
                 borderRadius: 12,
               }}
@@ -158,9 +158,8 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
               {/* Title and Target */}
               <div className="flex flex-col gap-0.5">
                 <div
-                  className="text-sm font-semibold"
+                  className="text-sm font-semibold text-gray-900 dark:text-foreground"
                   style={{
-                    color: '#1F2937',
                     fontSize: 14,
                     fontFamily: 'Inter',
                     fontWeight: 600,
@@ -170,9 +169,8 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
                   {goal.title}
                 </div>
                 <div
-                  className="text-xs font-normal"
+                  className="text-xs font-normal text-gray-500 dark:text-muted-foreground"
                   style={{
-                    color: '#6B7280',
                     fontSize: 12,
                     fontFamily: 'Inter',
                     fontWeight: 400,
@@ -185,7 +183,7 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
 
               {/* Progress Bar and Amounts */}
               <div className="flex flex-col gap-2.5">
-                <div className="relative h-1.5 overflow-hidden rounded bg-gray-200">
+                <div className="relative h-1.5 overflow-hidden rounded bg-gray-200 dark:bg-gray-700">
                   <div
                     className="absolute left-0 top-0 h-full rounded"
                     style={{
@@ -196,9 +194,8 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
                 </div>
                 <div className="flex justify-between items-center">
                   <div
-                    className="text-xs font-medium"
+                    className="text-xs font-medium text-gray-900 dark:text-foreground"
                     style={{
-                      color: '#1F2937',
                       fontSize: 12,
                       fontFamily: 'Inter',
                       fontWeight: 500,
@@ -208,9 +205,8 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
                   </div>
                   {remaining && (
                     <div
-                      className="text-xs font-normal"
+                      className="text-xs font-normal text-gray-500 dark:text-muted-foreground"
                       style={{
-                        color: '#6B7280',
                         fontSize: 12,
                         fontFamily: 'Inter',
                         fontWeight: 400,

@@ -140,17 +140,14 @@ export function PortfolioPerformanceChart({
       const sp500Percent = ((dataPoint.sp500 - 100) / 100) * 100;
 
       return (
-        <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
-          <p className="text-xs font-medium text-gray-900 mb-2">{dataPoint.date}</p>
+        <div className="rounded-lg border border-gray-200 dark:border-border bg-card p-3 shadow-lg">
+          <p className="text-xs font-medium text-gray-900 dark:text-foreground mb-2">{dataPoint.date}</p>
           {payload.map((entry: any, index: number) => {
             const percent = entry.dataKey === 'portfolio' ? portfolioPercent : sp500Percent;
             return (
               <p
                 key={index}
-                className="text-xs"
-                style={{
-                  color: entry.dataKey === 'portfolio' ? '#3B82F6' : '#6B7280',
-                }}
+                className={`text-xs ${entry.dataKey === 'portfolio' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-muted-foreground'}`}
               >
                 {entry.dataKey === 'portfolio' ? 'Your Portfolio' : 'S&P 500'}:{' '}
                 {percent >= 0 ? '+' : ''}
@@ -169,11 +166,11 @@ export function PortfolioPerformanceChart({
       <CardHeader className="pb-0">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
               <TrendingUp className="h-5 w-5" />
             </div>
             <div>
-              <CardTitle className="text-lg font-semibold text-gray-900">Portfolio Performance</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900 dark:text-foreground">Portfolio Performance</CardTitle>
             </div>
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -182,8 +179,8 @@ export function PortfolioPerformanceChart({
                 key={range}
                 onClick={() => setSelectedRange(range)}
                 className={`px-3 py-1.5 text-[11px] font-semibold rounded-full transition-colors ${selectedRange === range
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
+                  : 'bg-gray-100 dark:bg-muted text-gray-600 dark:text-muted-foreground hover:bg-gray-200 dark:hover:bg-accent'
                   }`}
               >
                 {range}
@@ -194,7 +191,7 @@ export function PortfolioPerformanceChart({
       </CardHeader>
 
       <CardContent className="">
-        <div className="rounded-xl border border-gray-200 bg-gray-50 px-4">
+        <div className="rounded-xl border border-gray-200 dark:border-border bg-gray-50 dark:bg-muted/30 px-4">
           <ResponsiveContainer width="100%" height={280}>
             <ComposedChart data={chartData} margin={{ top: 12, right: 10, left: 0, bottom: 20 }}>
               <defs>
@@ -203,16 +200,18 @@ export function PortfolioPerformanceChart({
                   <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
               <XAxis
                 dataKey="date"
                 tick={{ fontSize: 11, fill: '#6B7280' }}
+                className="dark:[&_text]:fill-gray-400"
                 tickLine={false}
                 axisLine={false}
                 height={32}
               />
               <YAxis
                 tick={{ fontSize: 11, fill: '#6B7280' }}
+                className="dark:[&_text]:fill-gray-400"
                 tickLine={false}
                 axisLine={false}
                 domain={['auto', 'auto']}
@@ -231,6 +230,7 @@ export function PortfolioPerformanceChart({
                 type="monotone"
                 dataKey="sp500"
                 stroke="#6B7280"
+                className="dark:stroke-gray-400"
                 strokeWidth={2}
                 strokeDasharray="6 6"
                 dot={false}

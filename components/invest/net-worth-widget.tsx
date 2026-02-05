@@ -54,7 +54,7 @@ export function NetWorthWidget({
 
   return (
     <div
-      className="w-full h-full p-4 rounded-xl overflow-hidden bg-white border border-gray-200"
+      className="w-full h-full p-4 rounded-xl overflow-hidden bg-card border border-gray-200 dark:border-border"
       style={{
         borderRadius: 12,
       }}
@@ -62,29 +62,28 @@ export function NetWorthWidget({
       <div className="flex flex-1 items-center gap-6">
         <div className="flex-1 flex flex-col justify-center items-start gap-1">
           <div
-            className="text-xs font-normal"
-            style={{ color: '#6B7280', fontSize: 12, fontFamily: 'Inter' }}
+            className="text-xs font-normal text-gray-500 dark:text-muted-foreground"
+            style={{ fontSize: 12, fontFamily: 'Inter' }}
           >
             Total Net Worth
           </div>
           <div
-            className="text-2xl font-semibold"
-            style={{ color: '#1F2937', fontSize: 24, fontFamily: 'Inter', fontWeight: 600 }}
+            className="text-2xl font-semibold text-gray-900 dark:text-foreground"
+            style={{ fontSize: 24, fontFamily: 'Inter', fontWeight: 600 }}
           >
             {formatNetWorth(netWorth)}
           </div>
         </div>
         <button
           onClick={handleViewDetails}
-          className="px-2 py-1 rounded-full flex items-center gap-1 transition-opacity hover:opacity-80 bg-gray-100 hover:bg-gray-200"
+          className="px-2 py-1 rounded-full flex items-center gap-1 transition-opacity hover:opacity-80 bg-gray-100 dark:bg-muted hover:bg-gray-200 dark:hover:bg-accent"
           style={{
             borderRadius: 100,
           }}
         >
           <span
-            className="text-xs font-normal leading-[18px]"
+            className="text-xs font-normal leading-[18px] text-gray-700 dark:text-muted-foreground"
             style={{
-              color: '#374151',
               fontSize: 12,
               fontFamily: 'Inter',
               fontWeight: 400,
@@ -92,7 +91,7 @@ export function NetWorthWidget({
           >
             View details
           </span>
-          <ChevronDown className="w-[18px] h-[18px] text-gray-600" />
+          <ChevronDown className="w-[18px] h-[18px] text-gray-600 dark:text-muted-foreground" />
         </button>
       </div>
     </div>

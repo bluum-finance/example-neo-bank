@@ -43,7 +43,7 @@ function useDarkMode() {
     const stored = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const shouldBeDark = stored === 'dark' || (!stored && prefersDark);
-    
+
     setIsDark(shouldBeDark);
     if (shouldBeDark) {
       document.documentElement.classList.add('dark');
@@ -55,7 +55,7 @@ function useDarkMode() {
   const toggleDarkMode = () => {
     const newIsDark = !isDark;
     setIsDark(newIsDark);
-    
+
     if (newIsDark) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
@@ -94,7 +94,10 @@ export function SidebarNav() {
   };
 
   return (
-    <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:border-r lg:bg-card">
+    <aside
+      className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:border-r lg:bg-card"
+      style={{ backgroundColor: isDark ? '#07120F' : undefined }}
+    >
       <div className="flex flex-col h-full">
         {/* Logo/Brand */}
         <div className="flex items-center gap-2 px-6 py-6 border-b">
@@ -157,7 +160,7 @@ export function SidebarNav() {
               <p className="text-xs text-muted-foreground truncate">{user?.email || ''}</p>
             </div>
           </div>
-          
+
           {/* Dark Mode Toggle */}
           {mounted && (
             <button
@@ -178,7 +181,7 @@ export function SidebarNav() {
               )}
             </button>
           )}
-          
+
           <button
             onClick={handleLogout}
             className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"

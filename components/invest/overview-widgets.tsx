@@ -116,8 +116,7 @@ export function OverviewWidgets({
                   {insight.actionLabel && insight.actionLink && (
                     <Link
                       href={insight.actionLink}
-                      className="text-xs font-medium mt-2 inline-block"
-                      style={{ color: '#3B82F6' }}
+                      className="text-xs font-medium mt-2 inline-block text-blue-500 dark:text-blue-400"
                     >
                       {insight.actionLabel}
                     </Link>

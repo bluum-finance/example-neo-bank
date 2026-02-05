@@ -78,8 +78,8 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
       {/* Header */}
       <div className="flex justify-between items-center">
         <div
-          className="text-base font-semibold"
-          style={{ color: '#1F2937', fontSize: 16, fontFamily: 'Inter', fontWeight: 600 }}
+          className="text-base font-semibold text-gray-900 dark:text-foreground"
+          style={{ fontSize: 16, fontFamily: 'Inter', fontWeight: 600 }}
         >
           Investment Policy
         </div>
@@ -88,14 +88,14 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
       {/* Policy Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
         {/* 1. Risk Tolerance */}
-        <div className="p-4 rounded-xl bg-white border border-gray-200 flex flex-col gap-3">
+        <div className="p-4 rounded-xl bg-card border border-gray-200 dark:border-border flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-red-100">
               <Shield className="h-5 w-5 text-red-600" />
             </div>
             <div
-              className="text-sm font-semibold"
-              style={{ color: '#1F2937', fontSize: 14, fontFamily: 'Inter', fontWeight: 600 }}
+              className="text-sm font-semibold text-gray-900 dark:text-foreground"
+              style={{ fontSize: 14, fontFamily: 'Inter', fontWeight: 600 }}
             >
               Risk Tolerance
             </div>
@@ -104,28 +104,28 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
             {/* Slider */}
             <div className="relative h-2 bg-gradient-to-r from-green-500 via-yellow-500 to-orange-500 rounded-full">
               <div
-                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-gray-300 shadow-sm"
+                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-card rounded-full border-2 border-gray-300 dark:border-border shadow-sm"
                 style={{ left: `${currentPolicy.riskTolerance.position}%` }}
               />
             </div>
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className="flex justify-between text-xs text-gray-500 dark:text-muted-foreground">
               <span>Conservative</span>
               <span>Aggressive</span>
             </div>
-            <div className="text-sm font-semibold text-orange-600">{currentPolicy.riskTolerance.level}</div>
-            <div className="text-xs text-gray-500">{currentPolicy.riskTolerance.description}</div>
+            <div className="text-sm font-semibold text-orange-600 dark:text-orange-500">{currentPolicy.riskTolerance.level}</div>
+            <div className="text-xs text-gray-500 dark:text-muted-foreground">{currentPolicy.riskTolerance.description}</div>
           </div>
         </div>
 
         {/* 2. Time Horizon */}
-        <div className="p-4 rounded-xl bg-white border border-gray-200 flex flex-col gap-3">
+        <div className="p-4 rounded-xl bg-card border border-gray-200 dark:border-border flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-100">
-              <Clock className="h-5 w-5 text-blue-600" />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-100 dark:bg-blue-900/30">
+              <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div
-              className="text-sm font-semibold"
-              style={{ color: '#1F2937', fontSize: 14, fontFamily: 'Inter', fontWeight: 600 }}
+              className="text-sm font-semibold text-gray-900 dark:text-foreground"
+              style={{ fontSize: 14, fontFamily: 'Inter', fontWeight: 600 }}
             >
               Time Horizon
             </div>
@@ -136,27 +136,27 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
               {['Now', '5yr', '10yr', '15yr', '20yr+'].map((period, index) => (
                 <div key={period} className="flex-1 flex flex-col gap-1">
                   <div
-                    className={`h-8 rounded ${index < 4 ? 'bg-blue-500' : index === 4 ? 'bg-blue-500/30' : 'bg-gray-200'
+                    className={`h-8 rounded ${index < 4 ? 'bg-blue-500' : index === 4 ? 'bg-blue-500/30' : 'bg-gray-200 dark:bg-gray-700'
                       }`}
                   />
-                  <span className="text-xs text-gray-600 text-center">{period}</span>
+                  <span className="text-xs text-gray-600 dark:text-muted-foreground text-center">{period}</span>
                 </div>
               ))}
             </div>
-            <div className="text-sm font-semibold text-blue-600">{currentPolicy.timeHorizon.range}</div>
-            <div className="text-xs text-gray-500">{currentPolicy.timeHorizon.description}</div>
+            <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">{currentPolicy.timeHorizon.range}</div>
+            <div className="text-xs text-gray-500 dark:text-muted-foreground">{currentPolicy.timeHorizon.description}</div>
           </div>
         </div>
 
         {/* 5. Objectives */}
-        <div className="p-4 rounded-xl bg-white border border-gray-200 flex flex-col gap-3">
+        <div className="p-4 rounded-xl bg-card border border-gray-200 dark:border-border flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-green-100">
-              <Target className="h-5 w-5 text-green-600" />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-green-100 dark:bg-green-900/30">
+              <Target className="h-5 w-5 text-green-600 dark:text-green-400" />
             </div>
             <div
-              className="text-sm font-semibold"
-              style={{ color: '#1F2937', fontSize: 14, fontFamily: 'Inter', fontWeight: 600 }}
+              className="text-sm font-semibold text-gray-900 dark:text-foreground"
+              style={{ fontSize: 14, fontFamily: 'Inter', fontWeight: 600 }}
             >
               Objectives
             </div>
@@ -164,8 +164,8 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
           <div className="flex flex-col gap-2">
             {currentPolicy.objectives.map((obj) => (
               <div key={obj.text} className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                <span className="text-sm text-gray-700 flex-1">{obj.text}</span>
+                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400 flex-shrink-0" />
+                <span className="text-sm text-gray-700 dark:text-foreground flex-1">{obj.text}</span>
                 <span
                   className={`px-2 py-0.5 rounded text-xs font-medium text-white ${obj.tagColor}`}
                 >
@@ -177,14 +177,14 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
         </div>
 
         {/* 6. Target Allocation */}
-        <div className="p-4 rounded-xl bg-white border border-gray-200 flex flex-col gap-3">
+        <div className="p-4 rounded-xl bg-card border border-gray-200 dark:border-border flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-100">
-              <RotateCcw className="h-5 w-5 text-purple-600" />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-purple-100 dark:bg-purple-900/30">
+              <RotateCcw className="h-5 w-5 text-purple-600 dark:text-purple-400" />
             </div>
             <div
-              className="text-sm font-semibold"
-              style={{ color: '#1F2937', fontSize: 14, fontFamily: 'Inter', fontWeight: 600 }}
+              className="text-sm font-semibold text-gray-900 dark:text-foreground"
+              style={{ fontSize: 14, fontFamily: 'Inter', fontWeight: 600 }}
             >
               Target Allocation
             </div>
@@ -214,7 +214,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-xs font-semibold text-gray-700">IPS Target</div>
+                <div className="text-xs font-semibold text-gray-700 dark:text-foreground">IPS Target</div>
               </div>
             </div>
             {/* Legend */}
@@ -226,13 +226,13 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
                       className="w-3 h-3 rounded"
                       style={{ backgroundColor: item.color }}
                     />
-                    <span className="text-gray-700">{item.name}</span>
+                    <span className="text-gray-700 dark:text-foreground">{item.name}</span>
                   </div>
-                  <span className="font-medium text-gray-900">{item.value}%</span>
+                  <span className="font-medium text-gray-900 dark:text-foreground">{item.value}%</span>
                 </div>
               ))}
             </div>
-            <div className="flex items-center gap-1 text-xs text-green-600">
+            <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
               <CheckCircle2 className="h-3 w-3" />
               <span>Within ±3% of target allocation</span>
             </div>

@@ -92,9 +92,8 @@ export function InsightsWidget({
         <div className="w-full h-full flex flex-col gap-4">
           {/* Title */}
           <div
-            className="flex items-center mb-2"
+            className="flex items-center mb-2 text-gray-500 dark:text-muted-foreground"
             style={{
-              color: '#6B7280',
               fontSize: 18,
               fontFamily: 'Inter',
               fontWeight: 500,
@@ -123,13 +122,12 @@ export function InsightsWidget({
                           borderRadius: 6,
                         }}
                       >
-                        <Clock className="h-4 w-4" />
+                        <IconComponent />
                       </div>
                       {/* Title */}
                       <div
-                        className="flex items-center text-sm"
+                        className="flex items-center text-sm text-gray-700 dark:text-foreground"
                         style={{
-                          color: '#374151',
                           fontFamily: 'Inter',
                           fontWeight: 600,
                         }}
@@ -140,8 +138,8 @@ export function InsightsWidget({
 
                     {/* Description */}
                     <div
+                      className="text-gray-600 dark:text-muted-foreground"
                       style={{
-                        color: '#6B7280',
                         fontSize: 13,
                         fontFamily: 'Inter',
                         fontWeight: 400,
@@ -161,9 +159,8 @@ export function InsightsWidget({
                       <div className="h-[19.50px] relative mt-1">
                         <button
                           onClick={() => handleActionClick(insight.actionLink)}
-                          className="h-4 flex items-center cursor-pointer hover:opacity-80 transition-opacity"
+                          className="h-4 flex items-center cursor-pointer hover:opacity-80 transition-opacity text-blue-600 dark:text-blue-400"
                           style={{
-                            color: '#2563EB',
                             fontSize: 13,
                             fontFamily: 'Inter',
                             fontWeight: 500,
@@ -179,10 +176,7 @@ export function InsightsWidget({
                   {/* Divider */}
                   {showDivider && (
                     <div
-                      className="w-full h-px my-4"
-                      style={{
-                        background: '#E5E7EB',
-                      }}
+                      className="w-full h-px my-4 bg-gray-200 dark:bg-border"
                     />
                   )}
                 </div>
