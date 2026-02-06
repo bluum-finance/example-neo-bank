@@ -2,11 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
-import { type WidgetInsight } from '@/services/widget.service';
+import { type Insight, type Recommendation } from '@/services/widget.service';
 import { Receipt, TrendingUp, RotateCcw, BarChart3, AlertCircle } from 'lucide-react';
 
 interface InsightsWidgetProps {
-  insights?: WidgetInsight[];
+  insights?: { insights: Insight[]; recommendations: Recommendation[] };
   // Props kept for future use when connecting to real data
   positions?: any[];
   portfolioGains?: {
@@ -16,21 +16,22 @@ interface InsightsWidgetProps {
   accountBalance?: number;
 }
 
-// Get icon component based on insight title or type
-const getIconComponent = (insight: WidgetInsight, index: number) => {
-  const title = insight.title?.toLowerCase() || '';
+// Get icon component based on insight/recommendation category
+const getIconComponent = (item: Insight | Recommendation, index: number) => {
+  const category = 'category' in item ? item.category : item.type || 'all';
+  const title = item.title?.toLowerCase() || '';
 
-  if (title.includes('tax') || title.includes('optimization')) {
+  if (category === 'tax' || title.includes('tax') || title.includes('optimization')) {
     return <Receipt className="w-3.5 h-3.5 text-green-800 dark:text-green-400" />;
   }
-  if (title.includes('outperforming') || title.includes('benchmark') || title.includes('performance')) {
-    return <TrendingUp className="w-3.5 h-3.5 text-green-800 dark:text-green-400" />;
-  }
-  if (title.includes('rebalancing') || title.includes('rebalance')) {
+  if (category === 'rebalancing' || title.includes('rebalancing') || title.includes('rebalance')) {
     return <RotateCcw className="w-3.5 h-3.5 text-green-800 dark:text-green-400" />;
   }
-  if (title.includes('alert') || title.includes('warning')) {
+  if (category === 'risk' || title.includes('alert') || title.includes('warning')) {
     return <AlertCircle className="w-3.5 h-3.5 text-green-800 dark:text-green-400" />;
+  }
+  if (category === 'opportunity' || title.includes('outperforming') || title.includes('benchmark') || title.includes('performance')) {
+    return <TrendingUp className="w-3.5 h-3.5 text-green-800 dark:text-green-400" />;
   }
 
   // Default icons based on index
@@ -43,7 +44,7 @@ const getIconComponent = (insight: WidgetInsight, index: number) => {
 };
 
 export function InsightsWidget({
-  insights = [],
+  insights,
   positions,
   portfolioGains,
   accountBalance,
@@ -56,30 +57,27 @@ export function InsightsWidget({
     }
   };
 
+  // Combine insights and recommendations
+  const allItems: Array<Insight | Recommendation> = [
+    ...(insights?.insights || []),
+    ...(insights?.recommendations || []),
+  ];
+
   return (
     <Card className="w-full h-full">
       <CardContent className="">
         <div className="w-full h-full flex flex-col gap-4">
-          {/* Title */}
-          <div
-            className="flex items-center mb-2 text-gray-500 dark:text-muted-foreground"
-            style={{
-              fontSize: 18,
-              fontFamily: 'Inter',
-              fontWeight: 500,
-            }}
-          >
-            Your Insights
-          </div>
+          <div className="text-base font-semibold text-foreground/70 dark:text-white/70">Your Insights</div>
 
-          {/* Insights List */}
           <div className="flex flex-col gap-0">
-            {insights.map((insight, index) => {
-              const iconElement = getIconComponent(insight, index);
-              const showDivider = index < insights.length - 1;
+            {allItems.map((item, index) => {
+              const iconElement = getIconComponent(item, index);
+              const showDivider = index < allItems.length - 1;
+              const description = 'summary' in item ? item.summary : item.rationale || '';
+              const hasAction = ('action' in item && item.action) || ('suggested_actions' in item && item.suggested_actions?.length > 0);
 
               return (
-                <div key={insight.id} className="flex flex-col gap-0">
+                <div key={('insight_id' in item ? item.insight_id : item.recommendation_id) || index} className="flex flex-col gap-0">
                   {/* Insight Card */}
                   <div className="rounded-[10px] flex flex-col gap-2">
                     {/* Header with Icon and Title */}
@@ -98,7 +96,7 @@ export function InsightsWidget({
                           fontWeight: 600,
                         }}
                       >
-                        {insight.title}
+                        {item.title}
                       </div>
                     </div>
 
@@ -112,7 +110,7 @@ export function InsightsWidget({
                         lineHeight: '19.50px',
                       }}
                     >
-                      {insight.description.split('<br/>').map((line, lineIndex, array) => (
+                      {description.split('<br/>').map((line: string, lineIndex: number, array: string[]) => (
                         <span key={lineIndex}>
                           {line}
                           {lineIndex < array.length - 1 && <br />}
@@ -121,10 +119,10 @@ export function InsightsWidget({
                     </div>
 
                     {/* Action Link */}
-                    {insight.actionLabel && insight.actionLink && (
+                    {hasAction && (
                       <div className="h-[19.50px] relative mt-1">
                         <button
-                          onClick={() => handleActionClick(insight.actionLink)}
+                          onClick={() => handleActionClick('/invest/trade')}
                           className="h-4 flex items-center cursor-pointer hover:opacity-80 transition-opacity text-green-600 dark:text-green-400"
                           style={{
                             fontSize: 13,
@@ -133,7 +131,7 @@ export function InsightsWidget({
                             lineHeight: '19.50px',
                           }}
                         >
-                          {insight.actionLabel} →
+                          Review allocation →
                         </button>
                       </div>
                     )}
@@ -149,6 +147,14 @@ export function InsightsWidget({
               );
             })}
           </div>
+
+          {allItems.length === 0 && (
+            <div className="flex flex-col items-center gap-0 pb-2">
+              <div className="w-full text-base font-normal text-gray-500 dark:text-muted-foreground">
+                No insights found
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -68,7 +68,7 @@ export function QuickActionsWidget() {
     const loadAccount = async () => {
       const user = getAuth();
       const userAccountId = user?.externalAccountId;
-      
+
       if (userAccountId) {
         setAccountId(userAccountId);
         try {
@@ -154,10 +154,11 @@ export function QuickActionsWidget() {
 
   return (
     <>
-      <Card className="h-full">
+      <Card className="h-full gap-2">
         <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
+          <div className="text-base font-semibold text-foreground/70 dark:text-white/70">Quick Actions</div>
         </CardHeader>
+
         <CardContent>
           <div className="space-y-4">
             {quickActions.map((action) => (
@@ -166,7 +167,7 @@ export function QuickActionsWidget() {
                 onClick={() => handleActionClick(action)}
                 className="w-full flex items-center gap-3 py-3 rounded-lg hover:bg-muted/50 transition-colors text-left group"
               >
-                <div 
+                <div
                   className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
                   style={{ backgroundColor: '#1A3A2C' }}
                 >

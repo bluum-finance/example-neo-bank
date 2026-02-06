@@ -30,74 +30,6 @@ interface PortfolioPerformanceChartProps {
   portfolioValue?: number; // Current portfolio value in USD
 }
 
-// Demo data for different time ranges
-const generateDemoData = (range: TimeRange): PerformanceDataPoint[] => {
-  const now = new Date();
-  const data: PerformanceDataPoint[] = [];
-
-  let days = 0;
-  let interval = 1; // days between data points
-
-  switch (range) {
-    case '1W':
-      days = 7;
-      interval = 1;
-      break;
-    case '1M':
-      days = 30;
-      interval = 1;
-      break;
-    case '3M':
-      days = 90;
-      interval = 3;
-      break;
-    case '1Y':
-      days = 365;
-      interval = 7;
-      break;
-    case 'All':
-      days = 365;
-      interval = 30;
-      break;
-  }
-
-  // Starting values (normalized to 100)
-  let portfolioValue = 100;
-  let sp500Value = 100;
-
-  // Portfolio slightly outperforms S&P 500
-  const portfolioDailyReturn = range === '1M' ? 0.0028 : 0.0015; // ~8.67% for 1M, ~5% for others
-  const sp500DailyReturn = range === '1M' ? 0.0017 : 0.0012; // ~5.23% for 1M, ~4% for others
-
-  for (let i = 0; i <= days; i += interval) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - (days - i));
-
-    // Add some volatility
-    const portfolioVolatility = (Math.random() - 0.5) * 0.01;
-    const sp500Volatility = (Math.random() - 0.5) * 0.008;
-
-    portfolioValue *= (1 + portfolioDailyReturn + portfolioVolatility);
-    sp500Value *= (1 + sp500DailyReturn + sp500Volatility);
-
-    let dateLabel = '';
-    if (range === '1W' || range === '1M') {
-      dateLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    } else if (range === '3M') {
-      dateLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    } else {
-      dateLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }
-
-    data.push({
-      date: dateLabel,
-      portfolio: portfolioValue,
-      sp500: sp500Value,
-    });
-  }
-
-  return data;
-};
 
 // Calculate performance percentage
 const calculatePerformance = (data: PerformanceDataPoint[]): { portfolio: number; sp500: number } => {
@@ -123,8 +55,8 @@ export function PortfolioPerformanceChart({
   const [selectedRange, setSelectedRange] = useState<TimeRange>('1M');
 
   const chartData = useMemo(() => {
-    return externalData || generateDemoData(selectedRange);
-  }, [externalData, selectedRange]);
+    return externalData || [];
+  }, [externalData]);
 
   const performance = useMemo(() => {
     if (portfolioPerformance !== undefined && sp500Performance !== undefined) {
@@ -169,7 +101,7 @@ export function PortfolioPerformanceChart({
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex items-start gap-3">
             <div>
-              <CardTitle className="text-sm font-medium text-muted-foreground dark:text-muted-foreground">Portfolio balance</CardTitle>
+              <CardTitle className="text-sm font-medium text-foreground/70 dark:text-white/70">Portfolio balance</CardTitle>
               {portfolioValue !== undefined && (
                 <p className="text-2xl font-semibold text-gray-900 dark:text-foreground mt-2">
                   {new Intl.NumberFormat('en-US', {

@@ -42,18 +42,20 @@ export interface Account {
   };
 }
 
+// API Response Types - match API contract exactly
 export interface FinancialGoal {
-  id: string;
-  title: string;
-  target: string;
-  currentAmount: number;
-  targetAmount: number;
-  progress: number; // 0-100
-  icon: string; // Icon name/identifier
-  iconColor: string;
-  iconBgColor: string;
-  barColor: string;
-  status?: 'complete' | 'in-progress';
+  goal_id: string;
+  name: string;
+  goal_type: 'retirement' | 'education' | 'emergency' | 'wealth_growth' | 'home_purchase' | 'custom';
+  target_amount: string;
+  target_date?: string;
+  current_amount?: string;
+  current_value?: string;
+  progress_percent?: number;
+  status: 'active' | 'completed' | 'archived';
+  priority?: number;
+  monthly_contribution?: string;
+  [key: string]: any;
 }
 
 export interface AllocationData {
@@ -63,29 +65,65 @@ export interface AllocationData {
   [key: string]: any;
 }
 
+// API Response Type - matches API contract
 export interface InvestmentPolicy {
-  riskTolerance: {
-    level: string;
-    position: number; // 0-100 percentage
-    description: string;
+  risk_profile: {
+    risk_tolerance: 'conservative' | 'moderate' | 'moderate-high' | 'aggressive';
+    risk_score?: number;
+    volatility_tolerance?: 'low' | 'medium' | 'high';
   };
-  timeHorizon: {
-    range: string;
-    description: string;
+  time_horizon: {
+    years: number;
+    category: 'short_term' | 'medium_term' | 'long_term';
   };
-  liquidity: {
-    percentage: number;
-    description: string;
+  investment_objectives: {
+    primary: string;
+    secondary?: string[];
+    tertiary?: string[];
+    target_annual_return?: string;
   };
-  taxConsiderations: string;
-  objectives: Array<{
-    text: string;
-    tag: 'PRIMARY' | 'SECONDARY' | 'TERTIARY';
-    tagColor: string;
-  }>;
-  targetAllocation: AllocationData[];
-  restrictions: string;
-  rebalancing: string;
+  target_allocation: {
+    equities?: {
+      target_percent: string;
+      min_percent?: string;
+      max_percent?: string;
+    };
+    fixed_income?: {
+      target_percent: string;
+      min_percent?: string;
+      max_percent?: string;
+    };
+    treasury?: {
+      target_percent: string;
+      min_percent?: string;
+      max_percent?: string;
+    };
+    alternatives?: {
+      target_percent: string;
+      min_percent?: string;
+      max_percent?: string;
+    };
+  };
+  constraints: {
+    liquidity_requirements?: {
+      minimum_cash_percent: string;
+      emergency_fund_months?: number;
+    };
+    tax_considerations?: {
+      tax_loss_harvesting?: boolean;
+      tax_bracket?: string;
+    };
+    restrictions?: {
+      excluded_sectors?: string[];
+      esg_screening?: boolean;
+    };
+    rebalancing_policy?: {
+      frequency: string;
+      threshold_percent: string;
+      tax_aware?: boolean;
+    };
+  };
+  [key: string]: any;
 }
 
 export interface PerformanceDataPoint {
@@ -104,14 +142,37 @@ export interface RecentActivity {
   iconEmoji: string;
 }
 
-export interface WidgetInsight {
-  id: string;
+// API Response Types
+export interface Insight {
+  insight_id: string;
+  category: 'all' | 'opportunity' | 'risk' | 'tax' | 'rebalancing';
   title: string;
-  description: string;
-  icon: string;
-  iconColor: string;
-  actionLabel?: string;
-  actionLink?: string;
+  summary: string;
+  priority?: 'low' | 'medium' | 'high';
+  action?: {
+    type: string;
+    description: string;
+  };
+  [key: string]: any;
+}
+
+export interface Recommendation {
+  recommendation_id: string;
+  type: 'allocation' | 'security' | 'strategy';
+  title: string;
+  rationale: string;
+  confidence?: 'low' | 'medium' | 'high';
+  suggested_actions?: Array<{
+    action: string;
+    symbol?: string;
+    target_allocation?: string;
+  }>;
+  [key: string]: any;
+}
+
+export interface WidgetInsightsResponse {
+  insights: Insight[];
+  recommendations: Recommendation[];
 }
 
 // Widget Service
@@ -157,11 +218,13 @@ export class WidgetService {
    */
   static async getPortfolioPerformanceData(
     range: '1W' | '1M' | '3M' | '1Y' | 'All' = '1M',
-    accountId?: string
+    accountId?: string,
+    portfolioId?: string
   ): Promise<PerformanceDataPoint[]> {
     const queryParams = new URLSearchParams({
       range,
       ...(accountId && { account_id: accountId }),
+      ...(portfolioId && { portfolio_id: portfolioId }),
     });
     const response = await fetch(`/api/widget/portfolio-performance?${queryParams}`);
     return handleResponse<PerformanceDataPoint[]>(response);
@@ -179,10 +242,10 @@ export class WidgetService {
   /**
    * Get insights for OverviewWidgets
    */
-  static async getWidgetInsights(accountId?: string): Promise<WidgetInsight[]> {
+  static async getWidgetInsights(accountId?: string): Promise<WidgetInsightsResponse> {
     const queryParams = accountId ? `?account_id=${encodeURIComponent(accountId)}` : '';
     const response = await fetch(`/api/widget/widget-insights${queryParams}`);
-    return handleResponse<WidgetInsight[]>(response);
+    return handleResponse<WidgetInsightsResponse>(response);
   }
 
   /**

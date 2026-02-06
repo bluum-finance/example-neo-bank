@@ -2,43 +2,27 @@
 
 import { Umbrella, Shield, TrendingUp, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import { type FinancialGoal as WidgetFinancialGoal } from '@/services/widget.service';
-
-export interface FinancialGoal {
-  id: string;
-  title: string;
-  target: string;
-  currentAmount: number;
-  targetAmount: number;
-  progress: number; // 0-100
-  icon: React.ReactNode;
-  iconColor: string;
-  iconBgColor: string;
-  barColor: string;
-  status?: 'complete' | 'in-progress';
-}
+import { type FinancialGoal } from '@/services/widget.service';
 
 interface FinancialPlanProps {
-  goals?: WidgetFinancialGoal[];
+  goals?: FinancialGoal[];
   onViewDetails?: () => void;
 }
 
-// Helper function to convert widget service goal to component goal
-const convertGoalToComponentFormat = (goal: WidgetFinancialGoal): FinancialGoal => {
+// Helper function to get icon based on goal type
+const getGoalIcon = (goalType: string) => {
   const iconMap: Record<string, React.ReactNode> = {
-    umbrella: <Umbrella className="h-5 w-5 text-white" />,
-    shield: <Shield className="h-5 w-5 text-white" />,
-    'trending-up': <TrendingUp className="h-5 w-5 text-white" />,
+    retirement: <Umbrella className="h-5 w-5 text-white" />,
+    emergency: <Shield className="h-5 w-5 text-white" />,
+    wealth_growth: <TrendingUp className="h-5 w-5 text-white" />,
+    education: <Umbrella className="h-5 w-5 text-white" />,
+    home_purchase: <TrendingUp className="h-5 w-5 text-white" />,
+    custom: <TrendingUp className="h-5 w-5 text-white" />,
   };
-
-  return {
-    ...goal,
-    icon: iconMap[goal.icon] || <Umbrella className="h-5 w-5 text-white" />,
-  };
+  return iconMap[goalType] || <Umbrella className="h-5 w-5 text-white" />;
 };
 
-export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps) {
-  const displayGoals = goals.map(convertGoalToComponentFormat);
+export function FinancialPlan({ goals = [] }: FinancialPlanProps) {
   const formatCurrency = (value: number, compact: boolean = false) => {
     if (compact) {
       if (value >= 1000000) {
@@ -69,26 +53,14 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
   };
 
   return (
-    <div className="w-full flex flex-col gap-4">
+    <div className="w-full">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div className="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+      <div className="flex justify-between items-center mb-4">
+        <div className="text-base font-semibold text-gray-900 dark:text-white">
           Financial Plan
         </div>
-        {onViewDetails ? (
-          <button
-            onClick={onViewDetails}
-            className="flex items-center gap-0.5 hover:opacity-80 transition-opacity"
-          >
-            <span
-              className="text-xs font-normal text-blue-500 dark:text-blue-400"
-              style={{ fontSize: 12, fontFamily: 'Inter', fontWeight: 400, }}
-            >
-              View all goals
-            </span>
-            <ChevronRight className="w-3 h-3 text-blue-500 dark:text-blue-400" />
-          </button>
-        ) : (
+
+        {goals.length > 0 && (
           <Link
             href="/invest?tab=plan"
             className="flex items-center gap-0.5 hover:opacity-80 transition-opacity"
@@ -106,14 +78,19 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
 
       {/* Goals Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {displayGoals.map((goal) => {
-          const remaining = formatRemaining(goal.currentAmount, goal.targetAmount);
-          const progressPercentage = Math.min(goal.progress, 100);
-          const progressBarWidth = (goal.currentAmount / goal.targetAmount) * 100;
+        {goals.map((goal) => {
+          const currentAmount = parseFloat(goal.current_amount || goal.current_value || '0');
+          const targetAmount = parseFloat(goal.target_amount || '0');
+          const progressPercentage = goal.progress_percent || (targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 100)) : 0);
+          const progressBarWidth = targetAmount > 0 ? (currentAmount / targetAmount) * 100 : 0;
+          const remaining = formatRemaining(currentAmount, targetAmount);
+          const targetText = goal.target_date
+            ? `Target: ${formatCurrency(targetAmount, true)} by ${new Date(goal.target_date).getFullYear()}`
+            : `Target: ${formatCurrency(targetAmount, true)}`;
 
           return (
             <div
-              key={goal.id}
+              key={goal.goal_id}
               className="p-4 rounded-xl flex flex-col gap-3.5 bg-card border border-gray-200 dark:border-border"
               style={{
                 borderRadius: 12,
@@ -129,7 +106,7 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
                     paddingRight: 12,
                   }}
                 >
-                  <div style={{ color: goal.iconColor || '#9333EA' }}>{goal.icon}</div>
+                  {getGoalIcon(goal.goal_type)}
                 </div>
                 <div
                   className="px-1 rounded-2xl flex items-center justify-center"
@@ -163,7 +140,7 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
                     height: 21,
                   }}
                 >
-                  {goal.title}
+                  {goal.name}
                 </div>
                 <div
                   className="text-xs font-normal text-gray-500 dark:text-muted-foreground"
@@ -174,7 +151,7 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
                     height: 16.5,
                   }}
                 >
-                  {goal.target}
+                  {targetText}
                 </div>
               </div>
 
@@ -198,7 +175,7 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
                       fontWeight: 500,
                     }}
                   >
-                    {formatCurrency(goal.currentAmount)}
+                    {formatCurrency(currentAmount)}
                   </div>
                   {remaining && (
                     <div
@@ -218,6 +195,20 @@ export function FinancialPlan({ goals = [], onViewDetails }: FinancialPlanProps)
           );
         })}
       </div>
+
+      {goals.length === 0 && (
+        <NoDataAvailable />
+      )}
     </div>
   );
 }
+
+const NoDataAvailable = () => {
+  return (
+    <div className="flex flex-col items-center gap-0 py-2">
+      <div className="w-full text-base font-normal text-gray-500 dark:text-muted-foreground">
+        No financial goals found
+      </div>
+    </div>
+  );
+};

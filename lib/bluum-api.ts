@@ -225,6 +225,123 @@ class BluumApiClient {
     return response.data;
   }
 
+  // Wealth Management - Goals
+  async getGoals(
+    accountId: string,
+    params?: {
+      status?: 'active' | 'completed' | 'archived';
+      goal_type?: string;
+      include_projections?: boolean;
+    }
+  ) {
+    const response = await this.client.get(`/wealth/accounts/${accountId}/goals`, { params });
+    return response.data.goals || [];
+  }
+
+  // Wealth Management - Investment Policy
+  async getInvestmentPolicy(
+    accountId: string,
+    params?: {
+      version?: string;
+      include_history?: boolean;
+    }
+  ) {
+    const response = await this.client.get(`/wealth/accounts/${accountId}/investment-policy`, {
+      params,
+    });
+    return response.data;
+  }
+
+  // Wealth Management - Insights
+  async getInsights(
+    accountId: string,
+    params?: {
+      category?: 'all' | 'opportunity' | 'risk' | 'tax' | 'rebalancing';
+      limit?: number;
+    }
+  ) {
+    const response = await this.client.get(`/wealth/accounts/${accountId}/insights`, { params });
+    return response.data.insights || [];
+  }
+
+  // Wealth Management - Recommendations
+  async getRecommendations(
+    accountId: string,
+    params?: {
+      type?: 'allocation' | 'security' | 'strategy' | 'all';
+      goal_id?: string;
+    }
+  ) {
+    const response = await this.client.get(`/wealth/accounts/${accountId}/recommendations`, {
+      params,
+    });
+    return response.data.recommendations || [];
+  }
+
+  // Wealth Management - Portfolio Performance
+  async getPortfolioPerformance(
+    accountId: string,
+    portfolioId: string,
+    params?: {
+      period?: '1d' | '1w' | '1m' | '3m' | '6m' | 'ytd' | '1y' | '3y' | '5y' | 'all';
+      start_date?: string;
+      end_date?: string;
+      benchmark?: string;
+    }
+  ) {
+    const response = await this.client.get(
+      `/wealth/accounts/${accountId}/portfolios/${portfolioId}/performance`,
+      { params }
+    );
+    return response.data;
+  }
+
+  // Wealth Management - Portfolio Summary
+  async getPortfolioSummary(
+    accountId: string,
+    portfolioId: string,
+    params?: {
+      refresh_prices?: boolean;
+    }
+  ) {
+    const response = await this.client.get(
+      `/wealth/accounts/${accountId}/portfolios/${portfolioId}/summary`,
+      { params }
+    );
+    return response.data;
+  }
+
+  // Wealth Management - Portfolio Holdings
+  async getPortfolioHoldings(
+    accountId: string,
+    portfolioId: string,
+    params?: {
+      refresh_prices?: boolean;
+      include_lots?: boolean;
+      group_by?: 'asset_class' | 'sector' | 'none';
+    }
+  ) {
+    const response = await this.client.get(
+      `/wealth/accounts/${accountId}/portfolios/${portfolioId}/holdings`,
+      { params }
+    );
+    return response.data;
+  }
+
+  // Wealth Management - AI Assistant Chat
+  async chatWithAssistant(
+    accountId: string,
+    data: {
+      message: string;
+      context?: {
+        portfolio_id?: string;
+        include_positions?: boolean;
+      };
+    }
+  ) {
+    const response = await this.client.post(`/wealth/accounts/${accountId}/assistant/chat`, data);
+    return response.data;
+  }
 }
 
 export const bluumApi = new BluumApiClient();

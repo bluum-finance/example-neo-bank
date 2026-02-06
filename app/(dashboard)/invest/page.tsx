@@ -1,14 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { MessageCircle } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { InvestOnboarding } from '@/components/invest/onboarding';
 import { AIWealthLanding } from '@/components/invest/ai-wealth-landing';
-import { HoldingsWidget } from '@/components/invest/holdings-widget';
-import { OverviewWidgets } from '@/components/invest/overview-widgets';
 import { InvestmentService, type Position } from '@/services/investment.service';
 import { AccountService } from '@/services/account.service';
 import {
@@ -20,15 +14,13 @@ import {
 import { toast } from 'sonner';
 import { PortfolioPerformanceChart } from '@/components/invest/portfolio-performance-chart';
 import { FinancialPlan } from '@/components/invest/financial-plan';
-import { AccountsWidget } from '@/components/invest/accounts-widget';
 import { InsightsWidget } from '@/components/invest/insights-widget';
 import { InvestmentPolicyWidget } from '@/components/invest/investment-policy-widget';
 import { QuickActionsWidget } from '@/components/invest/quick-actions-widget';
-import { WidgetService } from '@/services/widget.service';
+import { WidgetService, type Insight, type Recommendation } from '@/services/widget.service';
 import { AIChatWidget } from '@/components/invest/ai-chat-widget';
 
 export default function Invest() {
-  const router = useRouter();
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [accountId, setAccountId] = useState<string | null>(null);
@@ -41,12 +33,9 @@ export default function Invest() {
   const [showAIOnboarding, setShowAIOnboarding] = useState<boolean>(false);
 
   // Widget data from WidgetService
-  const [insights, setInsights] = useState<any[]>([]);
-  const [accounts, setAccounts] = useState<any[]>([]);
   const [financialGoals, setFinancialGoals] = useState<any[]>([]);
   const [investmentPolicy, setInvestmentPolicy] = useState<any>(null);
-  const [recentActivities, setRecentActivities] = useState<any[]>([]);
-  const [widgetInsights, setWidgetInsights] = useState<any[]>([]);
+  const [widgetInsights, setWidgetInsights] = useState<{ insights: Insight[]; recommendations: Recommendation[] } | undefined>(undefined);
 
   const loadPortfolio = async () => {
     try {
@@ -106,26 +95,17 @@ export default function Invest() {
   const loadWidgetData = async (accountId?: string) => {
     try {
       const [
-        insightsData,
-        accountsData,
         financialGoalsData,
         investmentPolicyData,
-        recentActivitiesData,
         widgetInsightsData,
       ] = await Promise.all([
-        WidgetService.getInsights(accountId),
-        WidgetService.getAccounts(accountId),
         WidgetService.getFinancialGoals(accountId),
         WidgetService.getInvestmentPolicy(accountId),
-        WidgetService.getRecentActivities(accountId),
         WidgetService.getWidgetInsights(accountId),
       ]);
 
-      setInsights(insightsData);
-      setAccounts(accountsData);
       setFinancialGoals(financialGoalsData);
       setInvestmentPolicy(investmentPolicyData);
-      setRecentActivities(recentActivitiesData);
       setWidgetInsights(widgetInsightsData);
     } catch (error) {
       console.error('Failed to load widget data:', error);
@@ -165,10 +145,6 @@ export default function Invest() {
     setHasAccountId(true);
     loadPortfolio();
     toast.success('Welcome to investing!');
-  };
-
-  const handleChat = () => {
-    router.push('/invest/chat');
   };
 
   // Show AI Wealth Landing if no account
@@ -217,7 +193,7 @@ export default function Invest() {
       <section className="py-2 grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
         {/* Left (2/3 width) */}
         <div className="col-span-2">
-          <PortfolioPerformanceChart 
+          <PortfolioPerformanceChart
             portfolioValue={
               accountBalance + positions.reduce((sum, pos) => sum + (pos.value || 0), 0)
             }
