@@ -91,7 +91,7 @@ export function FinancialPlan({ goals = [] }: FinancialPlanProps) {
           return (
             <div
               key={goal.goal_id}
-              className="p-4 rounded-xl flex flex-col gap-3.5 bg-card border border-gray-200 dark:border-border"
+              className="p-4 rounded-xl flex flex-col gap-3.5 bg-white dark:bg-card border border-gray-100 dark:border-border"
               style={{
                 borderRadius: 12,
               }}
@@ -99,9 +99,8 @@ export function FinancialPlan({ goals = [] }: FinancialPlanProps) {
               {/* Icon and Percentage Badge */}
               <div className="flex justify-between items-start">
                 <div
-                  className="w-9 h-9 rounded-[10px] flex items-center justify-center"
+                  className="w-9 h-9 rounded-[10px] flex items-center justify-center bg-[#1E3D2F] dark:bg-emerald-900/30"
                   style={{
-                    background: "#1E3D2F",
                     paddingLeft: 12,
                     paddingRight: 12,
                   }}
@@ -109,9 +108,8 @@ export function FinancialPlan({ goals = [] }: FinancialPlanProps) {
                   {getGoalIcon(goal.goal_type)}
                 </div>
                 <div
-                  className="px-1 rounded-2xl flex items-center justify-center"
+                  className="px-1 rounded-2xl flex items-center justify-center bg-green-500/15 dark:bg-green-500/20"
                   style={{
-                    background: 'rgba(34, 197, 94, 0.15)',
                     borderRadius: 16,
                   }}
                 >
@@ -157,12 +155,11 @@ export function FinancialPlan({ goals = [] }: FinancialPlanProps) {
 
               {/* Progress Bar and Amounts */}
               <div className="flex flex-col gap-2.5">
-                <div className="relative h-1.5 overflow-hidden rounded bg-gray-200 dark:bg-[#2A4D3C]">
+                <div className="relative h-1.5 overflow-hidden rounded bg-gray-100 dark:bg-emerald-900/20">
                   <div
-                    className="absolute left-0 top-0 h-full rounded"
+                    className="absolute left-0 top-0 h-full rounded bg-emerald-500"
                     style={{
                       width: `${progressBarWidth}%`,
-                      background: '#57B75C',
                     }}
                   />
                 </div>

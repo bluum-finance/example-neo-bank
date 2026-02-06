@@ -231,6 +231,23 @@ export class WidgetService {
   }
 
   /**
+   * Get portfolio summary data from Bluum API via widget endpoint.
+   */
+  static async getPortfolioSummary(
+    accountId: string,
+    portfolioId: string,
+    refreshPrices?: boolean
+  ): Promise<any> {
+    const queryParams = new URLSearchParams({
+      account_id: accountId,
+      portfolio_id: portfolioId,
+      ...(refreshPrices ? { refresh_prices: 'true' } : {}),
+    });
+    const response = await fetch(`/api/widget/portfolio-summary?${queryParams}`);
+    return handleResponse<any>(response);
+  }
+
+  /**
    * Get recent activities for OverviewWidgets
    */
   static async getRecentActivities(accountId?: string): Promise<RecentActivity[]> {

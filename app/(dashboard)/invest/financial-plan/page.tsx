@@ -35,9 +35,9 @@ export default function FinancialPlanPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Financial Plan</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Financial Plan</h1>
         <p className="text-muted-foreground mt-1">
           Track your financial goals and progress
         </p>

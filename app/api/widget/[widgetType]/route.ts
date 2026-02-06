@@ -103,6 +103,39 @@ export async function GET(
         }
       }
 
+      case 'portfolio-summary': {
+        const portfolioId = searchParams.get('portfolio_id');
+        if (!portfolioId) {
+          return NextResponse.json(
+            {
+              error: 'portfolio_id is required for portfolio-summary',
+            },
+            { status: 400 }
+          );
+        }
+
+        const refreshPricesParam = searchParams.get('refresh_prices');
+        const refreshPrices =
+          refreshPricesParam === 'true' || refreshPricesParam === '1' || refreshPricesParam === 'yes';
+
+        try {
+          const response = await bluumApi.getPortfolioSummary(accountId, portfolioId, {
+            refresh_prices: refreshPrices ? true : undefined,
+          });
+          return NextResponse.json(response);
+        } catch (error: any) {
+          if (error.response?.status === 404) {
+            return NextResponse.json(
+              {
+                error: 'Portfolio summary not found',
+              },
+              { status: 404 }
+            );
+          }
+          throw error;
+        }
+      }
+
       default: {
         return NextResponse.json(
           {

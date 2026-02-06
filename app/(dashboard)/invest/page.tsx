@@ -29,6 +29,10 @@ export default function Invest() {
     totalGain: 0,
     totalGainPercent: 0,
   });
+  const [portfolioId, setPortfolioId] = useState<string | null>(null);
+  const [summaryData, setSummaryData] = useState<any | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
   const [hasAccountId, setHasAccountId] = useState<boolean>(false);
   const [showAIOnboarding, setShowAIOnboarding] = useState<boolean>(false);
 
@@ -72,6 +76,12 @@ export default function Invest() {
 
       const balanceValue = account?.balance ? parseFloat(account.balance) : 0;
       setAccountBalance(balanceValue);
+      const accountData = account as any;
+      const detectedPortfolioId =
+        accountData?.portfolios?.find((p: any) => p.status === 'active')?.id ||
+        accountData?.portfolios?.[0]?.id ||
+        null;
+      setPortfolioId(detectedPortfolioId);
 
       // Fetch positions
       const positionsData = await InvestmentService.getPositions(userAccountId);
@@ -147,6 +157,30 @@ export default function Invest() {
     toast.success('Welcome to investing!');
   };
 
+  useEffect(() => {
+    if (!accountId || !portfolioId) {
+      setSummaryData(null);
+      setSummaryError(null);
+      setSummaryLoading(false);
+      return;
+    }
+
+    setSummaryLoading(true);
+    setSummaryError(null);
+
+    WidgetService.getPortfolioSummary(accountId, portfolioId)
+      .then((summary) => {
+        setSummaryData(summary);
+      })
+      .catch((error) => {
+        console.error('Failed to load portfolio summary', error);
+        setSummaryError(error?.message || 'Unable to load portfolio summary');
+      })
+      .finally(() => {
+        setSummaryLoading(false);
+      });
+  }, [accountId, portfolioId]);
+
   // Show AI Wealth Landing if no account
   if (!hasAccountId) {
     // If user clicked "Get Started", show onboarding directly
@@ -197,6 +231,9 @@ export default function Invest() {
             portfolioValue={
               accountBalance + positions.reduce((sum, pos) => sum + (pos.value || 0), 0)
             }
+            summaryData={summaryData}
+            summaryLoading={summaryLoading}
+            summaryError={summaryError}
           />
         </div>
 
