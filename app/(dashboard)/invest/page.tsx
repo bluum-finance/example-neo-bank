@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
@@ -18,8 +19,10 @@ import { InvestmentService, type Position } from '@/services/investment.service'
 import { AccountService } from '@/services/account.service';
 import { WidgetService, type Insight, type Recommendation, type PerformanceDataPoint, FinancialGoal } from '@/services/widget.service';
 import { getAuth, setExternalAccountId, clearExternalAccountId, setInvestingChoice } from '@/lib/auth';
+import { Button } from '@/components/ui/button';
 
 export default function Invest() {
+  const router = useRouter();
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [accountId, setAccountId] = useState<string | null>(null);
@@ -284,9 +287,30 @@ export default function Invest() {
       </section>
 
       <section className="py-4">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-4">
+          <div className="flex-1 flex flex-col justify-start items-start">
+            <div className="text-base font-semibold text-gray-900 dark:text-white">
+              Investment Policy Statement
+            </div>
+            <div className="text-xs font-normal pt-2 text-gray-500 dark:text-muted-foreground">
+              Your personalized investment guidelines
+            </div>
+          </div>
+
+
+          {investmentPolicy ? (
+            <Button variant="outline" onClick={() => router.push('/invest/investment-policy')}>
+              Edit IPS
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={() => router.push('/invest/investment-policy')}>
+              Create IPS
+            </Button>
+          )}
+        </div>
         <InvestmentPolicyWidget policy={investmentPolicy} />
       </section>
-
     </div>
   );
 }

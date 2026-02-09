@@ -65,66 +65,9 @@ export interface AllocationData {
   [key: string]: any;
 }
 
-// API Response Type - matches API contract
-export interface InvestmentPolicy {
-  risk_profile: {
-    risk_tolerance: 'conservative' | 'moderate' | 'moderate-high' | 'aggressive';
-    risk_score?: number;
-    volatility_tolerance?: 'low' | 'medium' | 'high';
-  };
-  time_horizon: {
-    years: number;
-    category: 'short_term' | 'medium_term' | 'long_term';
-  };
-  investment_objectives: {
-    primary: string;
-    secondary?: string[];
-    tertiary?: string[];
-    target_annual_return?: string;
-  };
-  target_allocation: {
-    equities?: {
-      target_percent: string;
-      min_percent?: string;
-      max_percent?: string;
-    };
-    fixed_income?: {
-      target_percent: string;
-      min_percent?: string;
-      max_percent?: string;
-    };
-    treasury?: {
-      target_percent: string;
-      min_percent?: string;
-      max_percent?: string;
-    };
-    alternatives?: {
-      target_percent: string;
-      min_percent?: string;
-      max_percent?: string;
-    };
-  };
-  constraints: {
-    liquidity_requirements?: {
-      minimum_cash_percent: string;
-      emergency_fund_months?: number;
-    };
-    tax_considerations?: {
-      tax_loss_harvesting?: boolean;
-      tax_bracket?: string;
-    };
-    restrictions?: {
-      excluded_sectors?: string[];
-      esg_screening?: boolean;
-    };
-    rebalancing_policy?: {
-      frequency: string;
-      threshold_percent: string;
-      tax_aware?: boolean;
-    };
-  };
-  [key: string]: any;
-}
+// Re-export InvestmentPolicy type from investment-policy service for backward compatibility
+import type { InvestmentPolicy } from './investment-policy.service';
+export type { InvestmentPolicy } from './investment-policy.service';
 
 export interface PerformanceDataPoint {
   date: string;
@@ -290,9 +233,15 @@ export class WidgetService {
 
   /**
    * Get investment policy data for InvestmentPolicyWidget
+   * @deprecated Use InvestmentPolicyService.getInvestmentPolicy instead
+   * This method is kept for backward compatibility and delegates to InvestmentPolicyService
    */
   static async getInvestmentPolicy(accountId?: string): Promise<InvestmentPolicy> {
-    const queryParams = accountId ? `?account_id=${encodeURIComponent(accountId)}` : '';
+    if (!accountId) {
+      throw new Error('account_id is required');
+    }
+    // Use widget endpoint for backward compatibility (may have different caching behavior)
+    const queryParams = `?account_id=${encodeURIComponent(accountId)}`;
     const response = await fetch(`/api/widget/investment-policy${queryParams}`);
     return handleResponse<InvestmentPolicy>(response);
   }

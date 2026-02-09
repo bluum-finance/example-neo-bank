@@ -313,6 +313,87 @@ class BluumApiClient {
     return response.data;
   }
 
+  async createOrUpdateInvestmentPolicy(
+    accountId: string,
+      policyData: {
+      risk_profile: {
+        risk_tolerance: 'conservative' | 'moderate_conservative' | 'moderate' | 'moderate_aggressive' | 'aggressive';
+        risk_score?: number;
+        volatility_tolerance?: 'low' | 'medium' | 'high';
+      };
+      time_horizon: {
+        years: number;
+        category: 'short_term' | 'medium_term' | 'long_term';
+      };
+      investment_objectives: {
+        primary: string;
+        secondary?: string[];
+        target_annual_return?: string;
+      };
+      target_allocation: {
+        equities?: {
+          target_percent: string;
+          min_percent?: string;
+          max_percent?: string;
+        };
+        fixed_income?: {
+          target_percent: string;
+          min_percent?: string;
+          max_percent?: string;
+        };
+        treasury?: {
+          target_percent: string;
+          min_percent?: string;
+          max_percent?: string;
+        };
+        alternatives?: {
+          target_percent: string;
+          min_percent?: string;
+          max_percent?: string;
+        };
+      };
+      constraints: {
+        liquidity_requirements?: {
+          minimum_cash_percent: string;
+          emergency_fund_months?: number;
+        };
+        tax_considerations?: {
+          tax_loss_harvesting?: boolean;
+          tax_bracket?: string;
+        };
+        restrictions?: {
+          excluded_sectors?: string[];
+          esg_screening?: boolean;
+        };
+        rebalancing_policy?: {
+          frequency: string;
+          threshold_percent: string;
+          tax_aware?: boolean;
+        };
+      };
+    },
+    idempotencyKey?: string
+  ) {
+    const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {};
+    const response = await this.client.put(
+      `/wealth/accounts/${accountId}/investment-policy`,
+      policyData,
+      { headers }
+    );
+    return response.data;
+  }
+
+  async validatePortfolioAgainstIPS(
+    accountId: string,
+    portfolioId: string
+  ) {
+    const response = await this.client.post(
+      `/wealth/accounts/${accountId}/investment-policy/validate`,
+      { portfolio_id: portfolioId }
+    );
+    return response.data;
+  }
+
   // Wealth Management - Insights
   async getInsights(
     accountId: string,

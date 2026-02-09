@@ -47,15 +47,17 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
 export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) {
   // Extract values from API response
   const riskTolerance = policy?.risk_profile?.risk_tolerance || 'moderate';
-  const riskScore = policy?.risk_profile?.risk_score || 50;
+  const riskScore = policy?.risk_profile?.risk_score || 5;
   const riskLevels: Record<string, string> = {
     conservative: 'Conservative',
+    moderate_conservative: 'Moderate-Conservative',
     moderate: 'Moderate',
-    'moderate-high': 'Moderate-High',
+    moderate_aggressive: 'Moderate-Aggressive',
     aggressive: 'Aggressive',
   };
   const riskLevel = riskLevels[riskTolerance] || 'Moderate';
-  const riskPosition = riskScore; // Use risk_score as position (0-100)
+  // Convert risk_score from 0-10 scale to 0-100 for display position
+  const riskPosition = (riskScore / 10) * 100;
 
   const timeHorizonYears = policy?.time_horizon?.years || 15;
   const timeHorizonCategory = policy?.time_horizon?.category || 'long_term';
@@ -66,8 +68,12 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
         ? '5-10 Years'
         : timeHorizonYears < 15
           ? '10-15 Years'
-          : '15-20 Years';
-  const timeHorizonDescription = timeHorizonCategory.replace('_', '-') + ' investment horizon';
+          : '15+ Years';
+  const timeHorizonDescription = timeHorizonCategory.replace(/_/g, '-') + ' investment horizon';
+  
+  // Calculate progress bar width based on years (assuming max 20 years for display)
+  const maxDisplayYears = 20;
+  const timeHorizonProgress = Math.min((timeHorizonYears / maxDisplayYears) * 100, 100);
 
   const liquidityPercent = parseFloat(policy?.constraints?.liquidity_requirements?.minimum_cash_percent || '5');
   const liquidityDescription = `Maintain ${liquidityPercent}% in cash/equivalents for operational needs.`;
@@ -113,21 +119,21 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
         color: '#22C55E',
       });
     }
-    if (policy.target_allocation.fixed_income) {
+    if (policy?.target_allocation?.fixed_income) {
       allocationData.push({
         name: 'Bonds',
         value: parseFloat(policy.target_allocation.fixed_income.target_percent || '0'),
         color: '#3B82F6',
       });
     }
-    if (policy.target_allocation.treasury) {
+    if (policy?.target_allocation?.treasury) {
       allocationData.push({
         name: 'Treasury',
         value: parseFloat(policy.target_allocation.treasury.target_percent || '0'),
         color: '#9333EA',
       });
     }
-    if (policy.target_allocation.alternatives) {
+    if (policy?.target_allocation?.alternatives) {
       allocationData.push({
         name: 'Alternatives',
         value: parseFloat(policy.target_allocation.alternatives.target_percent || '0'),
@@ -136,8 +142,12 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
     }
   }
 
+  const formatSectorName = (sector: string) => {
+    return sector.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+  };
+
   const restrictions = policy?.constraints?.restrictions?.excluded_sectors
-    ? `Excluded sectors: ${policy?.constraints?.restrictions?.excluded_sectors?.join(', ')}. ${policy?.constraints?.restrictions?.esg_screening ? 'ESG screening on all holdings.' : ''}`
+    ? `Excluded sectors: ${policy.constraints.restrictions.excluded_sectors.map(formatSectorName).join(', ')}. ${policy?.constraints?.restrictions?.esg_screening ? 'ESG screening on all holdings.' : ''}`
     : policy?.constraints?.restrictions?.esg_screening
       ? 'ESG screening on all holdings.'
       : 'No restrictions specified.';
@@ -148,24 +158,6 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
 
   return (
     <div className="w-full flex flex-col gap-4">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex-1 flex flex-col justify-start items-start">
-          <div className="text-base font-semibold text-gray-900 dark:text-white">
-            Investment Policy Statement
-          </div>
-          <div className="text-xs font-normal pt-2 text-gray-500 dark:text-muted-foreground">
-            Your personalized investment guidelines
-          </div>
-        </div>
-
-        <div className="px-2 py-1 bg-[rgba(129,140,248,0.12)] rounded-2xl flex items-center justify-center">
-          <span className="text-xs font-medium leading-[18px] text-[#818CF8]">
-            On Track
-          </span>
-        </div>
-      </div>
-
       {/* Policy Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
         {/* 1. Risk Tolerance */}
@@ -246,7 +238,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
                 <div className="w-full h-2 dark:bg-[#2A4D3C] bg-gray-200 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-[#57B75C] rounded-l-full"
-                    style={{ width: '24.89%' }}
+                    style={{ width: `${timeHorizonProgress}%` }}
                   />
                 </div>
                 {/* Time labels */}
