@@ -355,18 +355,6 @@ export default function AutoInvestPage() {
                   Create your first automated investment schedule to start building wealth
                 </p>
               </div>
-              <Button
-                onClick={() => {
-                  setEditingSchedule(null);
-                  editingScheduleIdRef.current = null;
-                  setIsModalOpen(true);
-                }}
-                className="mt-4"
-                disabled={!accountId}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Create Schedule
-              </Button>
             </div>
           </CardContent>
         </Card>
@@ -423,7 +411,7 @@ export default function AutoInvestPage() {
                       disabled={!accountId || loadingAction?.id === schedule.auto_invest_id}
                     >
                       {loadingAction?.id === schedule.auto_invest_id &&
-                      loadingAction.type === 'pause' ? (
+                        loadingAction.type === 'pause' ? (
                         <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                       ) : (
                         <Pause className="h-3 w-3 mr-1" />
@@ -440,7 +428,7 @@ export default function AutoInvestPage() {
                       disabled={!accountId || loadingAction?.id === schedule.auto_invest_id}
                     >
                       {loadingAction?.id === schedule.auto_invest_id &&
-                      loadingAction.type === 'resume' ? (
+                        loadingAction.type === 'resume' ? (
                         <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                       ) : (
                         <Play className="h-3 w-3 mr-1" />
@@ -487,7 +475,7 @@ export default function AutoInvestPage() {
         schedule={editingSchedule}
         portfolioId={portfolioId || undefined}
         fundingSources={fundingSources}
-        onSubmit={editingSchedule ? 
+        onSubmit={editingSchedule ?
           async (data: CreateScheduleData) => {
             const scheduleIdToUpdate = editingScheduleIdRef.current || editingSchedule?.auto_invest_id;
             if (!scheduleIdToUpdate) {
