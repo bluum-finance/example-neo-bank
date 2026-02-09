@@ -3,9 +3,10 @@ import { bluumApi } from '@/lib/bluum-api';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { scheduleId: string } }
+  { params }: { params: Promise<{ scheduleId: string }> }
 ) {
   try {
+    const { scheduleId } = await params;
     const searchParams = request.nextUrl.searchParams;
     const accountId = searchParams.get('account_id');
 
@@ -13,7 +14,7 @@ export async function GET(
       return NextResponse.json({ error: 'account_id is required' }, { status: 400 });
     }
 
-    const schedule = await bluumApi.getAutoInvestSchedule(accountId, params.scheduleId);
+    const schedule = await bluumApi.getAutoInvestSchedule(accountId, scheduleId);
     return NextResponse.json(schedule);
   } catch (error: any) {
     return NextResponse.json(
@@ -27,9 +28,10 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { scheduleId: string } }
+  { params }: { params: Promise<{ scheduleId: string }> }
 ) {
   try {
+    const { scheduleId } = await params;
     const body = await request.json();
     const accountId = body.account_id;
 
@@ -51,7 +53,7 @@ export async function PATCH(
 
     const response = await bluumApi.updateAutoInvestSchedule(
       accountId,
-      params.scheduleId,
+      scheduleId,
       scheduleData
     );
     return NextResponse.json(response);
@@ -67,9 +69,10 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { scheduleId: string } }
+  { params }: { params: Promise<{ scheduleId: string }> }
 ) {
   try {
+    const { scheduleId } = await params;
     const searchParams = request.nextUrl.searchParams;
     const accountId = searchParams.get('account_id');
 
@@ -80,7 +83,7 @@ export async function DELETE(
       );
     }
 
-    await bluumApi.deleteAutoInvestSchedule(accountId, params.scheduleId);
+    await bluumApi.deleteAutoInvestSchedule(accountId, scheduleId);
     return new NextResponse(null, { status: 204 });
   } catch (error: any) {
     return NextResponse.json(

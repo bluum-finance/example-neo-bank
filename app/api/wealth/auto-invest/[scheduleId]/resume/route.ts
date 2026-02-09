@@ -3,9 +3,10 @@ import { bluumApi } from '@/lib/bluum-api';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { scheduleId: string } }
+  { params }: { params: Promise<{ scheduleId: string }> }
 ) {
   try {
+    const { scheduleId } = await params;
     const body = await request.json();
     const accountId = body.account_id;
 
@@ -16,7 +17,7 @@ export async function POST(
       );
     }
 
-    const response = await bluumApi.resumeAutoInvestSchedule(accountId, params.scheduleId);
+    const response = await bluumApi.resumeAutoInvestSchedule(accountId, scheduleId);
     return NextResponse.json(response);
   } catch (error: any) {
     return NextResponse.json(
