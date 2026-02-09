@@ -45,9 +45,8 @@ const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent
 };
 
 export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) {
-  // Extract values from API response
-  const riskTolerance = policy?.risk_profile?.risk_tolerance || 'moderate';
-  const riskScore = policy?.risk_profile?.risk_score || 5;
+  const riskTolerance = policy?.risk_profile?.risk_tolerance;
+  const riskScore = policy?.risk_profile?.risk_score;
   const riskLevels: Record<string, string> = {
     conservative: 'Conservative',
     moderate_conservative: 'Moderate-Conservative',
@@ -55,34 +54,36 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
     moderate_aggressive: 'Moderate-Aggressive',
     aggressive: 'Aggressive',
   };
-  const riskLevel = riskLevels[riskTolerance] || 'Moderate';
+  const riskLevel = riskTolerance ? riskLevels[riskTolerance] : undefined;
   // Convert risk_score from 0-10 scale to 0-100 for display position
-  const riskPosition = (riskScore / 10) * 100;
+  const riskPosition = riskScore !== undefined ? (riskScore / 10) * 100 : undefined;
 
-  const timeHorizonYears = policy?.time_horizon?.years || 15;
-  const timeHorizonCategory = policy?.time_horizon?.category || 'long_term';
-  const timeHorizonRange =
-    timeHorizonYears < 5
-      ? '0-5 Years'
-      : timeHorizonYears < 10
-        ? '5-10 Years'
-        : timeHorizonYears < 15
-          ? '10-15 Years'
-          : '15+ Years';
-  const timeHorizonDescription = timeHorizonCategory.replace(/_/g, '-') + ' investment horizon';
-  
+  const timeHorizonYears = policy?.time_horizon?.years;
+  const timeHorizonCategory = policy?.time_horizon?.category;
+  const timeHorizonDisplay = timeHorizonYears !== undefined
+    ? `${timeHorizonYears} ${timeHorizonYears === 1 ? 'Year' : 'Years'}`
+    : undefined;
+  const timeHorizonDescription = timeHorizonCategory
+    ? timeHorizonCategory.replace(/_/g, '-') + ' investment horizon'
+    : undefined;
+
   // Calculate progress bar width based on years (assuming max 20 years for display)
   const maxDisplayYears = 20;
-  const timeHorizonProgress = Math.min((timeHorizonYears / maxDisplayYears) * 100, 100);
+  const timeHorizonProgress =
+    timeHorizonYears !== undefined ? Math.min((timeHorizonYears / maxDisplayYears) * 100, 100) : undefined;
 
-  const liquidityPercent = parseFloat(policy?.constraints?.liquidity_requirements?.minimum_cash_percent || '5');
-  const liquidityDescription = `Maintain ${liquidityPercent}% in cash/equivalents for operational needs.`;
+  const liquidityPercent = policy?.constraints?.liquidity_requirements?.minimum_cash_percent
+    ? parseFloat(policy.constraints.liquidity_requirements.minimum_cash_percent)
+    : undefined;
+  const liquidityDescription = liquidityPercent !== undefined
+    ? `Maintain ${liquidityPercent}% in cash/equivalents for operational needs.`
+    : undefined;
 
   const taxConsiderations = policy?.constraints?.tax_considerations?.tax_loss_harvesting
     ? 'Prioritize tax-advantaged accounts; harvest losses annually.'
     : policy?.constraints?.tax_considerations?.tax_bracket
-      ? `Tax bracket: ${policy?.constraints?.tax_considerations?.tax_bracket}%`
-      : 'Prioritize tax-advantaged accounts; harvest losses annually.';
+      ? `Tax bracket: ${policy.constraints.tax_considerations.tax_bracket}%`
+      : undefined;
 
   // Build objectives array
   const objectives: Array<{ text: string; tag: 'PRIMARY' | 'SECONDARY' | 'TERTIARY' }> = [];
@@ -146,15 +147,15 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
     return sector.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
-  const restrictions = policy?.constraints?.restrictions?.excluded_sectors
-    ? `Excluded sectors: ${policy.constraints.restrictions.excluded_sectors.map(formatSectorName).join(', ')}. ${policy?.constraints?.restrictions?.esg_screening ? 'ESG screening on all holdings.' : ''}`
+  const restrictions = policy?.constraints?.restrictions?.excluded_sectors && policy.constraints.restrictions.excluded_sectors.length > 0
+    ? `Excluded sectors: ${policy.constraints.restrictions.excluded_sectors.map(formatSectorName).join(', ')}. ${policy.constraints.restrictions.esg_screening ? 'ESG screening on all holdings.' : ''}`
     : policy?.constraints?.restrictions?.esg_screening
       ? 'ESG screening on all holdings.'
-      : 'No restrictions specified.';
+      : undefined;
 
   const rebalancing = policy?.constraints?.rebalancing_policy
     ? `${policy.constraints.rebalancing_policy.frequency} review; rebalance when drift exceeds ±${policy.constraints.rebalancing_policy.threshold_percent}%`
-    : 'Quarterly review; rebalance when drift exceeds ±5%.';
+    : undefined;
 
   return (
     <div className="w-full flex flex-col gap-4">
@@ -171,7 +172,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
             </div>
           </div>
 
-          {policy?.risk_profile ? (
+          {policy?.risk_profile && riskTolerance && riskScore !== undefined ? (
             <>
               <div className="flex flex-col gap-1">
                 {/* Slider */}
@@ -182,12 +183,14 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
                       background: 'linear-gradient(60deg, #10A144 0%, #E8FFF0 100%)',
                     }}
                   />
-                  <div
-                    className="absolute top-1/2 w-[26.72px] h-[18px] bg-white rounded-[9px] border-[3px] border-[#57B75C] shadow-lg -translate-y-1/2 z-10"
-                    style={{
-                      left: `clamp(0px, calc(${riskPosition}% - 13.36px), calc(100% - 26.72px))`,
-                    }}
-                  />
+                  {riskPosition !== undefined && (
+                    <div
+                      className="absolute top-1/2 w-[26.72px] h-[18px] bg-white rounded-[9px] border-[3px] border-[#57B75C] shadow-lg -translate-y-1/2 z-10"
+                      style={{
+                        left: `clamp(0px, calc(${riskPosition}% - 13.36px), calc(100% - 26.72px))`,
+                      }}
+                    />
+                  )}
                 </div>
                 {/* Labels */}
                 <div className="flex justify-between items-center w-full">
@@ -203,21 +206,21 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
                 </div>
               </div>
               <div className="flex flex-col items-center gap-0">
-                <div className="w-full text-center text-base font-semibold leading-6 text-[#57B75C]">
-                  {riskLevel}
-                </div>
-                <div className="w-full text-center text-[10px] leading-[15px] font-normal text-gray-500 dark:text-muted-foreground">
-                  {policy.risk_profile?.volatility_tolerance
-                    ? `${policy.risk_profile.volatility_tolerance} volatility tolerance`
-                    : 'Growth-oriented portfolio'}
-                </div>
+                {riskLevel && (
+                  <div className="w-full text-center text-base font-semibold leading-6 text-[#57B75C]">
+                    {riskLevel}
+                  </div>
+                )}
+                {policy?.risk_profile?.volatility_tolerance && (
+                  <div className="w-full text-center text-[10px] leading-[15px] font-normal text-gray-500 dark:text-muted-foreground">
+                    {policy.risk_profile.volatility_tolerance} volatility tolerance
+                  </div>
+                )}
               </div>
             </>
-          ) :
-            (
-              <NoDataAvailable />
-            )
-          }
+          ) : (
+            <NoDataAvailable />
+          )}
         </div>
 
         {/* 2. Time Horizon */}
@@ -231,15 +234,17 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
             </div>
           </div>
 
-          {policy?.time_horizon ? (
+          {policy?.time_horizon && timeHorizonYears !== undefined ? (
             <>
               <div className="flex flex-col gap-1">
                 {/* Progress bar */}
                 <div className="w-full h-2 dark:bg-[#2A4D3C] bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#57B75C] rounded-l-full"
-                    style={{ width: `${timeHorizonProgress}%` }}
-                  />
+                  {timeHorizonProgress !== undefined && (
+                    <div
+                      className="h-full bg-[#57B75C] rounded-l-full"
+                      style={{ width: `${timeHorizonProgress}%` }}
+                    />
+                  )}
                 </div>
                 {/* Time labels */}
                 <div className="flex justify-between items-center w-full">
@@ -255,24 +260,27 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
                 </div>
               </div>
               <div className="flex flex-col items-center gap-0">
-                <div
-                  className="w-full text-center text-base font-semibold leading-6 text-[#57B75C]"
-                  style={{ fontFamily: 'Inter', fontWeight: 600 }}
-                >
-                  {timeHorizonRange}
-                </div>
-                <div
-                  className="w-full text-center text-[10px] leading-[15px] text-gray-500 dark:text-muted-foreground"
-                  style={{ fontFamily: 'Inter', fontWeight: 400 }}
-                >
-                  {timeHorizonDescription}
-                </div>
+                {timeHorizonDisplay && (
+                  <div
+                    className="w-full text-center text-base font-semibold leading-6 text-[#57B75C]"
+                    style={{ fontFamily: 'Inter', fontWeight: 600 }}
+                  >
+                    {timeHorizonDisplay}
+                  </div>
+                )}
+                {timeHorizonDescription && (
+                  <div
+                    className="w-full text-center text-[10px] leading-[15px] text-gray-500 dark:text-muted-foreground"
+                    style={{ fontFamily: 'Inter', fontWeight: 400 }}
+                  >
+                    {timeHorizonDescription}
+                  </div>
+                )}
               </div>
             </>
           ) : (
             <NoDataAvailable />
-          )
-          }
+          )}
         </div>
 
         {/* 5. Objectives */}
@@ -392,13 +400,6 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
                 </div>
               </div>
 
-              {/* Status Bar */}
-              <div className="h-[27px] relative dark:bg-[rgba(48,209,88,0.12)] bg-green-100 rounded-md flex items-center pl-[28px]">
-                <CheckCircle2 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 dark:text-[#30D158] text-green-800" />
-                <span className="text-[10px] leading-[15px] font-medium dark:text-[#30D158] text-green-800">
-                  Within ±3% of target allocation
-                </span>
-              </div>
             </>) : (
             <NoDataAvailable />
           )
@@ -423,68 +424,76 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
         {policy?.constraints ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Liquidity */}
-            <div className="p-3 rounded-lg border border-gray-200 dark:border-border flex items-center gap-3">
-              <div className="w-7 h-7 rounded-md flex items-center justify-center bg-green-100 dark:bg-green-900/30 shrink-0">
-                <FileText className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-              </div>
-              <div className="flex-1 flex flex-col gap-0.5">
-                <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">
-                  Liquidity
+            {liquidityDescription && (
+              <div className="p-3 rounded-lg border border-gray-200 dark:border-border flex items-center gap-3">
+                <div className="w-7 h-7 rounded-md flex items-center justify-center bg-green-100 dark:bg-green-900/30 shrink-0">
+                  <FileText className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                 </div>
-                <div className="text-xs leading-[18px] text-gray-600 dark:text-muted-foreground">
-                  {liquidityDescription}
+                <div className="flex-1 flex flex-col gap-0.5">
+                  <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">
+                    Liquidity
+                  </div>
+                  <div className="text-xs leading-[18px] text-gray-600 dark:text-muted-foreground">
+                    {liquidityDescription}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Tax Considerations */}
-            <div className="p-3 rounded-lg border border-gray-200 dark:border-border flex items-center gap-3">
-              <div className="w-7 h-7 rounded-md flex items-center justify-center bg-green-100 dark:bg-green-900/30 shrink-0">
-                <FileText className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-              </div>
-              <div className="flex-1 flex flex-col gap-0.5">
-                <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">
-                  Tax Considerations
+            {taxConsiderations && (
+              <div className="p-3 rounded-lg border border-gray-200 dark:border-border flex items-center gap-3">
+                <div className="w-7 h-7 rounded-md flex items-center justify-center bg-green-100 dark:bg-green-900/30 shrink-0">
+                  <FileText className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                 </div>
-                <div className="text-xs leading-[18px] text-gray-600 dark:text-muted-foreground">
-                  {taxConsiderations}
+                <div className="flex-1 flex flex-col gap-0.5">
+                  <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">
+                    Tax Considerations
+                  </div>
+                  <div className="text-xs leading-[18px] text-gray-600 dark:text-muted-foreground">
+                    {taxConsiderations}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Restrictions */}
-            <div className="p-3 rounded-lg border border-gray-200 dark:border-border flex items-center gap-3">
-              <div className="w-7 h-7 rounded-md flex items-center justify-center bg-green-100 dark:bg-green-900/30 shrink-0">
-                <Circle className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-              </div>
-              <div className="flex-1 flex flex-col gap-0.5">
-                <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">
-                  Restrictions
+            {restrictions && (
+              <div className="p-3 rounded-lg border border-gray-200 dark:border-border flex items-center gap-3">
+                <div className="w-7 h-7 rounded-md flex items-center justify-center bg-green-100 dark:bg-green-900/30 shrink-0">
+                  <Circle className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                 </div>
-                <div className="text-xs leading-[18px] text-gray-600 dark:text-muted-foreground">
-                  {restrictions}
+                <div className="flex-1 flex flex-col gap-0.5">
+                  <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">
+                    Restrictions
+                  </div>
+                  <div className="text-xs leading-[18px] text-gray-600 dark:text-muted-foreground">
+                    {restrictions}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Rebalancing */}
-            <div className="p-3 rounded-lg border border-gray-200 dark:border-border flex items-center gap-3">
-              <div className="w-7 h-7 rounded-md flex items-center justify-center bg-green-100 dark:bg-green-900/30 shrink-0">
-                <BarChart3 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
-              </div>
-              <div className="flex-1 flex flex-col gap-0.5">
-                <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">
-                  Rebalancing
+            {rebalancing && (
+              <div className="p-3 rounded-lg border border-gray-200 dark:border-border flex items-center gap-3">
+                <div className="w-7 h-7 rounded-md flex items-center justify-center bg-green-100 dark:bg-green-900/30 shrink-0">
+                  <BarChart3 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                 </div>
-                <div className="text-xs leading-[18px] text-gray-600 dark:text-muted-foreground">
-                  {rebalancing}
+                <div className="flex-1 flex flex-col gap-0.5">
+                  <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">
+                    Rebalancing
+                  </div>
+                  <div className="text-xs leading-[18px] text-gray-600 dark:text-muted-foreground">
+                    {rebalancing}
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>) : (
+            )}
+          </div>
+        ) : (
           <NoDataAvailable />
-        )
-        }
+        )}
       </div>
     </div>
   );
