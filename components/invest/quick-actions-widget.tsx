@@ -52,7 +52,7 @@ const defaultQuickActions: Omit<QuickAction, 'icon'>[] = [
     title: 'Set Up Auto-Invest',
     description: 'Schedule recurring deposits',
     iconColor: '#3B82F6',
-    route: '/invest?action=auto-invest',
+    route: '/invest/auto-invest',
   },
 ];
 

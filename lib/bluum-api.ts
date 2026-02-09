@@ -403,6 +403,125 @@ class BluumApiClient {
     const response = await this.client.post(`/wealth/accounts/${accountId}/assistant/chat`, data);
     return response.data;
   }
+
+  // Wealth Management - Auto-Invest
+  async getAutoInvestSchedules(
+    accountId: string,
+    params?: {
+      status?: 'active' | 'paused' | 'completed' | 'cancelled';
+      portfolio_id?: string;
+    }
+  ) {
+    const response = await this.client.get(`/wealth/accounts/${accountId}/auto-invest`, {
+      params,
+    });
+    return response.data;
+  }
+
+  async getAutoInvestSchedule(accountId: string, scheduleId: string) {
+    const response = await this.client.get(
+      `/wealth/accounts/${accountId}/auto-invest/${scheduleId}`
+    );
+    return response.data;
+  }
+
+  async createAutoInvestSchedule(
+    accountId: string,
+    scheduleData: {
+      name: string;
+      portfolio_id: string;
+      funding_source_id: string;
+      amount: string;
+      currency: string;
+      frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
+      schedule: {
+        day_of_month?: number;
+        day_of_week?: number;
+        time: string;
+      };
+      allocation_rule: 'ips_target' | 'custom';
+      start_date: string;
+    },
+    idempotencyKey?: string
+  ) {
+    const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {};
+    const response = await this.client.post(
+      `/wealth/accounts/${accountId}/auto-invest`,
+      scheduleData,
+      { headers }
+    );
+    return response.data;
+  }
+
+  async updateAutoInvestSchedule(
+    accountId: string,
+    scheduleId: string,
+    scheduleData: Partial<{
+      name: string;
+      amount: string;
+      frequency: 'weekly' | 'biweekly' | 'monthly' | 'quarterly';
+      schedule: {
+        day_of_month?: number;
+        day_of_week?: number;
+        time: string;
+      };
+      allocation_rule: 'ips_target' | 'custom';
+      status: 'active' | 'paused' | 'completed' | 'cancelled';
+    }>
+  ) {
+    const response = await this.client.patch(
+      `/wealth/accounts/${accountId}/auto-invest/${scheduleId}`,
+      scheduleData
+    );
+    return response.data;
+  }
+
+  async deleteAutoInvestSchedule(accountId: string, scheduleId: string) {
+    const response = await this.client.delete(
+      `/wealth/accounts/${accountId}/auto-invest/${scheduleId}`
+    );
+    return response.data;
+  }
+
+  async pauseAutoInvestSchedule(accountId: string, scheduleId: string) {
+    const response = await this.client.post(
+      `/wealth/accounts/${accountId}/auto-invest/${scheduleId}/pause`
+    );
+    return response.data;
+  }
+
+  async resumeAutoInvestSchedule(accountId: string, scheduleId: string) {
+    const response = await this.client.post(
+      `/wealth/accounts/${accountId}/auto-invest/${scheduleId}/resume`
+    );
+    return response.data;
+  }
+
+  // DRIP Configuration
+  async getDripConfiguration(accountId: string, portfolioId: string) {
+    const response = await this.client.get(
+      `/wealth/accounts/${accountId}/portfolios/${portfolioId}/drip`
+    );
+    return response.data;
+  }
+
+  async updateDripConfiguration(
+    accountId: string,
+    portfolioId: string,
+    dripData: {
+      enabled: boolean;
+      reinvestment_rule: 'same_security' | 'portfolio_allocation' | 'custom';
+      minimum_amount?: string;
+      cash_sweep_enabled?: boolean;
+      cash_sweep_threshold?: string;
+    }
+  ) {
+    const response = await this.client.put(
+      `/wealth/accounts/${accountId}/portfolios/${portfolioId}/drip`,
+      dripData
+    );
+    return response.data;
+  }
 }
 
 export const bluumApi = new BluumApiClient();

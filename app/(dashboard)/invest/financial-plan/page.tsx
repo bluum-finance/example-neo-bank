@@ -6,6 +6,8 @@ import { FinancialPlan } from '@/components/invest/financial-plan';
 import { GoalDetailsModal } from '@/components/invest/goal-details-modal';
 import { GoalFormModal } from '@/components/invest/goal-form-modal';
 import { getAuth } from '@/lib/auth';
+import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function FinancialPlanPage() {
   const [financialGoals, setFinancialGoals] = useState<FinancialGoal[]>([]);
@@ -174,12 +176,13 @@ export default function FinancialPlanPage() {
             Track your financial goals and progress
           </p>
         </div>
-        <button
+
+        <Button
           onClick={handleOpenCreateModal}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors"
         >
-          + Create Goal
-        </button>
+          <Plus className="h-4 w-4" />
+          Create Schedule
+        </Button>
       </div>
 
       {error && (

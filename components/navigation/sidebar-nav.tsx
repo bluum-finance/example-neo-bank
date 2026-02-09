@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Home, TrendingUp, PiggyBank, ArrowLeftRight, CreditCard, LogOut, Target, Moon, Sun } from 'lucide-react';
+import { Home, TrendingUp, PiggyBank, ArrowLeftRight, CreditCard, LogOut, Target, Moon, Sun, Repeat } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { clearAuth, getAuth } from '@/lib/auth';
@@ -20,17 +20,18 @@ const navItems: NavItem[] = [
   { path: '/dashboard', icon: Home, label: 'Dashboard' },
   { path: '/invest', icon: TrendingUp, label: 'Portfolio' },
   { path: '/invest/financial-plan', icon: Target, label: 'Financial Plan' },
+  { path: '/invest/auto-invest', icon: Repeat, label: 'Auto-Invest' },
   { path: '/savings', icon: PiggyBank, label: 'Savings' },
   { path: '/transfers', icon: ArrowLeftRight, label: 'Transfers' },
   { path: '/cards', icon: CreditCard, label: 'Cards' },
 ];
 
 const navHeaders: { label: string; startIndex: number; endIndex: number }[] = [
-  { label: 'Invest', startIndex: 1, endIndex: 2 },
+  { label: 'Invest', startIndex: 1, endIndex: 3 },
 ];
 
 // Indices where spacing should be added after (end of a section)
-const sectionBreaks: number[] = [2]; // After Financial Plan (index 2)
+const sectionBreaks: number[] = [3]; // After Auto-Invest (index 3)
 
 // Dark mode hook
 function useDarkMode() {

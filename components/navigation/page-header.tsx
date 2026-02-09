@@ -53,6 +53,12 @@ export function PageHeader() {
   const router = useRouter();
   const { isDark, toggleDarkMode, mounted } = useDarkMode();
 
+  const investLinks = [
+    { label: 'Portfolio', path: '/invest' },
+    { label: 'Financial Plan', path: '/invest/financial-plan' },
+    { label: 'Auto-Invest', path: '/invest/auto-invest' },
+  ];
+
   const handleLogout = () => {
     clearAuth();
     toast.success('Logged out successfully');
@@ -120,11 +126,19 @@ export function PageHeader() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem className="cursor-pointer">
-                <span>Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
                 <span>Settings</span>
               </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+              {investLinks.map((link) => (
+                <DropdownMenuItem
+                  key={link.label}
+                  onClick={() => router.push(link.path)}
+                  className="cursor-pointer"
+                >
+                  <span>{link.label}</span>
+                </DropdownMenuItem>
+              ))}
               <DropdownMenuSeparator />
               {/* Dark Mode Toggle - Mobile Only */}
               {mounted && (
