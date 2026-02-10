@@ -264,7 +264,7 @@ export default function Invest() {
         insightsLoading={insightsLoading}
       />
 
-      <section className="pt-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+      <section className="pt-6 grid grid-cols-1 lg:grid-cols-3 gap-y-6 lg:gap-x-6 items-stretch">
         {/* Left (2/3 width) */}
         <div className="col-span-2">
           <PortfolioPerformanceChart
@@ -288,8 +288,8 @@ export default function Invest() {
         </div>
       </section>
 
-      <section className="pt-6 space-y-4">
-        <div className="flex justify-between items-center">
+      <section className="pt-6">
+        <div className="flex justify-between items-center mb-6">
           <div>
             <div className="text-base font-semibold text-gray-900 dark:text-white">
               Financial Plan
@@ -310,7 +310,7 @@ export default function Invest() {
 
       <section className="pt-6">
         {/* Header */}
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex justify-between items-center mb-6">
           <div className="flex-1 flex flex-col justify-start items-start">
             <div className="text-base font-semibold text-gray-900 dark:text-white">
               Investment Policy Statement

@@ -303,7 +303,7 @@ export function PortfolioPerformanceChart({
             )}
           </div>
 
-          <div className="bg-[#0F2A20] rounded-lg border-[0.70px] border-[#2A4D3C] flex items-start">
+          <div className="w-fit bg-[#0F2A20] rounded-lg border-[0.70px] border-[#2A4D3C] flex items-start">
             {/* Chart View Button */}
             <button
               onClick={() => setViewMode('chart')}

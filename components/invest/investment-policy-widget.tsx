@@ -226,7 +226,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#1A3A2C]">
               <Shield className="h-4 w-4 text-white" />
             </div>
-            <div className="text-xs font-semibold text-muted-foreground dark:text-white/80">
+            <div className="text-xs font-medium text-muted-foreground dark:text-[#D1D5DB]">
               Risk Tolerance
             </div>
           </div>
@@ -288,7 +288,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#1A3A2C]">
               <Clock className="h-4 w-4 text-white" />
             </div>
-            <div className="text-xs font-semibold text-muted-foreground dark:text-white/80">
+            <div className="text-xs font-medium text-muted-foreground dark:text-[#D1D5DB]">
               Time Horizon
             </div>
           </div>
@@ -346,7 +346,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#1A3A2C]">
               <Target className="h-4 w-4 text-white" />
             </div>
-            <div className="text-xs font-semibold text-muted-foreground dark:text-white/80">
+            <div className="text-xs font-medium text-muted-foreground dark:text-[#D1D5DB]">
               Objectives
             </div>
           </div>
@@ -396,7 +396,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#1A3A2C]">
               <ChartPieIcon className="h-4 w-4 text-white" />
             </div>
-            <div className="text-xs font-semibold text-muted-foreground dark:text-white/80">
+            <div className="text-xs font-medium text-muted-foreground dark:text-[#D1D5DB]">
               Target Allocation
             </div>
           </div>
@@ -480,7 +480,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
           <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#1A3A2C]">
             <Lock className="h-4 w-4 text-white" />
           </div>
-          <div className="text-xs font-semibold text-muted-foreground dark:text-white/80">
+          <div className="text-xs font-medium text-muted-foreground dark:text-[#D1D5DB]">
             Constraints & Guidelines
           </div>
         </div>
@@ -495,7 +495,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
                   <Droplets className="h-3.5 w-3.5 text-green-600 dark:text-white" />
                 </div>
                 <div className="flex-1 flex flex-col gap-0.5">
-                  <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">
+                  <div className="text-[13px] font-medium text-gray-900 dark:text-foreground">
                     Liquidity
                   </div>
                   <div className="text-xs leading-[18px] text-gray-600 dark:text-muted-foreground">
