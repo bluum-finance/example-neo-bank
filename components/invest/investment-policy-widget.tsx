@@ -241,9 +241,9 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
                 <div className="relative h-2 rounded-[5px] overflow-visible">
                   <div
                     className="absolute inset-0 rounded-[5px]"
-                    style={{
-                      background: 'linear-gradient(60deg, #10A144 0%, #E8FFF0 100%)',
-                    }}
+                  style={{
+                    background: 'linear-gradient(60deg, #E8FFF0 0%, #10A144 100%)',
+                  }}
                   />
                   {riskPosition !== undefined && (
                     <div

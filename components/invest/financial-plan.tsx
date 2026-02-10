@@ -1,7 +1,8 @@
 'use client';
 
-import { Umbrella, Shield, TrendingUp } from 'lucide-react';
+import Image from 'next/image';
 import { type FinancialGoal } from '@/services/widget.service';
+import { Check } from 'lucide-react';
 
 interface FinancialPlanProps {
   goals?: FinancialGoal[];
@@ -11,15 +12,25 @@ interface FinancialPlanProps {
 
 // Helper function to get icon based on goal type
 const getGoalIcon = (goalType: string) => {
-  const iconMap: Record<string, React.ReactNode> = {
-    retirement: <Umbrella className="h-5 w-5 text-white" />,
-    emergency: <Shield className="h-5 w-5 text-white" />,
-    wealth_growth: <TrendingUp className="h-5 w-5 text-white" />,
-    education: <Umbrella className="h-5 w-5 text-white" />,
-    home_purchase: <TrendingUp className="h-5 w-5 text-white" />,
-    custom: <TrendingUp className="h-5 w-5 text-white" />,
+  const iconMap: Record<string, string> = {
+    retirement: '/icons/retirement.png',
+    emergency: '/icons/emergency.png',
+    wealth_growth: '/icons/wealth-growth.png',
+    education: '/icons/education.png',
+    home_purchase: '/icons/wealth-growth.png',
+    custom: '/icons/wealth-growth.png',
   };
-  return iconMap[goalType] || <Umbrella className="h-5 w-5 text-white" />;
+  const iconPath = iconMap[goalType] || '/icons/wealth-growth.png';
+
+  return (
+    <Image
+      src={iconPath}
+      alt={goalType}
+      width={20}
+      height={20}
+      className="w-5 h-5"
+    />
+  );
 };
 
 export function FinancialPlan({ goals = [], onGoalClick }: FinancialPlanProps) {
@@ -62,6 +73,7 @@ export function FinancialPlan({ goals = [], onGoalClick }: FinancialPlanProps) {
           const progressPercentage = goal.progress_percent || (targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 100)) : 0);
           const progressBarWidth = targetAmount > 0 ? (currentAmount / targetAmount) * 100 : 0;
           const remaining = formatRemaining(currentAmount, targetAmount);
+          const completed = currentAmount >= targetAmount;
           const targetText = goal.target_date
             ? `Target: ${formatCurrency(targetAmount, true)} by ${new Date(goal.target_date).getFullYear()}`
             : `Target: ${formatCurrency(targetAmount, true)}`;
@@ -148,18 +160,29 @@ export function FinancialPlan({ goals = [], onGoalClick }: FinancialPlanProps) {
                   >
                     {formatCurrency(currentAmount)}
                   </div>
-                  {remaining && (
+                  {completed ? (
                     <div
-                      className="text-xs font-normal text-gray-500 dark:text-muted-foreground"
+                      className="flex items-center gap-1 text-xs font-normal text-gray-500 dark:text-muted-foreground"
                       style={{
                         fontSize: 12,
                         fontFamily: 'Inter',
                         fontWeight: 400,
                       }}
                     >
-                      {remaining} to go
+                      <Check className="w-3 h-3 text-gray-500 dark:text-muted-foreground" /> Completed
                     </div>
-                  )}
+                  ) : (
+                    remaining && (
+                      <div
+                        className="text-xs font-normal text-gray-500 dark:text-muted-foreground"
+                        style={{
+                          fontSize: 12,
+                          fontWeight: 400,
+                        }}
+                      >
+                        {remaining} to go
+                      </div>
+                    ))}
                 </div>
               </div>
 
