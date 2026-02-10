@@ -9,10 +9,6 @@ import {
   RotateCcw,
   Ban,
   CheckCircle2,
-  FileText,
-  Circle,
-  BarChart3,
-  List,
   Check,
   Lock,
   CheckCircle,
@@ -496,7 +492,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
             {liquidityDescription && (
               <div className="p-3 rounded-lg border border-gray-200 dark:border-border flex items-center gap-3">
                 <div className="w-7 h-7 rounded-md flex items-center justify-center bg-green-100 dark:bg-green-900/30 shrink-0">
-                  <FileText className="h-3.5 w-3.5 text-green-600 dark:text-white" />
+                  <Droplets className="h-3.5 w-3.5 text-green-600 dark:text-white" />
                 </div>
                 <div className="flex-1 flex flex-col gap-0.5">
                   <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">
@@ -513,7 +509,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
             {taxConsiderations && (
               <div className="p-3 rounded-lg border border-gray-200 dark:border-border flex items-center gap-3">
                 <div className="w-7 h-7 rounded-md flex items-center justify-center bg-green-100 dark:bg-green-900/30 shrink-0">
-                  <FileText className="h-3.5 w-3.5 text-green-600 dark:text-white" />
+                  <DollarSign className="h-3.5 w-3.5 text-green-600 dark:text-white" />
                 </div>
                 <div className="flex-1 flex flex-col gap-0.5">
                   <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">
@@ -530,7 +526,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
             {restrictions && (
               <div className="p-3 rounded-lg border border-gray-200 dark:border-border flex items-center gap-3">
                 <div className="w-7 h-7 rounded-md flex items-center justify-center bg-green-100 dark:bg-green-900/30 shrink-0">
-                  <Circle className="h-3.5 w-3.5 text-green-600 dark:text-white" />
+                  <Ban className="h-3.5 w-3.5 text-green-600 dark:text-white" />
                 </div>
                 <div className="flex-1 flex flex-col gap-0.5">
                   <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">
@@ -547,7 +543,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
             {rebalancing && (
               <div className="p-3 rounded-lg border border-gray-200 dark:border-border flex items-center gap-3">
                 <div className="w-7 h-7 rounded-md flex items-center justify-center bg-green-100 dark:bg-green-900/30 shrink-0">
-                  <BarChart3 className="h-3.5 w-3.5 text-green-600 dark:text-white" />
+                  <RotateCcw className="h-3.5 w-3.5 text-green-600 dark:text-white" />
                 </div>
                 <div className="flex-1 flex flex-col gap-0.5">
                   <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">

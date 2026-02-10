@@ -105,9 +105,7 @@ export default function Invest() {
       setAccountBalance(balanceValue);
       const accountData = account as any;
       const detectedPortfolioId =
-        accountData?.portfolios?.find((p: any) => p.status === 'active')?.id ||
-        accountData?.portfolios?.[0]?.id ||
-        null;
+        accountData?.portfolios?.find((p: any) => p.status === 'active')?.id || "ptf_demo_main";
       setPortfolioId(detectedPortfolioId);
 
       if (detectedPortfolioId) {
