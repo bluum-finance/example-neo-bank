@@ -4,14 +4,13 @@ import { useState, useMemo } from 'react';
 import {
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
   ResponsiveContainer,
   AreaChart,
   Area,
   ComposedChart,
 } from 'recharts';
-import { TrendingUp, Shield, List, BarChart3 } from 'lucide-react';
+import { TrendingUp, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShieldIcon } from '../icons/shield.icon';
 export type TimeRange = '1W' | '1M' | '3M' | '1Y' | 'All';
@@ -28,6 +27,9 @@ interface PortfolioPerformanceChartProps {
   summaryData?: PortfolioSummary | null;
   summaryLoading?: boolean;
   summaryError?: string | null;
+  onRangeChange?: (range: TimeRange) => void; // Callback when range changes
+  accountId?: string; // Account ID for reloading data
+  portfolioId?: string; // Portfolio ID for reloading data
 }
 
 interface AllocationEntry {
@@ -81,10 +83,20 @@ export function PortfolioPerformanceChart({
   summaryData,
   summaryLoading,
   summaryError,
+  onRangeChange,
+  accountId,
+  portfolioId,
 }: PortfolioPerformanceChartProps) {
   const [selectedRange, setSelectedRange] = useState<TimeRange>('1M');
   const [viewMode, setViewMode] = useState<'chart' | 'summary'>('chart');
   const [hideAmount, setHideAmount] = useState(false);
+
+  const handleRangeChange = (newRange: TimeRange) => {
+    setSelectedRange(newRange);
+    if (onRangeChange) {
+      onRangeChange(newRange);
+    }
+  };
 
   const chartData = useMemo(() => {
     if (externalData && externalData.length > 0) {
@@ -141,7 +153,7 @@ export function PortfolioPerformanceChart({
       <div className="mb-4 flex justify-between items-center">
         <select
           value={selectedRange}
-          onChange={(event) => setSelectedRange(event.target.value as TimeRange)}
+          onChange={(event) => handleRangeChange(event.target.value as TimeRange)}
           className="text-xs text-muted-foreground px-0 border-0 outline-none"
         >
           {timeRanges.map((range) => (
@@ -183,7 +195,6 @@ export function PortfolioPerformanceChart({
               <stop offset="95%" stopColor="#22C55E" stopOpacity={0.05} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
           <XAxis
             dataKey="date"
             tick={{ fontSize: 11, fill: '#6B7280' }}
@@ -191,6 +202,16 @@ export function PortfolioPerformanceChart({
             tickLine={false}
             axisLine={false}
             height={32}
+            tickFormatter={(value) => {
+              try {
+                const date = new Date(value);
+                const month = date.toLocaleDateString('en-US', { month: 'short' });
+                const day = date.getDate();
+                return `${month} ${day}`;
+              } catch {
+                return value;
+              }
+            }}
           />
           <YAxis
             tick={{ fontSize: 11, fill: '#6B7280' }}
@@ -284,18 +305,27 @@ export function PortfolioPerformanceChart({
 
           </div>
 
-          <div className="bg-[#0F2A20] dark:bg-[#0F2A20] rounded-lg border border-[#2A4D3C] dark:border-[#2A4D3C] flex items-start">
-            {/* Chart View Button (Active) */}
+          <div className="bg-[#0F2A20] rounded-lg border-[0.70px] border-[#2A4D3C] flex items-start">
+            {/* Chart View Button */}
             <button
               onClick={() => setViewMode('chart')}
               className={`px-2 py-0.5 rounded-lg transition-colors ${viewMode === 'chart'
-                ? 'bg-[#1E3D2F] dark:bg-[#1E3D2F]'
+                ? 'bg-[#1E3D2F]'
                 : 'bg-transparent'
                 }`}
             >
-              <div className="p-1">
-                <BarChart3 className={`w-4 h-4 ${viewMode === 'chart' ? 'text-white' : 'text-gray-400 dark:text-muted-foreground'
-                  }`} />
+              <div className="py-1">
+                <div className="w-4 h-4 relative">
+                  {viewMode === 'chart' ? (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4">
+                      <path d="M2.34375 12.3125L6.34375 8.3125L9 11L14.6562 4.625L13.7188 3.6875L9 9L6.34375 6.3125L1.34375 11.3125L2.34375 12.3125Z" fill="white"/>
+                    </svg>
+                  ) : (
+                    <svg width="13" height="12" viewBox="0 0 13 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4">
+                      <path d="M11.3438 0H1.34375C0.59375 0 0 0.59375 0 1.34375V10.6562C0 11.4062 0.59375 12 1.34375 12H11.3438C12.0625 12 12.6562 11.4062 12.6562 10.6562V1.34375C12.6562 0.59375 12.0625 0 11.3438 0ZM11.3438 1.34375V3.34375H1.34375V1.34375H11.3438ZM8 10.6562H4.65625V4.65625H8V10.6562ZM1.34375 4.65625H3.34375V10.6562H1.34375V4.65625ZM9.34375 10.6562V4.65625H11.3438V10.6562H9.34375Z" fill="#B0B8BD"/>
+                    </svg>
+                  )}
+                </div>
               </div>
             </button>
 
@@ -303,13 +333,22 @@ export function PortfolioPerformanceChart({
             <button
               onClick={() => setViewMode('summary')}
               className={`px-2 py-0.5 rounded-lg transition-colors ${viewMode === 'summary'
-                ? 'bg-[#1E3D2F] dark:bg-[#1E3D2F]'
+                ? 'bg-[#1E3D2F]'
                 : 'bg-transparent'
                 }`}
             >
-              <div className="p-1">
-                <List className={`w-4 h-4 ${viewMode === 'summary' ? 'text-white' : 'text-gray-400 dark:text-muted-foreground'
-                  }`} />
+              <div className="py-1">
+                <div className="w-4 h-4 relative">
+                  {viewMode === 'summary' ? (
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4">
+                      <path d="M2.34375 12.3125L6.34375 8.3125L9 11L14.6562 4.625L13.7188 3.6875L9 9L6.34375 6.3125L1.34375 11.3125L2.34375 12.3125Z" fill="white"/>
+                    </svg>
+                  ) : (
+                    <svg width="13" height="12" viewBox="0 0 13 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4">
+                      <path d="M11.3438 0H1.34375C0.59375 0 0 0.59375 0 1.34375V10.6562C0 11.4062 0.59375 12 1.34375 12H11.3438C12.0625 12 12.6562 11.4062 12.6562 10.6562V1.34375C12.6562 0.59375 12.0625 0 11.3438 0ZM11.3438 1.34375V3.34375H1.34375V1.34375H11.3438ZM8 10.6562H4.65625V4.65625H8V10.6562ZM1.34375 4.65625H3.34375V10.6562H1.34375V4.65625ZM9.34375 10.6562V4.65625H11.3438V10.6562H9.34375Z" fill="#B0B8BD"/>
+                    </svg>
+                  )}
+                </div>
               </div>
             </button>
           </div>

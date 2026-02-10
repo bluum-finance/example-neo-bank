@@ -57,17 +57,23 @@ export default function Invest() {
     }
   };
 
-  const loadChartData = async (userAccountId: string, detectedPortfolioId: string) => {
+  const loadChartData = async (userAccountId: string, detectedPortfolioId: string, range: '1W' | '1M' | '3M' | '1Y' | 'All' = '1M') => {
     setChartLoading(true);
     setChartError(null);
     try {
-      const data = await WidgetService.getPortfolioPerformanceData('1M', userAccountId, detectedPortfolioId);
+      const data = await WidgetService.getPortfolioPerformanceData(range, userAccountId, detectedPortfolioId);
       setChartData(data);
     } catch (error: any) {
       console.error('Failed to load performance data', error);
       setChartError(error?.message || 'Unable to load chart data');
     } finally {
       setChartLoading(false);
+    }
+  };
+
+  const handleRangeChange = async (range: '1W' | '1M' | '3M' | '1Y' | 'All') => {
+    if (accountId && portfolioId) {
+      await loadChartData(accountId, portfolioId, range);
     }
   };
 
@@ -267,6 +273,9 @@ export default function Invest() {
             summaryData={summaryData}
             summaryLoading={summaryLoading}
             summaryError={summaryError}
+            onRangeChange={handleRangeChange}
+            accountId={accountId || undefined}
+            portfolioId={portfolioId || undefined}
           />
         </div>
 

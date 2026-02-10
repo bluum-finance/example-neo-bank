@@ -255,13 +255,33 @@ export class WidgetService {
     accountId?: string,
     portfolioId?: string
   ): Promise<PerformanceDataPoint[]> {
+    // Map frontend range to API range format
+    const rangeMap: Record<'1W' | '1M' | '3M' | '1Y' | 'All', string> = {
+      '1W': '1w',
+      '1M': '1m',
+      '3M': '3m',
+      '1Y': '1y',
+      'All': 'all',
+    };
+    
     const queryParams = new URLSearchParams({
-      range,
+      range: rangeMap[range],
       ...(accountId && { account_id: accountId }),
       ...(portfolioId && { portfolio_id: portfolioId }),
     });
     const response = await fetch(`/api/widget/portfolio-performance?${queryParams}`);
-    return handleResponse<PerformanceDataPoint[]>(response);
+    const data = await handleResponse<any>(response);
+    
+    // Transform balance_history into PerformanceDataPoint[]
+    if (data?.balance_history?.dates && data?.balance_history?.values) {
+      return data.balance_history.dates.map((date: string, index: number) => ({
+        date,
+        portfolio: data.balance_history.values[index] || 0,
+      }));
+    }
+    
+    // Fallback to empty array if structure doesn't match
+    return [];
   }
 
   /**
