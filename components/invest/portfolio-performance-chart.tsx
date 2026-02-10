@@ -149,7 +149,7 @@ export function PortfolioPerformanceChart({
   };
 
   const renderChartView = () => (
-    <>
+    <div className='mb-[-28px]'>
       <div className="mb-4 flex justify-between items-center">
         <select
           value={selectedRange}
@@ -232,17 +232,17 @@ export function PortfolioPerformanceChart({
           />
         </ComposedChart>
       </ResponsiveContainer>
-    </>
+    </div>
   );
 
   // Render summary view
   const renderSummaryView = () => (
-    <>
-      <div className="text-xs mb-4 uppercase tracking-wide text-gray-500 dark:text-muted-foreground">
+    <div className='mb-4'>
+      <div className="text-xs mt-4 mb-5 uppercase tracking-wide text-gray-500 dark:text-muted-foreground">
         Portfolio summary
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {summaryMetrics.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-200 dark:border-border/50 bg-white/70 dark:bg-[#0F2A20]/80 p-4 text-sm text-center text-muted-foreground dark:text-white/70">
             No data available
@@ -267,7 +267,7 @@ export function PortfolioPerformanceChart({
           ))
         )}
       </div>
-    </>
+    </div>
   );
 
   return (
@@ -301,8 +301,6 @@ export function PortfolioPerformanceChart({
                 )}
               </div>
             )}
-
-
           </div>
 
           <div className="bg-[#0F2A20] rounded-lg border-[0.70px] border-[#2A4D3C] flex items-start">
