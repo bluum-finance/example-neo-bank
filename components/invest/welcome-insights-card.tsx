@@ -137,7 +137,7 @@ export function WelcomeInsightsCard({
                     filter: 'blur(32px)',
                   }}
                 />
-                <Image src="/ai-icon.png" alt="AI Icon" width={178} height={178} className="z-10" />
+                <Image src="/ai-icon.svg" alt="AI Icon" width={190} height={190} className="z-10" />
               </div>
 
               {/* Input Section */}
@@ -186,7 +186,7 @@ export function WelcomeInsightsCard({
                       className="cursor-pointer transition-colors rounded-full border border-[#1E3D2F] bg-[#0E231F] flex px-6 py-2"
                     >
                       <span
-                        className="text-center justify-center text-[#A1BEAD] text-xs font-normal leading-5"
+                        className="text-center justify-center text-[#A1BEAD] text-xs font-light leading-5"
                       >
                         {prompt}
                       </span>

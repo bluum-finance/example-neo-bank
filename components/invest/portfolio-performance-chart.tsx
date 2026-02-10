@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import { TrendingUp, Shield, List, BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ShieldIcon } from '../icons/shield.icon';
 export type TimeRange = '1W' | '1M' | '3M' | '1Y' | 'All';
 
 interface PerformanceDataPoint {
@@ -83,6 +84,7 @@ export function PortfolioPerformanceChart({
 }: PortfolioPerformanceChartProps) {
   const [selectedRange, setSelectedRange] = useState<TimeRange>('1M');
   const [viewMode, setViewMode] = useState<'chart' | 'summary'>('chart');
+  const [hideAmount, setHideAmount] = useState(false);
 
   const chartData = useMemo(() => {
     if (externalData && externalData.length > 0) {
@@ -136,7 +138,7 @@ export function PortfolioPerformanceChart({
 
   const renderChartView = () => (
     <>
-      <div className="mb-2">
+      <div className="mb-4 flex justify-between items-center">
         <select
           value={selectedRange}
           onChange={(event) => setSelectedRange(event.target.value as TimeRange)}
@@ -148,6 +150,30 @@ export function PortfolioPerformanceChart({
             </option>
           ))}
         </select>
+
+        {/* Growth/Loss */}
+        <div className="flex justify-center gap-4"  >
+          <div className="flex items-center gap-1">
+            <div className="pt-[2px] pb-[2px]">
+              <div className="w-3 h-3 relative">
+                <div className="w-[7.5px] h-[7.5px] absolute left-[1.99px] top-[2.51px] bg-[#22C55E]" />
+              </div>
+            </div>
+            <div className="text-xs leading-4 text-[#A1BEAD]" style={{ fontFamily: 'Inter', fontWeight: 400 }}>
+              $••K
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="pt-[2px] pb-[2px]">
+              <div className="w-3 h-3 relative">
+                <div className="w-[7.5px] h-[7.5px] absolute left-[1.99px] top-[1.99px] bg-[#EF4444]" />
+              </div>
+            </div>
+            <div className="text-xs leading-4 text-[#A1BEAD]" style={{ fontFamily: 'Inter', fontWeight: 400 }}>
+              $••K
+            </div>
+          </div>
+        </div>
       </div>
       <ResponsiveContainer width="100%" height={280}>
         <ComposedChart data={chartData} margin={{ top: 12, right: 10, left: 0, bottom: 20 }}>
@@ -234,20 +260,24 @@ export function PortfolioPerformanceChart({
               <div className="text-sm font-medium text-gray-500 dark:text-muted-foreground">
                 Portfolio balance
               </div>
-              <div className="p-1.5 bg-green-100 dark:bg-[#1A3A2C] rounded-full flex items-center justify-center">
-                <Shield className="w-3 h-3 text-[#66D07A]" />
+              <div className="p-0 bg-green-100 dark:bg-[#1A3A2C] rounded-full flex items-center justify-center">
+                <ShieldIcon className="w-7 h-7" />
               </div>
             </div>
 
-            {/* Masked portfolio value */}
             {portfolioValue !== undefined && (
-              <div className="text-2xl font-semibold text-gray-900 dark:text-white">
-                {new Intl.NumberFormat('en-US', {
-                  style: 'currency',
-                  currency: 'USD',
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                }).format(portfolioValue)}
+              <div className="text-[30px] leading-[36px] font-semibold text-white tracking-[3px] cursor-pointer"
+                onClick={() => setHideAmount(!hideAmount)}
+              >
+                {hideAmount ? (<span>$ • • • • • • •</span>) : (
+                  <span>{new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }).format(portfolioValue)}
+                  </span>
+                )}
               </div>
             )}
 

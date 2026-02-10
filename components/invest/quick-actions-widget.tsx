@@ -156,7 +156,7 @@ export function QuickActionsWidget() {
     <>
       <Card className="h-full gap-2">
         <CardHeader>
-          <div className="text-base font-semibold text-foreground/70 dark:text-white/70">Quick Actions</div>
+          <div className="text-base font-medium text-foreground/70 dark:text-white/70">Quick Actions</div>
         </CardHeader>
 
         <CardContent>
@@ -176,8 +176,8 @@ export function QuickActionsWidget() {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm">{action.title}</p>
-                  <p className="text-xs text-muted-foreground mt-1.5">{action.description}</p>
+                  <p className="text-[#D1D5DB] font-medium text-sm">{action.title}</p>
+                  <p className="text-xs font-light text-[#A1BEAD] mt-1.5">{action.description}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
               </button>
