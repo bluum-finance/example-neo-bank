@@ -122,7 +122,7 @@ export function InsightsWidget({
                     {hasAction && (
                       <div className="h-[19.50px] relative mt-1">
                         <button
-                          onClick={() => handleActionClick('/invest/trade')}
+                          onClick={() => handleActionClick('/trade')}
                           className="h-4 flex items-center cursor-pointer hover:opacity-80 transition-opacity text-green-600 dark:text-green-400"
                           style={{
                             fontSize: 13,

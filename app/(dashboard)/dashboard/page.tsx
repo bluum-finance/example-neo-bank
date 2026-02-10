@@ -45,7 +45,7 @@ export default function Dashboard() {
     if (!user?.investingChoice) {
       setInvestingChoice('ai-wealth');
     }
-    router.push('/invest');
+    router.push('/portfolio');
   };
 
   const handleInvestClick = (e: React.MouseEvent) => {
@@ -53,13 +53,13 @@ export default function Dashboard() {
     const user = getAuth();
     if (user?.externalAccountId) {
       // User already has account, go directly to invest page
-      router.push('/invest');
+      router.push('/portfolio');
     } else {
       // Set default to AI Wealth and navigate to invest page
       if (!user?.investingChoice) {
         setInvestingChoice('ai-wealth');
       }
-      router.push('/invest');
+      router.push('/portfolio');
     }
   };
 

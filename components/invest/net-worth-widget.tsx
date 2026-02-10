@@ -48,7 +48,7 @@ export function NetWorthWidget({
       onViewDetails();
     } else {
       // Default: navigate to accounts tab or overview
-      router.push('/invest?tab=accounts');
+      router.push('/portfolio?tab=accounts');
     }
   };
 

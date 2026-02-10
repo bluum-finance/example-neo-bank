@@ -27,13 +27,13 @@ export function AIChatWidget() {
 
   const handleSend = () => {
     if (inputValue.trim()) {
-      router.push(`/invest/chat?message=${encodeURIComponent(inputValue.trim())}`);
+      router.push(`/chat?message=${encodeURIComponent(inputValue.trim())}`);
       setInputValue('');
     }
   };
 
   const handlePromptClick = (prompt: string) => {
-    router.push(`/invest/chat?message=${encodeURIComponent(prompt)}`);
+    router.push(`/chat?message=${encodeURIComponent(prompt)}`);
   };
 
   return (

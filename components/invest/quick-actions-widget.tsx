@@ -31,28 +31,28 @@ const defaultQuickActions: Omit<QuickAction, 'icon'>[] = [
     title: 'Deposit Funds',
     description: 'Add money to your portfolio',
     iconColor: '#10B981',
-    route: '/invest?action=deposit',
+    route: '/portfolio?action=deposit',
   },
   {
     id: 'withdraw',
     title: 'Withdraw',
     description: 'Transfer to your bank account',
     iconColor: '#F97316',
-    route: '/invest?action=withdraw',
+    route: '/portfolio?action=withdraw',
   },
   {
     id: 'allocation',
     title: 'Trade Assets',
     description: 'Buy and sell stocks and ETFs',
     iconColor: '#9333EA',
-    route: '/invest/trade',
+    route: '/trade',
   },
   {
     id: 'auto-invest',
     title: 'Set Up Auto-Invest',
     description: 'Schedule recurring deposits',
     iconColor: '#3B82F6',
-    route: '/invest/auto-invest',
+    route: '/auto-invest',
   },
 ];
 

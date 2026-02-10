@@ -49,7 +49,7 @@ export function TrendingStocks() {
           return (
             <Link
               key={stock.symbol}
-              href={`/invest/assets/${stock.symbol}`}
+              href={`/assets/${stock.symbol}`}
               className="block"
             >
               <Card className="cursor-pointer transition-all hover:shadow-md h-full border border-border bg-card dark:bg-card">

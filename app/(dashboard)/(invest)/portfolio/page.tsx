@@ -275,7 +275,7 @@ export default function Invest() {
           </div>
           {financialGoals.length > 0 && (
             <Link
-              href="/invest/financial-plan"
+              href="/financial-plan"
               className="flex items-center gap-0.5 text-sm text-blue-500 hover:opacity-80 transition-opacity"
             >
               View all goals
@@ -300,11 +300,11 @@ export default function Invest() {
 
 
           {investmentPolicy ? (
-            <Button variant="outline" onClick={() => router.push('/invest/investment-policy')}>
+            <Button variant="outline" onClick={() => router.push('/investment-policy')}>
               Edit IPS
             </Button>
           ) : (
-            <Button variant="outline" onClick={() => router.push('/invest/investment-policy')}>
+            <Button variant="outline" onClick={() => router.push('/investment-policy')}>
               Create IPS
             </Button>
           )}

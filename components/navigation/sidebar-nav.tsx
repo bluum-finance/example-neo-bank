@@ -1,85 +1,48 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Home, TrendingUp, PiggyBank, ArrowLeftRight, CreditCard, LogOut, Target, Moon, Sun, Repeat } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { clearAuth, getAuth } from '@/lib/auth';
-import { toast } from 'sonner';
+import { usePathname } from 'next/navigation';
+import { getAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback } from '../ui/avatar';
 import Image from 'next/image';
+import {
+  DashboardIcon,
+  AccountsIcon,
+  TransactionsIcon,
+  PortfolioIcon,
+  FinancialIcon,
+  TreasuryIcon,
+  AutoInvestIcon,
+  AnalyticsIcon,
+  TaxIcon,
+  SettingsIcon,
+} from '@/components/icons/nav-icons';
 
 interface NavItem {
   path: string;
   icon?: React.ComponentType<{ className?: string }>;
   label: string;
+  badge?: string;
+  badgeColor?: 'green' | 'purple';
+  section?: string;
 }
 
 const navItems: NavItem[] = [
-  { path: '/dashboard', icon: Home, label: 'Dashboard' },
-  { path: '/invest', icon: TrendingUp, label: 'Portfolio' },
-  { path: '/invest/financial-plan', icon: Target, label: 'Financial Plan' },
-  { path: '/invest/auto-invest', icon: Repeat, label: 'Auto-Invest' },
-  { path: '/savings', icon: PiggyBank, label: 'Savings' },
-  { path: '/transfers', icon: ArrowLeftRight, label: 'Transfers' },
-  { path: '/cards', icon: CreditCard, label: 'Cards' },
+  { path: '/dashboard', icon: DashboardIcon, label: 'Home' },
+  { path: '/accounts', icon: AccountsIcon, label: 'Accounts' },
+  { path: '/transactions', icon: TransactionsIcon, label: 'Transactions' },
+  { path: '/portfolio', icon: PortfolioIcon, label: 'Portfolio', badge: '+8.7%', badgeColor: 'green', section: 'Invest' },
+  { path: '/financial-plan', icon: FinancialIcon, label: 'Financial Plan', badge: 'Active', badgeColor: 'purple' },
+  { path: '/treasury', icon: TreasuryIcon, label: 'Treasury' },
+  { path: '/auto-invest', icon: AutoInvestIcon, label: 'Auto-Invest' },
+  { path: '/analytics', icon: AnalyticsIcon, label: 'Analytics', section: 'Tools' },
+  { path: '/tax-documents', icon: TaxIcon, label: 'Tax Documents' },
+  { path: '/settings', icon: SettingsIcon, label: 'Settings' },
 ];
-
-const navHeaders: { label: string; startIndex: number; endIndex: number }[] = [
-  { label: 'Invest', startIndex: 1, endIndex: 3 },
-];
-
-// Indices where spacing should be added after (end of a section)
-const sectionBreaks: number[] = [3]; // After Auto-Invest (index 3)
-
-// Dark mode hook
-function useDarkMode() {
-  const [isDark, setIsDark] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    // Check localStorage and system preference
-    const stored = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const shouldBeDark = stored === 'dark' || (!stored && prefersDark);
-
-    setIsDark(shouldBeDark);
-    if (shouldBeDark) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, []);
-
-  const toggleDarkMode = () => {
-    const newIsDark = !isDark;
-    setIsDark(newIsDark);
-
-    if (newIsDark) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    }
-  };
-
-  return { isDark, toggleDarkMode, mounted };
-}
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const router = useRouter();
   const user = getAuth();
-  const { isDark, toggleDarkMode, mounted } = useDarkMode();
-
-  const handleLogout = () => {
-    clearAuth();
-    toast.success('Logged out successfully');
-    router.push('/signin');
-  };
 
   const getInitials = (name: string) => {
     return name
@@ -91,105 +54,113 @@ export function SidebarNav() {
   };
 
   const isItemActive = (item: NavItem) => {
-    return pathname === item.path;
+    if (item.path === '/portfolio') {
+      return pathname === '/portfolio' ||
+        pathname === '/trade' ||
+        pathname === '/chat' ||
+        pathname.startsWith('/assets/');
+    }
+    return pathname === item.path || pathname.startsWith(item.path + '/');
   };
+
+  let currentSection: string | undefined;
 
   return (
     <aside
-      className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:border-r lg:bg-card"
-      style={{ backgroundColor: isDark ? '#07120F' : undefined }}
+      className="hidden lg:flex lg:w-[248px] lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:border-r lg:bg-[#07120F]"
+      style={{ borderRightColor: '#1E3D2F' }}
     >
       <div className="flex flex-col h-full">
-        {/* Logo/Brand */}
-        <div className="flex items-center gap-2 px-6 py-6 border-b">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <Image src="/favicon.svg" alt="Neo Bank" width={32} height={32} />
-            <span className="text-xl font-bold">Neo Bank</span>
+        {/* Logo/Brand Header */}
+        <div className="h-[81.5px] border-b flex items-center px-5" style={{ borderBottomColor: '#1E3D2F' }}>
+          <Link href="/dashboard" className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-[10px] bg-[#1A3A2C] flex items-center justify-center shadow-[0px_0px_20px_rgba(129,140,248,0.20)]">
+              <Image src="/logo.svg" alt="Bluum" width={20} height={20} />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-base font-bold text-white leading-6">Bluum</span>
+              <span className="text-[11px] font-semibold text-[#57B75C] uppercase leading-4 tracking-[0.5px]">
+                Invest
+              </span>
+            </div>
           </Link>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
           {navItems.map((item, index) => {
             const Icon = item.icon;
             const isActive = isItemActive(item);
+            const showSectionHeader = item.section && item.section !== currentSection;
 
-            // Check if this item should have a header before it
-            const headerBefore = navHeaders.find(
-              header => header.startIndex === index
-            );
-
-            const isSectionBreak = sectionBreaks.includes(index);
+            if (showSectionHeader) {
+              currentSection = item.section;
+            }
 
             return (
               <div key={item.path}>
-                {headerBefore && (
+                {showSectionHeader && (
                   <div className="px-3 py-2 mt-4 mb-1">
-                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      {headerBefore.label}
+                    <h3 className="text-[11px] font-semibold text-[#B0B8BD] uppercase tracking-[0.8px] leading-4">
+                      {item.section}
                     </h3>
                   </div>
                 )}
-                {Icon && (
-                  <Link
-                    href={item.path}
-                    className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                      isActive
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                    )}
-                  >
-                    <Icon className="h-5 w-5" />
-                    {item.label}
-                  </Link>
-                )}
-                {isSectionBreak && <div className="h-4" />}
+                <Link
+                  href={item.path}
+                  className={cn(
+                    'group flex items-center gap-3 rounded-[10px] px-3 h-[43px] text-sm font-normal transition-colors relative',
+                    isActive
+                      ? 'bg-[#0B2219] text-[#66D07A]'
+                      : 'text-[#9CA3AF] hover:bg-[#0B2219] hover:text-white'
+                  )}
+                >
+                  {Icon && (
+                    <Icon
+                      className={cn(
+                        'h-5 w-5 transition-colors shrink-0',
+                        isActive ? 'text-[#66D07A]' : 'text-[#9CA3AF] group-hover:text-white'
+                      )}
+                    />
+                  )}
+
+                  <span className="flex-1">{item.label}</span>
+
+                  {item.badge && (
+                    <div
+                      className={cn(
+                        'px-2 py-1 rounded-[10px] text-[11px] font-semibold leading-4',
+                        item.badgeColor === 'green'
+                          ? 'bg-[rgba(74,222,128,0.15)] text-[#4ADE80]'
+                          : 'bg-[rgba(129,140,248,0.15)] text-[#818CF8]'
+                      )}
+                    >
+                      {item.badge}
+                    </div>
+                  )}
+                </Link>
               </div>
             );
           })}
         </nav>
 
-        {/* User Profile & Logout */}
-        <div className="border-t p-4 space-y-2">
-          <div className="flex items-center gap-3 mb-3 px-2">
-            <Avatar>
-              <AvatarFallback>{user ? getInitials(user.name) : 'U'}</AvatarFallback>
-            </Avatar>
+        {/* User Profile Footer */}
+        <div className="h-[92px] border-t px-4 py-4" style={{ borderTopColor: '#1E3D2F' }}>
+          <div className="flex items-center gap-3 h-[59px] rounded-[10px] px-2.5 py-2.5">
+            <div className="w-[38px] h-[38px] rounded-[19px] bg-[#66D07A] flex items-center justify-center shrink-0">
+              <span className="text-sm font-semibold text-white leading-5">
+                {user ? getInitials(user.name) : 'JD'}
+              </span>
+            </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user?.name || 'User'}</p>
-              <p className="text-xs text-muted-foreground truncate">{user?.email || ''}</p>
+              <p className="text-sm font-medium text-white leading-5 truncate">
+                {user?.name || 'Jane Doe'}
+              </p>
+              <p className="text-xs text-[#9CA3AF] leading-[18px] truncate">
+                {user?.email || 'jane@acme.com'}
+              </p>
             </div>
           </div>
-
-          {/* Dark Mode Toggle */}
-          {mounted && (
-            <button
-              onClick={toggleDarkMode}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-              aria-label="Toggle dark mode"
-            >
-              {isDark ? (
-                <>
-                  <Sun className="h-5 w-5" />
-                  Light Mode
-                </>
-              ) : (
-                <>
-                  <Moon className="h-5 w-5" />
-                  Dark Mode
-                </>
-              )}
-            </button>
-          )}
-
-          <button
-            onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-          >
-            <LogOut className="h-5 w-5" />
-            Logout
-          </button>
         </div>
       </div>
     </aside>

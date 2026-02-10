@@ -69,7 +69,7 @@ export default function TradeStock() {
 
         if (!accId) {
           toast.error('No investment account found. Please create an account first.');
-          router.push('/invest');
+          router.push('/portfolio');
           return;
         }
 
@@ -471,7 +471,7 @@ export default function TradeStock() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => router.push(`/invest/assets/${selectedAsset.symbol}`)}
+                      onClick={() => router.push(`/assets/${selectedAsset.symbol}`)}
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       View Details
