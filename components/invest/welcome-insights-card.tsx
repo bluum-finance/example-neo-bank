@@ -14,6 +14,7 @@ interface WelcomeInsightsCardProps {
   onAiSend: () => void;
   onPromptClick: (prompt: string) => void;
   suggestedPrompts: string[];
+  insightsLoading?: boolean;
 }
 
 export function WelcomeInsightsCard({
@@ -24,9 +25,12 @@ export function WelcomeInsightsCard({
   onAiSend,
   onPromptClick,
   suggestedPrompts,
+  insightsLoading,
 }: WelcomeInsightsCardProps) {
   const router = useRouter();
   const insightVisibleCount = Math.min(insights.length, 3);
+  const insightsToShow = insights.slice(0, insightVisibleCount);
+  const hasInsights = insights.length > 0;
 
   return (
     <Card className="py-6 bg-[#0F2A20] border-[#1E3D2F]">
@@ -47,77 +51,82 @@ export function WelcomeInsightsCard({
                 </div>
 
                 <div className="flex flex-col gap-4">
-                  {insights.slice(0, insightVisibleCount).map((item, index) => {
-                    const description = item.summary || '';
-                    const hasAction = !!item.action;
-                    const showDivider = index < insightVisibleCount - 1;
-
-                    // Get icon based on category
-                    let IconComponent;
-                    const category = item.category?.toLowerCase() || '';
-                    if (category === 'tax') {
-                      IconComponent = <Info className="w-3.5 h-3.5 text-[#4CAF50]" />;
-                    } else if (category === 'opportunity') {
-                      IconComponent = <CheckCircle2 className="w-3.5 h-3.5 text-[#4CAF50]" />;
-                    } else if (category === 'rebalancing') {
-                      IconComponent = <Clock className="w-3.5 h-3.5 text-[#4CAF50]" />;
-                    } else {
-                      IconComponent = <Info className="w-3.5 h-3.5 text-[#4CAF50]" />;
-                    }
-
-                    // Handle action click
-                    const handleActionClick = () => {
-                      if (item.action?.type === 'rebalance') {
-                        router.push('/trade');
-                      } else if (item.action?.type === 'view') {
-                        router.push('/trade');
-                      }
-                    };
-
-                    return (
-                      <div key={item.insight_id || index}>
-                        <div className="flex flex-col gap-2">
-                          {/* Header with Icon and Title */}
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 bg-[#124031] rounded-md flex items-center justify-center">
-                              {IconComponent}
-                            </div>
-                            <div className="text-xs font-medium text-[#D1D5DB] leading-[19.5px]" style={{ fontFamily: 'Inter' }}>
-                              {item.title}
-                            </div>
-                          </div>
-
-                          {/* Description */}
-                          <div className="text-[13px] font-light text-[#A1BEAD] leading-[19.5px]" style={{ fontFamily: 'Inter' }}>
-                            {description.split('<br/>').map((line: string, lineIndex: number, array: string[]) => (
-                              <span key={lineIndex}>
-                                {line}
-                                {lineIndex < array.length - 1 && <br />}
-                              </span>
-                            ))}
-                          </div>
-
-                          {/* Action Link */}
-                          {hasAction && item.action?.cta_label && (
-                            <div className="text-[13px] font-medium text-[#66D07A] leading-[19.5px] cursor-pointer hover:opacity-80 transition-opacity" style={{ fontFamily: 'Inter' }}>
-                              <button onClick={handleActionClick}>
-                                {item.action.cta_label} →
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Divider */}
-                        {showDivider && (
-                          <div className="w-full h-px bg-[#1E3D2F] my-4" />
-                        )}
-                      </div>
-                    );
-                  })}
-                  {insights.length === 0 && (
+                  {insightsLoading ? (
+                    <div className="text-sm text-[#A1BEAD]" style={{ fontFamily: 'Inter' }}>
+                      Loading insights…
+                    </div>
+                  ) : !hasInsights ? (
                     <div className="text-sm text-[#A1BEAD]" style={{ fontFamily: 'Inter' }}>
                       No insights found
                     </div>
+                  ) : (
+                    insightsToShow.map((item, index) => {
+                      const description = item.summary || '';
+                      const hasAction = !!item.action;
+                      const showDivider = index < insightVisibleCount - 1;
+
+                      // Get icon based on category
+                      let IconComponent;
+                      const category = item.category?.toLowerCase() || '';
+                      if (category === 'tax') {
+                        IconComponent = <Info className="w-3.5 h-3.5 text-[#4CAF50]" />;
+                      } else if (category === 'opportunity') {
+                        IconComponent = <CheckCircle2 className="w-3.5 h-3.5 text-[#4CAF50]" />;
+                      } else if (category === 'rebalancing') {
+                        IconComponent = <Clock className="w-3.5 h-3.5 text-[#4CAF50]" />;
+                      } else {
+                        IconComponent = <Info className="w-3.5 h-3.5 text-[#4CAF50]" />;
+                      }
+
+                      // Handle action click
+                      const handleActionClick = () => {
+                        if (item.action?.type === 'rebalance') {
+                          router.push('/trade');
+                        } else if (item.action?.type === 'view') {
+                          router.push('/trade');
+                        }
+                      };
+
+                      return (
+                        <div key={item.insight_id || index}>
+                          <div className="flex flex-col gap-2">
+                            {/* Header with Icon and Title */}
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 bg-[#124031] rounded-md flex items-center justify-center">
+                                {IconComponent}
+                              </div>
+                              <div className="text-xs font-medium text-[#D1D5DB] leading-[19.5px]" style={{ fontFamily: 'Inter' }}>
+                                {item.title}
+                              </div>
+                            </div>
+
+                            {/* Description */}
+                            <div className="text-[13px] font-light text-[#A1BEAD] leading-[19.5px]" style={{ fontFamily: 'Inter' }}>
+                              {description.split('<br/>').map((line: string, lineIndex: number, array: string[]) => (
+                                <span key={lineIndex}>
+                                  {line}
+                                  {lineIndex < array.length - 1 && <br />}
+                                </span>
+                              ))}
+                            </div>
+
+                            {/* Action Link */}
+                            {hasAction && item.action?.cta_label && (
+                              <div className="text-[13px] font-medium text-[#66D07A] leading-[19.5px] cursor-pointer hover:opacity-80 transition-opacity" style={{ fontFamily: 'Inter' }}>
+                                <button onClick={handleActionClick}>
+                                  {item.action.cta_label} →
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Divider */}
+                          {showDivider && (
+                            <div className="w-full h-px bg-[#1E3D2F] my-4" />
+                          )}
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </div>

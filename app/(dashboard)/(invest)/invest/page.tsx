@@ -42,6 +42,7 @@ export default function Invest() {
   const [financialGoals, setFinancialGoals] = useState<FinancialGoal[]>([]);
   const [investmentPolicy, setInvestmentPolicy] = useState<any>(null);
   const [widgetInsights, setWidgetInsights] = useState<{ insights: Insight[]; recommendations: Recommendation[] } | undefined>(undefined);
+  const [insightsLoading, setInsightsLoading] = useState<boolean>(false);
 
   const loadSummaryData = async (userAccountId: string, detectedPortfolioId: string) => {
     setSummaryLoading(true);
@@ -140,6 +141,7 @@ export default function Invest() {
 
   // Load widget data
   const loadWidgetData = async (accountId: string) => {
+    setInsightsLoading(true);
     try {
       const results = await Promise.allSettled([
         WidgetService.getFinancialGoals(accountId),
@@ -170,6 +172,8 @@ export default function Invest() {
       }
     } catch (error) {
       console.error('Failed to load widget data:', error);
+    } finally {
+      setInsightsLoading(false);
     }
   };
 
@@ -257,6 +261,7 @@ export default function Invest() {
         onAiSend={handleAISend}
         onPromptClick={handlePromptClick}
         suggestedPrompts={SUGGESTED_PROMPTS}
+        insightsLoading={insightsLoading}
       />
 
       <section className="pt-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
