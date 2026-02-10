@@ -16,6 +16,7 @@ import {
   Check,
   Lock,
   CheckCircle,
+  ChartPieIcon,
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { type InvestmentPolicy } from '@/services/widget.service';
@@ -241,9 +242,9 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
                 <div className="relative h-2 rounded-[5px] overflow-visible">
                   <div
                     className="absolute inset-0 rounded-[5px]"
-                  style={{
-                    background: 'linear-gradient(60deg, #E8FFF0 0%, #10A144 100%)',
-                  }}
+                    style={{
+                      background: 'linear-gradient(60deg, #E8FFF0 0%, #10A144 100%)',
+                    }}
                   />
                   {riskPosition !== undefined && (
                     <div
@@ -397,7 +398,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
         <div className="p-4 rounded-xl bg-card border border-gray-200 dark:border-border flex flex-col gap-4">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#1A3A2C]">
-              <RotateCcw className="h-4 w-4 text-white" />
+              <ChartPieIcon className="h-4 w-4 text-white" />
             </div>
             <div className="text-xs font-semibold text-muted-foreground dark:text-white/80">
               Target Allocation
@@ -495,7 +496,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
             {liquidityDescription && (
               <div className="p-3 rounded-lg border border-gray-200 dark:border-border flex items-center gap-3">
                 <div className="w-7 h-7 rounded-md flex items-center justify-center bg-green-100 dark:bg-green-900/30 shrink-0">
-                  <FileText className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                  <FileText className="h-3.5 w-3.5 text-green-600 dark:text-white" />
                 </div>
                 <div className="flex-1 flex flex-col gap-0.5">
                   <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">
@@ -512,7 +513,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
             {taxConsiderations && (
               <div className="p-3 rounded-lg border border-gray-200 dark:border-border flex items-center gap-3">
                 <div className="w-7 h-7 rounded-md flex items-center justify-center bg-green-100 dark:bg-green-900/30 shrink-0">
-                  <FileText className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                  <FileText className="h-3.5 w-3.5 text-green-600 dark:text-white" />
                 </div>
                 <div className="flex-1 flex flex-col gap-0.5">
                   <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">
@@ -529,7 +530,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
             {restrictions && (
               <div className="p-3 rounded-lg border border-gray-200 dark:border-border flex items-center gap-3">
                 <div className="w-7 h-7 rounded-md flex items-center justify-center bg-green-100 dark:bg-green-900/30 shrink-0">
-                  <Circle className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                  <Circle className="h-3.5 w-3.5 text-green-600 dark:text-white" />
                 </div>
                 <div className="flex-1 flex flex-col gap-0.5">
                   <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">
@@ -546,7 +547,7 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
             {rebalancing && (
               <div className="p-3 rounded-lg border border-gray-200 dark:border-border flex items-center gap-3">
                 <div className="w-7 h-7 rounded-md flex items-center justify-center bg-green-100 dark:bg-green-900/30 shrink-0">
-                  <BarChart3 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+                  <BarChart3 className="h-3.5 w-3.5 text-green-600 dark:text-white" />
                 </div>
                 <div className="flex-1 flex flex-col gap-0.5">
                   <div className="text-[13px] font-semibold text-gray-900 dark:text-foreground">

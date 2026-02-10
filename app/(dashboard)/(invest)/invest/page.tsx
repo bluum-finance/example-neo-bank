@@ -249,7 +249,7 @@ export default function Invest() {
   };
 
   return (
-    <div className="space-y-6 mt-4">
+    <div className="space-y-6 my-4">
       {/* Combined Welcome Card with Insights and AI Chat */}
       <WelcomeInsightsCard
         insights={insightsList}
@@ -261,7 +261,7 @@ export default function Invest() {
         suggestedPrompts={SUGGESTED_PROMPTS}
       />
 
-      <section className="py-2 grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+      <section className="pt-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
         {/* Left (2/3 width) */}
         <div className="col-span-2">
           <PortfolioPerformanceChart
@@ -285,30 +285,27 @@ export default function Invest() {
         </div>
       </section>
 
-      <section className="py-2 space-y-4">
+      <section className="pt-6 space-y-4">
         <div className="flex justify-between items-center">
           <div>
             <div className="text-base font-semibold text-gray-900 dark:text-white">
               Financial Plan
             </div>
-            <p className="text-sm text-muted-foreground">
-              Track your financial goals and progress
-            </p>
           </div>
           {financialGoals.length > 0 && (
             <Link
               href="/financial-plan"
-              className="flex items-center gap-0.5 text-sm text-blue-500 hover:opacity-80 transition-opacity"
+              className="flex items-center gap-0.5 text-sm text-[#57B75C] hover:opacity-80 transition-opacity"
             >
               View all goals
-              <ChevronRight className="w-3 h-3 text-blue-500" />
+              <ChevronRight className="w-3 h-3 text-[#57B75C]" />
             </Link>
           )}
         </div>
         <FinancialPlan goals={financialGoals.slice(0, 4)} />
       </section>
 
-      <section className="py-4">
+      <section className="pt-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">
           <div className="flex-1 flex flex-col justify-start items-start">
@@ -321,15 +318,11 @@ export default function Invest() {
           </div>
 
 
-          {investmentPolicy ? (
-            <Button variant="outline" onClick={() => router.push('/investment-policy')}>
-              Edit IPS
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={() => router.push('/investment-policy')}>
-              Create IPS
-            </Button>
-          )}
+          <div className="px-2 py-1 bg-[rgba(129,140,248,0.12)] rounded-2xl flex items-center justify-center">
+            <span className="text-xs font-medium leading-[18px] text-[#818CF8]">
+              On Track
+            </span>
+          </div>
         </div>
         <InvestmentPolicyWidget policy={investmentPolicy} />
       </section>
