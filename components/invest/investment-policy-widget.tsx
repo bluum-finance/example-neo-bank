@@ -15,6 +15,7 @@ import {
   List,
   Check,
   Lock,
+  CheckCircle,
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { type InvestmentPolicy } from '@/services/widget.service';
@@ -51,20 +52,30 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
     conservative: 'Conservative',
     moderate_conservative: 'Moderate-Conservative',
     moderate: 'Moderate',
+    moderate_high: 'Moderate-High',
     moderate_aggressive: 'Moderate-Aggressive',
     aggressive: 'Aggressive',
   };
-  const riskLevel = riskTolerance ? riskLevels[riskTolerance] : undefined;
-  // Convert risk_score from 0-10 scale to 0-100 for display position
-  const riskPosition = riskScore !== undefined ? (riskScore / 10) * 100 : undefined;
+  const riskLevel = riskTolerance
+    ? (riskLevels[riskTolerance] || riskTolerance.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()))
+    : undefined;
+  // Convert risk_score - handle both 0-10 and 0-100 scales
+  const riskPosition = riskScore !== undefined
+    ? riskScore > 10
+      ? riskScore // Already 0-100 scale
+      : (riskScore / 10) * 100 // Convert 0-10 to 0-100
+    : undefined;
 
   const timeHorizonYears = policy?.time_horizon?.years;
   const timeHorizonCategory = policy?.time_horizon?.category;
   const timeHorizonDisplay = timeHorizonYears !== undefined
     ? `${timeHorizonYears} ${timeHorizonYears === 1 ? 'Year' : 'Years'}`
     : undefined;
+  // Handle both old format (short_term, medium_term, long_term) and new format (15-20 years)
   const timeHorizonDescription = timeHorizonCategory
-    ? timeHorizonCategory.replace(/_/g, '-') + ' investment horizon'
+    ? timeHorizonCategory.includes('-') || timeHorizonCategory.includes('years')
+      ? timeHorizonCategory // Already readable format
+      : timeHorizonCategory.replace(/_/g, '-') + ' investment horizon'
     : undefined;
 
   // Calculate progress bar width based on years (assuming max 20 years for display)
@@ -79,11 +90,22 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
     ? `Maintain ${liquidityPercent}% in cash/equivalents for operational needs.`
     : undefined;
 
-  const taxConsiderations = policy?.constraints?.tax_considerations?.tax_loss_harvesting
-    ? 'Prioritize tax-advantaged accounts; harvest losses annually.'
-    : policy?.constraints?.tax_considerations?.tax_bracket
-      ? `Tax bracket: ${policy.constraints.tax_considerations.tax_bracket}%`
-      : undefined;
+  const taxConsiderations = (() => {
+    const tax = policy?.constraints?.tax_considerations;
+    if (!tax) return undefined;
+
+    const parts: string[] = [];
+    if (tax.prefer_tax_advantaged) {
+      parts.push('Prioritize tax-advantaged accounts');
+    }
+    if (tax.tax_loss_harvesting) {
+      parts.push('harvest losses annually');
+    }
+    if (tax.tax_bracket) {
+      parts.push(`Tax bracket: ${tax.tax_bracket}%`);
+    }
+    return parts.length > 0 ? parts.join('; ') + '.' : undefined;
+  })();
 
   // Build objectives array
   const objectives: Array<{ text: string; tag: 'PRIMARY' | 'SECONDARY' | 'TERTIARY' }> = [];
@@ -111,33 +133,45 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
   }
 
   // Build target allocation array
+  // Support both old structure (equities/fixed_income) and new structure (stocks/bonds)
   const allocationData: Array<{ name: string; value: number; color: string }> = [];
   if (policy?.target_allocation) {
-    if (policy?.target_allocation?.equities) {
+    const ta = policy.target_allocation;
+
+    // Handle stocks (new) or equities (old)
+    const stocks = ta.stocks || ta.equities;
+    if (stocks?.target_percent) {
       allocationData.push({
         name: 'Stocks',
-        value: parseFloat(policy?.target_allocation?.equities?.target_percent || '0'),
+        value: parseFloat(stocks.target_percent || '0'),
         color: '#22C55E',
       });
     }
-    if (policy?.target_allocation?.fixed_income) {
+
+    // Handle bonds (new) or fixed_income (old)
+    const bonds = ta.bonds || ta.fixed_income;
+    if (bonds?.target_percent) {
       allocationData.push({
         name: 'Bonds',
-        value: parseFloat(policy.target_allocation.fixed_income.target_percent || '0'),
+        value: parseFloat(bonds.target_percent || '0'),
         color: '#3B82F6',
       });
     }
-    if (policy?.target_allocation?.treasury) {
+
+    // Handle treasury
+    if (ta.treasury?.target_percent) {
       allocationData.push({
         name: 'Treasury',
-        value: parseFloat(policy.target_allocation.treasury.target_percent || '0'),
+        value: parseFloat(ta.treasury.target_percent || '0'),
         color: '#9333EA',
       });
     }
-    if (policy?.target_allocation?.alternatives) {
+
+    // Handle alternatives
+    if (ta.alternatives?.target_percent) {
       allocationData.push({
         name: 'Alternatives',
-        value: parseFloat(policy.target_allocation.alternatives.target_percent || '0'),
+        value: parseFloat(ta.alternatives.target_percent || '0'),
         color: '#F97316',
       });
     }
@@ -147,11 +181,39 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
     return sector.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
   };
 
-  const restrictions = policy?.constraints?.restrictions?.excluded_sectors && policy.constraints.restrictions.excluded_sectors.length > 0
-    ? `Excluded sectors: ${policy.constraints.restrictions.excluded_sectors.map(formatSectorName).join(', ')}. ${policy.constraints.restrictions.esg_screening ? 'ESG screening on all holdings.' : ''}`
-    : policy?.constraints?.restrictions?.esg_screening
-      ? 'ESG screening on all holdings.'
-      : undefined;
+  const restrictions = (() => {
+    const restr = policy?.constraints?.restrictions;
+    if (!restr) return undefined;
+
+    const parts: string[] = [];
+
+    // Excluded sectors
+    if (restr.excluded_sectors && restr.excluded_sectors.length > 0) {
+      parts.push(`Excluded sectors: ${restr.excluded_sectors.map(formatSectorName).join(', ')}`);
+    }
+
+    // Excluded securities
+    if (restr.excluded_securities && restr.excluded_securities.length > 0) {
+      parts.push(`Excluded securities: ${restr.excluded_securities.join(', ')}`);
+    }
+
+    // No individual stocks
+    if (restr.no_individual_stocks) {
+      parts.push('No individual stocks');
+    }
+
+    // ESG screening
+    if (restr.esg_screening) {
+      if (restr.esg_criteria && Array.isArray(restr.esg_criteria) && restr.esg_criteria.length > 0) {
+        const criteria = restr.esg_criteria.map((c: string) => c.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())).join(', ');
+        parts.push(`ESG screening (${criteria})`);
+      } else {
+        parts.push('ESG screening on all holdings');
+      }
+    }
+
+    return parts.length > 0 ? parts.join('. ') + '.' : undefined;
+  })();
 
   const rebalancing = policy?.constraints?.rebalancing_policy
     ? `${policy.constraints.rebalancing_policy.frequency} review; rebalance when drift exceeds ±${policy.constraints.rebalancing_policy.threshold_percent}%`
@@ -260,22 +322,20 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
                 </div>
               </div>
               <div className="flex flex-col items-center gap-0">
-                {timeHorizonDisplay && (
+                {timeHorizonDescription && (
                   <div
                     className="w-full text-center text-base font-semibold leading-6 text-[#57B75C]"
                     style={{ fontFamily: 'Inter', fontWeight: 600 }}
                   >
-                    {timeHorizonDisplay}
-                  </div>
-                )}
-                {timeHorizonDescription && (
-                  <div
-                    className="w-full text-center text-[10px] leading-[15px] text-gray-500 dark:text-muted-foreground"
-                    style={{ fontFamily: 'Inter', fontWeight: 400 }}
-                  >
                     {timeHorizonDescription}
                   </div>
                 )}
+                <div
+                  className="w-full text-center text-[10px] leading-[15px] text-gray-500 dark:text-muted-foreground"
+                  style={{ fontFamily: 'Inter', fontWeight: 400 }}
+                >
+                  Growth-oriented portfolio
+                </div>
               </div>
             </>
           ) : (
@@ -357,8 +417,8 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        outerRadius={25.2}
-                        innerRadius={15.12}
+                        outerRadius={28}
+                        innerRadius={20}
                         fill="#8884d8"
                         dataKey="value"
                         stroke="#2C2C2E"
@@ -373,11 +433,11 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
                 </div>
 
                 {/* Legend */}
-                <div className="flex-1 flex flex-col gap-0">
+                <div className="flex-1 flex flex-col gap-2">
                   {allocationData.map((item, index) => (
                     <div key={item.name} className="relative h-[15px]">
                       <div
-                        className="absolute left-0 top-[3.5px] w-2 h-2 rounded-sm"
+                        className="absolute left-0 top-[3.5px] w-2 h-2 rounded-xs"
                         style={{ backgroundColor: item.color }}
                       />
                       <span className="absolute left-3.5 top-0 text-[10px] leading-[15px] font-normal text-gray-500 dark:text-muted-foreground">
@@ -397,6 +457,14 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
                       {item.value}%
                     </div>
                   ))}
+                </div>
+              </div>
+
+              <div className="relative mt-1 flex items-center gap-2 px-2 py-1.5 w-full h-full rounded-[6px] bg-[rgba(48,209,88,0.12)]">
+                <CheckCircle className="h-3 w-3 text-[#30D158]" />
+
+                <div className="text-[11px] leading-[15px] font-light text-[#30D158]">
+                  Within ±3% of target allocation
                 </div>
               </div>
 

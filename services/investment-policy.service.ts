@@ -19,7 +19,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 // API Response Type - matches API contract
 export interface InvestmentPolicy {
   risk_profile: {
-    risk_tolerance: 'conservative' | 'moderate_conservative' | 'moderate' | 'moderate_aggressive' | 'aggressive';
+    risk_tolerance: 'conservative' | 'moderate_conservative' | 'moderate' | 'moderate_high' | 'moderate_aggressive' | 'aggressive';
     risk_score?: number;
     volatility_tolerance?: 'low' | 'medium' | 'high';
   };
@@ -44,6 +44,16 @@ export interface InvestmentPolicy {
       min_percent?: string;
       max_percent?: string;
     };
+    stocks?: {
+      target_percent: string;
+      min_percent?: string;
+      max_percent?: string;
+    };
+    bonds?: {
+      target_percent: string;
+      min_percent?: string;
+      max_percent?: string;
+    };
     treasury?: {
       target_percent: string;
       min_percent?: string;
@@ -63,10 +73,14 @@ export interface InvestmentPolicy {
     tax_considerations?: {
       tax_loss_harvesting?: boolean;
       tax_bracket?: string;
+      prefer_tax_advantaged?: boolean;
     };
     restrictions?: {
       excluded_sectors?: string[];
+      excluded_securities?: string[];
+      no_individual_stocks?: boolean;
       esg_screening?: boolean;
+      esg_criteria?: string[];
     };
     rebalancing_policy?: {
       frequency: string;
@@ -110,7 +124,7 @@ export interface IPSValidationResult {
 
 export interface CreateOrUpdateIPSRequest {
   risk_profile: {
-    risk_tolerance: 'conservative' | 'moderate_conservative' | 'moderate' | 'moderate_aggressive' | 'aggressive';
+    risk_tolerance: 'conservative' | 'moderate_conservative' | 'moderate' | 'moderate_high' | 'moderate_aggressive' | 'aggressive';
     risk_score?: number;
     volatility_tolerance?: 'low' | 'medium' | 'high';
   };
@@ -134,6 +148,16 @@ export interface CreateOrUpdateIPSRequest {
       min_percent?: string;
       max_percent?: string;
     };
+    stocks?: {
+      target_percent: string;
+      min_percent?: string;
+      max_percent?: string;
+    };
+    bonds?: {
+      target_percent: string;
+      min_percent?: string;
+      max_percent?: string;
+    };
     treasury?: {
       target_percent: string;
       min_percent?: string;
@@ -153,10 +177,14 @@ export interface CreateOrUpdateIPSRequest {
     tax_considerations?: {
       tax_loss_harvesting?: boolean;
       tax_bracket?: string;
+      prefer_tax_advantaged?: boolean;
     };
     restrictions?: {
       excluded_sectors?: string[];
+      excluded_securities?: string[];
+      no_individual_stocks?: boolean;
       esg_screening?: boolean;
+      esg_criteria?: string[];
     };
     rebalancing_policy?: {
       frequency: string;
