@@ -38,8 +38,11 @@ export default function DashboardLayout({
     <div className="flex min-h-screen bg-background">
       <SidebarNav />
       <main className="flex-1 lg:ml-64 pb-20 lg:pb-0">
-        <PageHeader />
-        <div className="container mx-auto px-4 lg:px-8 py-6 max-w-8xl">
+        <div className="container mx-auto px-4 md:px-6 lg:px-14 max-w-8xl">
+          <PageHeader />
+        </div>
+
+        <div className="container mx-auto px-4 md:px-6 lg:px-14 py-6 max-w-8xl">
           {children}
         </div>
       </main>

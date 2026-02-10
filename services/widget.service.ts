@@ -95,6 +95,7 @@ export interface Insight {
   action?: {
     type: string;
     description: string;
+    cta_label?: string;
   };
   [key: string]: any;
 }

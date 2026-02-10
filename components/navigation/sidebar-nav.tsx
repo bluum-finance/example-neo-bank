@@ -145,13 +145,14 @@ export function SidebarNav() {
         </nav>
 
         {/* User Profile Footer */}
-        <div className="h-[92px] border-t px-4 py-4" style={{ borderTopColor: '#1E3D2F' }}>
-          <div className="flex items-center gap-3 h-[59px] rounded-[10px] px-2.5 py-2.5">
+        <div className="border-t px-4 py-2" style={{ borderTopColor: '#1E3D2F' }}>
+          <div className="flex items-center gap-3 rounded-[10px] px-2.5 py-2.5">
             <div className="w-[38px] h-[38px] rounded-[19px] bg-[#66D07A] flex items-center justify-center shrink-0">
               <span className="text-sm font-semibold text-white leading-5">
                 {user ? getInitials(user.name) : 'JD'}
               </span>
             </div>
+
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white leading-5 truncate">
                 {user?.name || 'Jane Doe'}

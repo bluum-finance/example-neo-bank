@@ -10,10 +10,9 @@ import { InvestOnboarding } from '@/components/invest/onboarding';
 import { AIWealthLanding } from '@/components/invest/ai-wealth-landing';
 import { PortfolioPerformanceChart } from '@/components/invest/portfolio-performance-chart';
 import { FinancialPlan } from '@/components/invest/financial-plan';
-import { InsightsWidget } from '@/components/invest/insights-widget';
 import { InvestmentPolicyWidget } from '@/components/invest/investment-policy-widget';
 import { QuickActionsWidget } from '@/components/invest/quick-actions-widget';
-import { AIChatWidget } from '@/components/invest/ai-chat-widget';
+import { WelcomeInsightsCard } from '@/components/invest/welcome-insights-card';
 
 import { InvestmentService, type Position } from '@/services/investment.service';
 import { AccountService } from '@/services/account.service';
@@ -37,6 +36,7 @@ export default function Invest() {
   const [chartError, setChartError] = useState<string | null>(null);
   const [hasAccountId, setHasAccountId] = useState(false);
   const [showAIOnboarding, setShowAIOnboarding] = useState(false);
+  const [aiInputValue, setAiInputValue] = useState('');
 
   // Widget data
   const [financialGoals, setFinancialGoals] = useState<FinancialGoal[]>([]);
@@ -223,24 +223,37 @@ export default function Invest() {
     return 'Jessie'; // Default fallback
   };
 
+  const insightsList: Insight[] = widgetInsights?.insights || [];
+  const insightVisibleCount = Math.min(insightsList.length, 3);
+
+  const handleAISend = () => {
+    if (aiInputValue.trim()) {
+      router.push(`/chat?message=${encodeURIComponent(aiInputValue.trim())}`);
+      setAiInputValue('');
+    }
+  };
+
+  const SUGGESTED_PROMPTS = [
+    'What is the next billion-dollar company?',
+    'How can I invest in private AI companies with  minimal funds?',
+  ];
+
+  const handlePromptClick = (prompt: string) => {
+    router.push(`/chat?message=${encodeURIComponent(prompt)}`);
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-        Welcome, {getUserFirstName()}
-      </div>
-
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
-        {/* Left (2/3 width) */}
-        <InsightsWidget
-          insights={widgetInsights}
-          positions={positions}
-          portfolioGains={portfolioGains}
-          accountBalance={accountBalance}
-        />
-
-        {/* Chat with Bluum AI Card - Right (1/3 width) */}
-        <AIChatWidget />
-      </section>
+    <div className="space-y-6 mt-4">
+      {/* Combined Welcome Card with Insights and AI Chat */}
+      <WelcomeInsightsCard
+        insights={insightsList}
+        userName={getUserFirstName()}
+        aiInputValue={aiInputValue}
+        onAiInputChange={setAiInputValue}
+        onAiSend={handleAISend}
+        onPromptClick={handlePromptClick}
+        suggestedPrompts={SUGGESTED_PROMPTS}
+      />
 
       <section className="py-2 grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
         {/* Left (2/3 width) */}
