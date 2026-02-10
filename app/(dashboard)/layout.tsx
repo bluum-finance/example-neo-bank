@@ -34,15 +34,17 @@ export default function DashboardLayout({
     return null;
   }
 
+  const containerClassName = 'container mx-auto px-4 md:px-6 lg:px-14 lg:max-w-5xl';
+
   return (
     <div className="flex min-h-screen bg-background">
       <SidebarNav />
       <main className="flex-1 lg:ml-64 pb-20 lg:pb-0">
-        <div className="container mx-auto px-4 md:px-6 lg:px-14 max-w-8xl">
+        <div className={containerClassName}>
           <PageHeader />
         </div>
 
-        <div className="container mx-auto px-4 md:px-6 lg:px-14 py-6 max-w-8xl">
+        <div className={`${containerClassName} py-6`}>
           {children}
         </div>
       </main>

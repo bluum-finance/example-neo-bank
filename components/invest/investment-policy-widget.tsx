@@ -217,9 +217,9 @@ export function InvestmentPolicyWidget({ policy }: InvestmentPolicyWidgetProps) 
     : undefined;
 
   return (
-    <div className="w-full flex flex-col gap-4">
+    <div className="w-full flex flex-col gap-5">
       {/* Policy Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-5">
         {/* 1. Risk Tolerance */}
         <div className="p-4 rounded-xl bg-card border border-gray-200 dark:border-border flex flex-col gap-4">
           <div className="flex items-center gap-2.5">
