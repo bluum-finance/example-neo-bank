@@ -43,6 +43,7 @@ export default function Invest() {
   const [investmentPolicy, setInvestmentPolicy] = useState<any>(null);
   const [widgetInsights, setWidgetInsights] = useState<{ insights: Insight[]; recommendations: Recommendation[] } | undefined>(undefined);
   const [insightsLoading, setInsightsLoading] = useState<boolean>(false);
+  const [goalsLoading, setGoalsLoading] = useState<boolean>(false);
 
   const loadSummaryData = async (userAccountId: string, detectedPortfolioId: string) => {
     setSummaryLoading(true);
@@ -142,6 +143,7 @@ export default function Invest() {
   // Load widget data
   const loadWidgetData = async (accountId: string) => {
     setInsightsLoading(true);
+    setGoalsLoading(true);
     try {
       const results = await Promise.allSettled([
         WidgetService.getFinancialGoals(accountId),
@@ -156,6 +158,7 @@ export default function Invest() {
         console.error('Failed to load financial goals:', results[0].reason);
         setFinancialGoals([]);
       }
+      setGoalsLoading(false);
 
       // Handle investment policy
       if (results[1].status === 'fulfilled') {
@@ -170,10 +173,11 @@ export default function Invest() {
       } else {
         console.error('Failed to load widget insights:', results[2].reason);
       }
+      setInsightsLoading(false);
     } catch (error) {
       console.error('Failed to load widget data:', error);
-    } finally {
       setInsightsLoading(false);
+      setGoalsLoading(false);
     }
   };
 
@@ -305,7 +309,7 @@ export default function Invest() {
             </Link>
           )}
         </div>
-        <FinancialPlan goals={financialGoals.slice(0, 4)} />
+        <FinancialPlan goals={financialGoals.slice(0, 4)} loading={goalsLoading} />
       </section>
 
       <section className="pt-6">

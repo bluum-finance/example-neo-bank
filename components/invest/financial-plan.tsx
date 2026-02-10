@@ -3,11 +3,13 @@
 import Image from 'next/image';
 import { type FinancialGoal } from '@/services/widget.service';
 import { Check } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface FinancialPlanProps {
   goals?: FinancialGoal[];
   onViewDetails?: () => void;
   onGoalClick?: (goal: FinancialGoal) => void;
+  loading?: boolean;
 }
 
 // Helper function to get icon based on goal type
@@ -33,7 +35,39 @@ const getGoalIcon = (goalType: string) => {
   );
 };
 
-export function FinancialPlan({ goals = [], onGoalClick }: FinancialPlanProps) {
+export function FinancialPlan({ goals = [], onGoalClick, loading }: FinancialPlanProps) {
+  if (loading) {
+    return (
+      <div className="w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div
+              key={i}
+              className="p-4 rounded-xl flex flex-col gap-3.5 bg-white dark:bg-card border border-gray-100 dark:border-border"
+              style={{ borderRadius: 12 }}
+            >
+              <div className="flex justify-between items-start">
+                <Skeleton className="w-9 h-9 rounded-[10px]" />
+                <Skeleton className="w-12 h-6 rounded-2xl" />
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-full" />
+              </div>
+              <div className="flex flex-col gap-2.5">
+                <Skeleton className="h-1.5 w-full rounded" />
+                <div className="flex justify-between items-center">
+                  <Skeleton className="h-4 w-16" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const formatCurrency = (value: number, compact: boolean = false) => {
     if (compact) {
       if (value >= 1000000) {

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Info, CheckCircle2, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { Insight } from '@/services/widget.service';
 
 interface WelcomeInsightsCardProps {
@@ -33,7 +34,7 @@ export function WelcomeInsightsCard({
   const hasInsights = insights.length > 0;
 
   return (
-    <Card className="py-6 bg-[#0F2A20] border-[#1E3D2F] overflow-hidden">
+    <Card className="py-6 dark:bg-[#0F2A20] border-[#1E3D2F] overflow-hidden">
       <CardContent className="px-4 md:px-6">
         <div className="flex flex-col gap-6">
           {/* Welcome Heading */}
@@ -52,12 +53,10 @@ export function WelcomeInsightsCard({
 
                 <div className="flex flex-col gap-4">
                   {insightsLoading ? (
-                    <div className="text-sm text-[#A1BEAD]" style={{ fontFamily: 'Inter' }}>
-                      Loading insights…
-                    </div>
+                    <InsightSkeleton />
                   ) : !hasInsights ? (
-                    <div className="text-sm text-[#A1BEAD]" style={{ fontFamily: 'Inter' }}>
-                      No insights found
+                    <div className="text-base py-2 text-muted-foreground">
+                      No insights data available
                     </div>
                   ) : (
                     insightsToShow.map((item, index) => {
@@ -212,3 +211,24 @@ export function WelcomeInsightsCard({
     </Card>
   );
 }
+
+const InsightSkeleton = () => {
+  return (
+    <>
+      {[1, 2, 3].map((i) => (
+        <div key={i}>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Skeleton className="w-7 h-7 rounded-md bg-[#124031]" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          {i < 3 && <div className="w-full h-px bg-[#1E3D2F] my-4" />}
+        </div>
+      ))}
+    </>
+  );
+};
