@@ -138,9 +138,10 @@ export function PageHeader() {
                 <span>{link.label}</span>
               </DropdownMenuItem>
             ))}
+
             <DropdownMenuSeparator />
-            {/* Dark Mode Toggle - Mobile Only */}
-            {mounted && (
+
+            {/* {mounted && (
               <>
                 <div className="">
                   <DropdownMenuItem
@@ -162,7 +163,8 @@ export function PageHeader() {
                 </div>
                 <DropdownMenuSeparator className="" />
               </>
-            )}
+            )} */}
+
             <DropdownMenuItem
               onClick={handleLogout}
               className="cursor-pointer text-destructive"
