@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { path: '/dashboard', icon: Home, label: 'Home' },
-  { path: '/portfolio', icon: TrendingUp, label: 'Invest' },
+  { path: '/invest', icon: TrendingUp, label: 'Invest' },
   { path: '/savings', icon: PiggyBank, label: 'Savings' },
   { path: '/transfers', icon: ArrowLeftRight, label: 'Transfers' },
   { path: '/cards', icon: CreditCard, label: 'Cards' },

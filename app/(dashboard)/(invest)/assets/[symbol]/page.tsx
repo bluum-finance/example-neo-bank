@@ -118,7 +118,7 @@ export default function AssetDetailsPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.push('/portfolio')}>
+          <Button variant="ghost" size="icon" onClick={() => router.push('/invest')}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -131,7 +131,7 @@ export default function AssetDetailsPage() {
         <Card>
           <CardContent className="py-8 text-center">
             <p className="text-muted-foreground mb-4">{error || 'Asset not found'}</p>
-            <Button onClick={() => router.push('/portfolio')} variant="outline">
+            <Button onClick={() => router.push('/invest')} variant="outline">
               Back to Portfolio
             </Button>
           </CardContent>
@@ -144,7 +144,7 @@ export default function AssetDetailsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.push('/portfolio')}>
+        <Button variant="ghost" size="icon" onClick={() => router.push('/invest')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">

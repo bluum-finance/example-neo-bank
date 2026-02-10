@@ -69,7 +69,7 @@ export default function TradeStock() {
 
         if (!accId) {
           toast.error('No investment account found. Please create an account first.');
-          router.push('/portfolio');
+          router.push('/invest');
           return;
         }
 

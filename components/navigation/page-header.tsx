@@ -54,7 +54,7 @@ export function PageHeader() {
   const { isDark, toggleDarkMode, mounted } = useDarkMode();
 
   const investLinks = [
-    { label: 'Portfolio', path: '/portfolio' },
+    { label: 'Portfolio', path: '/invest' },
     { label: 'Financial Plan', path: '/financial-plan' },
     { label: 'Auto-Invest', path: '/auto-invest' },
   ];

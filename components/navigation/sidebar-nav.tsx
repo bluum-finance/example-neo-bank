@@ -31,7 +31,7 @@ const navItems: NavItem[] = [
   { path: '/dashboard', icon: DashboardIcon, label: 'Home' },
   { path: '/accounts', icon: AccountsIcon, label: 'Accounts' },
   { path: '/transactions', icon: TransactionsIcon, label: 'Transactions' },
-  { path: '/portfolio', icon: PortfolioIcon, label: 'Portfolio', badge: '+8.7%', badgeColor: 'green', section: 'Invest' },
+  { path: '/invest', icon: PortfolioIcon, label: 'Portfolio', badge: '+8.7%', badgeColor: 'green', section: 'Invest' },
   { path: '/financial-plan', icon: FinancialIcon, label: 'Financial Plan', badge: 'Active', badgeColor: 'purple' },
   { path: '/treasury', icon: TreasuryIcon, label: 'Treasury' },
   { path: '/auto-invest', icon: AutoInvestIcon, label: 'Auto-Invest' },
@@ -54,8 +54,8 @@ export function SidebarNav() {
   };
 
   const isItemActive = (item: NavItem) => {
-    if (item.path === '/portfolio') {
-      return pathname === '/portfolio' ||
+    if (item.path === '/invest') {
+      return pathname === '/invest' ||
         pathname === '/trade' ||
         pathname === '/chat' ||
         pathname.startsWith('/assets/');

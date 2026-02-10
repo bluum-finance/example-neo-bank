@@ -71,7 +71,7 @@ export default function InvestmentPolicyPage() {
 
       setPolicy(updatedPolicy);
       toast.success(policy ? 'Investment Policy updated successfully' : 'Investment Policy created successfully');
-      router.push('/portfolio');
+      router.push('/invest');
     } catch (error: any) {
       console.error('Failed to save investment policy:', error);
       const errorMessage = error.message || 'Failed to save investment policy';
@@ -122,7 +122,7 @@ export default function InvestmentPolicyPage() {
       <InvestmentPolicyForm
         policy={policy}
         onSubmit={handleSubmit}
-        onCancel={() => router.push('/portfolio')}
+        onCancel={() => router.push('/invest')}
         loading={saving}
       />
     </div>

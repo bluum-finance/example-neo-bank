@@ -31,14 +31,14 @@ const defaultQuickActions: Omit<QuickAction, 'icon'>[] = [
     title: 'Deposit Funds',
     description: 'Add money to your portfolio',
     iconColor: '#10B981',
-    route: '/portfolio?action=deposit',
+    route: '/invest?action=deposit',
   },
   {
     id: 'withdraw',
     title: 'Withdraw',
     description: 'Transfer to your bank account',
     iconColor: '#F97316',
-    route: '/portfolio?action=withdraw',
+    route: '/invest?action=withdraw',
   },
   {
     id: 'allocation',
