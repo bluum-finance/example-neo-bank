@@ -25,19 +25,20 @@ interface NavItem {
   badge?: string;
   badgeColor?: 'green' | 'purple';
   section?: string;
+  disabled?: boolean;
 }
 
 const navItems: NavItem[] = [
   { path: '/dashboard', icon: DashboardIcon, label: 'Home' },
-  { path: '/accounts', icon: AccountsIcon, label: 'Accounts' },
-  { path: '/transactions', icon: TransactionsIcon, label: 'Transactions' },
+  { path: '/accounts', icon: AccountsIcon, label: 'Accounts', disabled: true },
+  { path: '/transactions', icon: TransactionsIcon, label: 'Transactions', disabled: true },
   { path: '/invest', icon: PortfolioIcon, label: 'Portfolio', badge: '+8.7%', badgeColor: 'green', section: 'Invest' },
   { path: '/financial-plan', icon: FinancialIcon, label: 'Financial Plan', badge: 'Active', badgeColor: 'purple' },
-  { path: '/treasury', icon: TreasuryIcon, label: 'Treasury' },
+  { path: '/treasury', icon: TreasuryIcon, label: 'Treasury', disabled: true },
   { path: '/auto-invest', icon: AutoInvestIcon, label: 'Auto-Invest' },
-  { path: '/analytics', icon: AnalyticsIcon, label: 'Analytics', section: 'Tools' },
-  { path: '/tax-documents', icon: TaxIcon, label: 'Tax Documents' },
-  { path: '/settings', icon: SettingsIcon, label: 'Settings' },
+  { path: '/analytics', icon: AnalyticsIcon, label: 'Analytics', disabled: true, section: 'Tools' },
+  { path: '/tax-documents', icon: TaxIcon, label: 'Tax Documents', disabled: true },
+  { path: '/settings', icon: SettingsIcon, label: 'Settings', disabled: true },
 ];
 
 export function SidebarNav() {
@@ -107,7 +108,7 @@ export function SidebarNav() {
                   </div>
                 )}
                 <Link
-                  href={item.path}
+                  href={!item.disabled ? item.path : '#'}
                   className={cn(
                     'group flex items-center gap-3 rounded-[10px] px-3 h-[43px] text-sm font-normal transition-colors relative',
                     isActive
