@@ -112,17 +112,18 @@ export function SidebarNav() {
                   className={cn(
                     'group flex items-center gap-3 rounded-[10px] px-3 h-[43px] text-sm font-normal transition-colors relative',
                     !item.disabled && 'cursor-pointer',
-                    item.disabled && 'cursor-default',
                     isActive
                       ? 'bg-[#0B2219] text-[#66D07A]'
-                      : 'text-[#9CA3AF] hover:bg-[#0B2219] hover:text-white'
+                      : 'text-[#9CA3AF] hover:bg-[#0B2219] hover:text-white',
+                    item.disabled && 'bg-transparent! text-[#9CA3AF]!',
                   )}
                 >
                   {Icon && (
                     <Icon
                       className={cn(
                         'h-5 w-5 transition-colors shrink-0',
-                        isActive ? 'text-[#66D07A]' : 'text-[#9CA3AF] group-hover:text-white'
+                        isActive ? 'text-[#66D07A]' : 'text-[#9CA3AF] group-hover:text-white',
+                        item.disabled && 'text-[#9CA3AF]!',
                       )}
                     />
                   )}

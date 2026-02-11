@@ -110,9 +110,9 @@ export function PageHeader() {
       {/* Right Side Icons */}
       <div className="flex items-center gap-2 sm:gap-4 shrink-0">
         {/* Notification Bell */}
-        <div className="w-8 h-8 bg-gray-100 dark:bg-[#1A3A2C] rounded-full border border-gray-200 dark:border-[#1E3D2F] flex items-center justify-center">
+        <button className="w-8 h-8 bg-gray-100 dark:bg-[#1A3A2C] rounded-full border border-gray-200 dark:border-[#1E3D2F] flex items-center justify-center">
           <Bell className="w-3.5 h-3.5 text-gray-600 dark:text-[#A1BEAD]" />
-        </div>
+        </button>
 
         {/* User Avatar with Dropdown */}
         <DropdownMenu>
