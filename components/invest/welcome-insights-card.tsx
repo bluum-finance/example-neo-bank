@@ -79,11 +79,10 @@ export function WelcomeInsightsCard({
 
                       // Handle action click
                       const handleActionClick = () => {
-                        if (item.action?.type === 'rebalance') {
-                          router.push('/trade');
-                        } else if (item.action?.type === 'view') {
-                          router.push('/trade');
-                        }
+                        return;
+                        // if (item.action?.type === 'rebalance') {
+                        //   router.push('/trade');
+                        // }
                       };
 
                       return (
