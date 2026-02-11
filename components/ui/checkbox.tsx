@@ -14,7 +14,7 @@ function Checkbox({ className, label, id, ...props }: CheckboxProps) {
         type="checkbox"
         id={checkboxId}
         className={cn(
-          "h-4 w-4 rounded border-input text-primary focus:ring-ring focus:ring-offset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          "h-4 w-4 rounded border-input text-primary focus:ring-ring focus:ring-offset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}
         {...props}
@@ -22,7 +22,7 @@ function Checkbox({ className, label, id, ...props }: CheckboxProps) {
       {label && (
         <label
           htmlFor={checkboxId}
-          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          className="text-sm font-medium leading-none cursor-pointer peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
         >
           {label}
         </label>

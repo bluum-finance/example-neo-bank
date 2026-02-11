@@ -74,7 +74,7 @@ export function SidebarNav() {
       <div className="flex flex-col h-full">
         {/* Logo/Brand Header */}
         <div className="h-[81.5px] border-b flex items-center px-5" style={{ borderBottomColor: '#1E3D2F' }}>
-          <Link href="/dashboard" className="flex items-center gap-3">
+          <Link href="/dashboard" className="flex items-center gap-3 cursor-pointer">
             <div className="w-9 h-9 rounded-[10px] bg-[#1A3A2C] flex items-center justify-center shadow-[0px_0px_20px_rgba(129,140,248,0.20)]">
               <Image src="/logo.svg" alt="Bluum" width={20} height={20} />
             </div>
@@ -111,6 +111,8 @@ export function SidebarNav() {
                   href={!item.disabled ? item.path : '#'}
                   className={cn(
                     'group flex items-center gap-3 rounded-[10px] px-3 h-[43px] text-sm font-normal transition-colors relative',
+                    !item.disabled && 'cursor-pointer',
+                    item.disabled && 'cursor-default',
                     isActive
                       ? 'bg-[#0B2219] text-[#66D07A]'
                       : 'text-[#9CA3AF] hover:bg-[#0B2219] hover:text-white'

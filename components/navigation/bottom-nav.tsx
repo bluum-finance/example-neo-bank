@@ -41,7 +41,12 @@ export function BottomNav() {
             <Link
               key={item.path}
               href={href}
-              className={cn(baseLinkClasses, isActive ? activeClasses : inactiveClasses)}
+              className={cn(
+                baseLinkClasses,
+                isActive ? activeClasses : inactiveClasses,
+                !isDisabled && 'cursor-pointer',
+                item.disabled && 'cursor-default',
+              )}
               aria-current={isActive ? 'page' : undefined}
             >
               <Icon className={cn('h-5 w-5', isActive && 'fill-current')} />

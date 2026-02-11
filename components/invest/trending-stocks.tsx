@@ -50,7 +50,7 @@ export function TrendingStocks() {
             <Link
               key={stock.symbol}
               href={`/assets/${stock.symbol}`}
-              className="block"
+              className="block cursor-pointer"
             >
               <Card className="cursor-pointer transition-all hover:shadow-md h-full border border-border bg-card dark:bg-card">
                 <CardContent className="p-4 space-y-2">
