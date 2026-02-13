@@ -71,11 +71,16 @@ export default function SignIn() {
           <Link href="/">
             <img src="/bluum-logo.svg" alt="Bluum Finance" className="h-8 lg:h-10" />
           </Link>
-          <Link href="/#" className="text-white py-2 text-base font-light leading-6">Open Account</Link>
+          <Link href="/#" className="text-white py-2 text-base font-light leading-6">
+            Open Account
+          </Link>
         </div>
 
         <div className="flex w-full flex-1 items-center justify-center p-4">
-          <div className="w-full max-w-[582px] py-12 rounded-xl outline-1 -outline-offset-1 inline-flex flex-col justify-center items-start gap-6" style={{ backgroundColor: '#0F2A20', outlineColor: '#1E3D2F' }}>
+          <div
+            className="w-full max-w-[582px] py-12 rounded-xl outline-1 -outline-offset-1 inline-flex flex-col justify-center items-start gap-6"
+            style={{ backgroundColor: '#0F2A20', outlineColor: '#1E3D2F' }}
+          >
             {/* Form Section */}
             <div className="self-stretch px-6 lg:px-12 flex flex-col justify-start items-start gap-6">
               {/* Header */}
@@ -86,10 +91,18 @@ export default function SignIn() {
               </div>
 
               {/* Form */}
-              <form id="signin-form" onSubmit={handleSubmit} className="self-stretch flex flex-col justify-start items-start gap-6">
+              <form
+                id="signin-form"
+                onSubmit={handleSubmit}
+                className="self-stretch flex flex-col justify-start items-start gap-6"
+              >
                 {/* Email Field */}
                 <div className="self-stretch flex flex-col justify-start items-start gap-1">
-                  <Label htmlFor="email" className="text-white text-base font-light leading-6" style={{ fontFamily: 'Inter' }}>
+                  <Label
+                    htmlFor="email"
+                    className="text-white text-base font-light leading-6"
+                    style={{ fontFamily: 'Inter' }}
+                  >
                     Email
                   </Label>
                   <div className="self-stretch">
@@ -101,15 +114,19 @@ export default function SignIn() {
                       defaultValue={INVESTOR_EMAIL}
                       required
                       autoComplete="email"
-                      className="w-full rounded-[12px] bg-[#0E231F] px-4 py-3 outline outline-1 -outline-offset-1 text-white text-base font-light leading-6 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-0 placeholder:text-[#A1BEAD] placeholder:opacity-50"
-                      style={{ outlineColor: '#1E3D2F' }}
+                      className="w-full rounded-[12px] bg-[#0E231F] px-4 py-3 outline-[#1E3D2F] outline-1 outline-offset-1
+                       text-white text-base font-light leading-6 focus-visible:outline-primary/30 placeholder:text-[#A1BEAD] placeholder:opacity-50"
                     />
                   </div>
                 </div>
 
                 {/* Password Field */}
                 <div className="self-stretch flex flex-col justify-start items-start gap-1">
-                  <Label htmlFor="password" className="text-white text-base font-light leading-6" style={{ fontFamily: 'Inter' }}>
+                  <Label
+                    htmlFor="password"
+                    className="text-white text-base font-light leading-6"
+                    style={{ fontFamily: 'Inter' }}
+                  >
                     Password
                   </Label>
                   <div className="self-stretch relative">
@@ -120,8 +137,8 @@ export default function SignIn() {
                       placeholder="Enter password"
                       required
                       autoComplete="current-password"
-                      className="w-full rounded-[12px] bg-[#0E231F] px-4 py-3 pr-11 outline outline-1 -outline-offset-1 text-white text-base font-light leading-6 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-0 placeholder:text-[#8DA69B] placeholder:opacity-50"
-                      style={{ outlineColor: '#1E3D2F' }}
+                      className="w-full rounded-[12px] bg-[#0E231F] px-4 py-3 pr-11 outline-[#1E3D2F] outline-1 outline-offset-1
+                       text-white text-base font-light leading-6 focus-visible:outline-primary/30 placeholder:text-[#8DA69B] placeholder:opacity-50"
                     />
                     <button
                       type="button"
@@ -173,15 +190,26 @@ export default function SignIn() {
                 style={{ backgroundColor: '#1A3A2C' }}
               >
                 <span>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M20.9998 2L18.9998 4M18.9998 4L21.9998 7L18.4998 10.5L15.4998 7.5M18.9998 4L15.4998 7.5M11.3898 11.61C11.9061 12.1195 12.3166 12.726 12.5975 13.3948C12.8785 14.0635 13.0244 14.7813 13.0268 15.5066C13.0292 16.232 12.8882 16.9507 12.6117 17.6213C12.3352 18.2919 11.9288 18.9012 11.4159 19.4141C10.903 19.9271 10.2937 20.3334 9.62309 20.6099C8.95247 20.8864 8.23379 21.0275 7.50842 21.025C6.78305 21.0226 6.06533 20.8767 5.39658 20.5958C4.72782 20.3148 4.12125 19.9043 3.61179 19.388C2.60992 18.3507 2.05555 16.9614 2.06808 15.5193C2.08061 14.0772 2.65904 12.6977 3.67878 11.678C4.69853 10.6583 6.078 10.0798 7.52008 10.0673C8.96216 10.0548 10.3515 10.6091 11.3888 11.611L11.3898 11.61ZM11.3898 11.61L15.4998 7.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M20.9998 2L18.9998 4M18.9998 4L21.9998 7L18.4998 10.5L15.4998 7.5M18.9998 4L15.4998 7.5M11.3898 11.61C11.9061 12.1195 12.3166 12.726 12.5975 13.3948C12.8785 14.0635 13.0244 14.7813 13.0268 15.5066C13.0292 16.232 12.8882 16.9507 12.6117 17.6213C12.3352 18.2919 11.9288 18.9012 11.4159 19.4141C10.903 19.9271 10.2937 20.3334 9.62309 20.6099C8.95247 20.8864 8.23379 21.0275 7.50842 21.025C6.78305 21.0226 6.06533 20.8767 5.39658 20.5958C4.72782 20.3148 4.12125 19.9043 3.61179 19.388C2.60992 18.3507 2.05555 16.9614 2.06808 15.5193C2.08061 14.0772 2.65904 12.6977 3.67878 11.678C4.69853 10.6583 6.078 10.0798 7.52008 10.0673C8.96216 10.0548 10.3515 10.6091 11.3888 11.611L11.3898 11.61ZM11.3898 11.61L15.4998 7.5"
+                      stroke="white"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
                   </svg>
                 </span>
                 <span className="flex-1 text-white text-base font-light leading-6">
                   Continue with passkey
                 </span>
               </button>
-
 
               <div className="self-stretch flex flex-col justify-center items-start gap-1">
                 <p className="text-sm text-[#B0B8BD] font-light leading-5">
