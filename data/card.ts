@@ -2,31 +2,26 @@
 
 export interface Card {
   id: string;
-  type: 'virtual' | 'physical';
+  cardholderName: string;
   last4: string;
+  type: 'physical' | 'virtual';
+  accountName: string;
+  spentThisMonth: number;
   expiryDate: string;
   status: 'active' | 'frozen' | 'expired';
-  spendingLimit?: number;
-  cardholderName: string;
 }
 
 export const cards: Card[] = [
   {
     id: '1',
+    cardholderName: 'Tosin Oladokun',
+    last4: '3295',
     type: 'physical',
-    last4: '4567',
+    accountName: 'Checking ••3168',
+    spentThisMonth: 0.00,
     expiryDate: '12/25',
     status: 'active',
-    spendingLimit: 100000,
-    cardholderName: 'John Doe',
   },
-  {
-    id: '2',
-    type: 'virtual',
-    last4: '8901',
-    expiryDate: '06/26',
-    status: 'active',
-    cardholderName: 'John Doe',
-  },
+
 ];
 

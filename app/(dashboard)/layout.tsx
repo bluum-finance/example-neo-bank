@@ -30,7 +30,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return null;
   }
 
-  const containerClassName = 'container mx-auto px-4 md:px-6 lg:max-w-5xl';
+  const containerClassName = 'container mx-auto px-4 md:px-6 lg:max-w-6xl';
 
   return (
     <div className="flex min-h-screen bg-background">

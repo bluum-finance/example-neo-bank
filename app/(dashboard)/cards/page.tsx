@@ -8,166 +8,122 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { getCards, type Card as CardType } from '@/lib/mock-data';
 import { toast } from 'sonner';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 export default function Cards() {
   const [cards, setCards] = useState<CardType[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getCards().then((data) => {
-      setCards(data);
-      setLoading(false);
-    });
+    const fetchCards = async () => {
+      try {
+        const data = await getCards();
+        setCards(data);
+      } catch (error) {
+        toast.error('Failed to fetch cards');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCards();
   }, []);
-
-  const handleRequestCard = () => {
-    toast.info('Request card feature coming soon');
-  };
-
-  const handleFreeze = (cardId: string) => {
-    setCards((prev) =>
-      prev.map((card) =>
-        card.id === cardId
-          ? { ...card, status: card.status === 'frozen' ? 'active' : 'frozen' }
-          : card,
-      ),
-    );
-    const card = cards.find((c) => c.id === cardId);
-    toast.success(`Card ${card?.status === 'frozen' ? 'unfrozen' : 'frozen'} successfully`);
-  };
-
-  const handleSetLimit = (cardId: string) => {
-    toast.info('Set spending limit feature coming soon');
-  };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Cards</h1>
-          <p className="text-muted-foreground mt-1">Manage your debit cards</p>
-        </div>
-        <Button onClick={handleRequestCard}>
+        <h1 className="text-3xl font-bold">Cards</h1>
+
+        <Button>
           <Plus className="h-4 w-4 mr-2" />
           Request Card
         </Button>
       </div>
 
-      {/* Cards List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Cards</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="py-8 text-center text-muted-foreground">Loading cards...</div>
-          ) : cards.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground">
-              <p className="mb-4">No cards yet.</p>
-              <Button onClick={handleRequestCard} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Request Your First Card
-              </Button>
+      {/* Tabs (Manage, Subscriptions) */}
+      <Tabs defaultValue="manage" className="w-full">
+        <TabsList className="w-full h-auto bg-transparent border-b border-[#1E3D2F] rounded-none p-0 flex justify-start gap-8">
+          <TabsTrigger
+            value="manage"
+            className="bg-transparent rounded-none border-b-2 border-transparent px-1 py-4 text-sm font-medium text-[#A1BEAD] data-[state=active]:border-[#30D158] data-[state=active]:text-[#30D158] hover:text-foreground transition-all"
+          >
+            Manage
+          </TabsTrigger>
+          <TabsTrigger
+            value="subscriptions"
+            className="bg-transparent rounded-none border-b-2 border-transparent px-1 py-4 text-sm font-medium text-[#A1BEAD] data-[state=active]:border-[#30D158] data-[state=active]:text-[#30D158] hover:text-foreground transition-all"
+          >
+            Subscriptions
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="manage" className="mt-6">
+          <div className="w-full overflow-hidden rounded-xl border border-[#1E3D2F] bg-[#0F2A20]">
+            {/* Table Header */}
+            <div className="flex items-center bg-[#0E231F] px-6 py-3">
+              <div className="w-[240px] text-[10px] font-bold uppercase tracking-[0.1em] text-[#8DA69B]">
+                Cardholder
+              </div>
+              <div className="w-[178px] text-[10px] font-bold uppercase tracking-[0.1em] text-[#8DA69B]">
+                Card
+              </div>
+              <div className="flex-1 text-right text-[10px] font-bold uppercase tracking-[0.1em] text-[#8DA69B]">
+                Spent this month
+              </div>
+              <div className="w-[126px] text-center text-[10px] font-bold uppercase tracking-[0.1em] text-[#8DA69B]">
+                Type
+              </div>
+              <div className="w-[198px] text-[10px] font-bold uppercase tracking-[0.1em] text-[#8DA69B]">
+                Account
+              </div>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {cards.map((card, index) => (
-                <div key={card.id}>
-                  <div className="space-y-4">
-                    {/* Card Display */}
-                    <div
-                      className={`relative overflow-hidden rounded-xl p-6 text-white ${
-                        card.type === 'physical'
-                          ? 'bg-gradient-to-br from-blue-600 to-blue-800'
-                          : 'bg-gradient-to-br from-purple-600 to-purple-800'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between mb-8">
-                        <div>
-                          <p className="text-sm opacity-80 mb-1">Card Type</p>
-                          <Badge
-                            variant="outline"
-                            className="bg-white/20 text-white border-white/30"
-                          >
-                            {card.type === 'physical' ? 'Physical' : 'Virtual'}
-                          </Badge>
-                        </div>
-                        <CreditCard className="h-8 w-8 opacity-50" />
-                      </div>
-                      <div>
-                        <p className="text-sm opacity-80 mb-2">Card Number</p>
-                        <p className="text-2xl font-mono tracking-wider mb-4">
-                          •••• •••• •••• {card.last4}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-xs opacity-80">Cardholder</p>
-                            <p className="text-sm font-medium">{card.cardholderName}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs opacity-80">Expires</p>
-                            <p className="text-sm font-medium">{card.expiryDate}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Card Info */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Status</span>
-                        <Badge
-                          variant={
-                            card.status === 'active'
-                              ? 'default'
-                              : card.status === 'frozen'
-                                ? 'secondary'
-                                : 'destructive'
-                          }
-                        >
-                          {card.status.charAt(0).toUpperCase() + card.status.slice(1)}
-                        </Badge>
-                      </div>
-                      {card.spendingLimit && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Spending Limit</span>
-                          <span className="text-sm font-medium">
-                            ${card.spendingLimit.toLocaleString()}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Card Actions */}
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => handleFreeze(card.id)}
-                      >
-                        <Snowflake className="h-4 w-4 mr-2" />
-                        {card.status === 'frozen' ? 'Unfreeze' : 'Freeze'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => handleSetLimit(card.id)}
-                      >
-                        <Settings className="h-4 w-4 mr-2" />
-                        Set Limit
-                      </Button>
-                    </div>
-                  </div>
-                  {index < cards.length - 1 && <Separator className="mt-4" />}
+            {/* Table Body */}
+            <div className="flex flex-col">
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
                 </div>
-              ))}
+              ) : cards.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                  <CreditCard className="mb-4 h-12 w-12 opacity-20" />
+                  <p>No cards found</p>
+                </div>
+              ) : (
+                cards.map((card) => (
+                  <div
+                    key={card.id}
+                    className="flex items-center border-t border-[#2A4D3C] px-6 py-4 hover:bg-white/5 transition-colors"
+                  >
+                    <div className="w-[240px] flex items-center gap-2">
+                      <span className="text-sm font-medium text-white">
+                        {card.cardholderName}
+                      </span>
+                    </div>
+                    <div className="w-[178px] flex items-center gap-3">
+                      <div className="flex h-6 w-9 items-center justify-center rounded bg-[#124031] border border-[#1E3D2F]">
+                        <div className="h-1.5 w-1.5 rounded-full bg-[#D1D5DB]" />
+                      </div>
+                      <span className="text-sm text-white">••{card.last4}</span>
+                    </div>
+                    <div className="flex-1 text-right text-sm text-white">
+                      ${card.spentThisMonth.toFixed(2)}
+                    </div>
+                    <div className="w-[126px] text-center text-sm text-white capitalize">
+                      {card.type}
+                    </div>
+                    <div className="w-[198px] text-sm text-white">{card.accountName}</div>
+                  </div>
+                ))
+              )}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="subscriptions" className="mt-6">
+          <div className="text-foreground">Manage your subscriptions here</div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
