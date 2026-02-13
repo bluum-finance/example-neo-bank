@@ -16,7 +16,13 @@ import { WelcomeInsightsCard } from '@/components/invest/welcome-insights-card';
 
 import { InvestmentService, type Position } from '@/services/investment.service';
 import { AccountService } from '@/services/account.service';
-import { WidgetService, type Insight, type Recommendation, type PerformanceDataPoint, FinancialGoal } from '@/services/widget.service';
+import {
+  WidgetService,
+  type Insight,
+  type Recommendation,
+  type PerformanceDataPoint,
+  FinancialGoal,
+} from '@/services/widget.service';
 import { getAuth, setExternalAccountId, clearExternalAccountId } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 
@@ -41,7 +47,9 @@ export default function Invest() {
   // Widget data
   const [financialGoals, setFinancialGoals] = useState<FinancialGoal[]>([]);
   const [investmentPolicy, setInvestmentPolicy] = useState<any>(null);
-  const [widgetInsights, setWidgetInsights] = useState<{ insights: Insight[]; recommendations: Recommendation[] } | undefined>(undefined);
+  const [widgetInsights, setWidgetInsights] = useState<
+    { insights: Insight[]; recommendations: Recommendation[] } | undefined
+  >(undefined);
   const [insightsLoading, setInsightsLoading] = useState<boolean>(false);
   const [goalsLoading, setGoalsLoading] = useState<boolean>(false);
 
@@ -49,7 +57,10 @@ export default function Invest() {
     setSummaryLoading(true);
     setSummaryError(null);
     try {
-      const summary = await WidgetService.getPortfolioSummary(userAccountId, detectedPortfolioId);
+      const summary = await WidgetService.getPortfolioSummary(
+        userAccountId,
+        detectedPortfolioId,
+      );
       setSummaryData(summary);
     } catch (error: any) {
       console.error('Failed to load portfolio summary', error);
@@ -59,11 +70,19 @@ export default function Invest() {
     }
   };
 
-  const loadChartData = async (userAccountId: string, detectedPortfolioId: string, range: '1W' | '1M' | '3M' | '1Y' | 'All' = '1M') => {
+  const loadChartData = async (
+    userAccountId: string,
+    detectedPortfolioId: string,
+    range: '1W' | '1M' | '3M' | '1Y' | 'All' = '1M',
+  ) => {
     setChartLoading(true);
     setChartError(null);
     try {
-      const data = await WidgetService.getPortfolioPerformanceData(range, userAccountId, detectedPortfolioId);
+      const data = await WidgetService.getPortfolioPerformanceData(
+        range,
+        userAccountId,
+        detectedPortfolioId,
+      );
       setChartData(data);
     } catch (error: any) {
       console.error('Failed to load performance data', error);
@@ -107,7 +126,8 @@ export default function Invest() {
       setAccountBalance(balanceValue);
       const accountData = account as any;
       const detectedPortfolioId =
-        accountData?.portfolios?.find((p: any) => p.status === 'active')?.id || "ptf_demo_main";
+        accountData?.portfolios?.find((p: any) => p.status === 'active')?.id ||
+        'ptf_demo_main';
       setPortfolioId(detectedPortfolioId);
 
       if (detectedPortfolioId) {
@@ -251,7 +271,7 @@ export default function Invest() {
   };
 
   return (
-    <div className="space-y-6 my-4">
+    <div className="space-y-6 my-4 lg:px-8 max-w-5xl mx-auto">
       {/* Combined Welcome Card with Insights and AI Chat */}
       <WelcomeInsightsCard
         insights={insightsList}
@@ -320,11 +340,8 @@ export default function Invest() {
             </div>
           </div>
 
-
           <div className="px-2 py-1 bg-[rgba(129,140,248,0.12)] rounded-2xl flex items-center justify-center">
-            <span className="text-xs font-medium leading-[18px] text-[#818CF8]">
-              On Track
-            </span>
+            <span className="text-xs font-medium leading-[18px] text-[#818CF8]">On Track</span>
           </div>
         </div>
         <InvestmentPolicyWidget policy={investmentPolicy} />
