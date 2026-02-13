@@ -1,8 +1,5 @@
-import { mockUserAccount } from '@/lib/mock-data';
-
 // Simple authentication state management using localStorage
-const AUTH_KEY = 'xyzbank_auth';
-const IN_APP_BALANCE_KEY = 'in_app_balance';
+const AUTH_KEY = 'bluum_invest_auth';
 
 export interface User {
   email: string;
@@ -43,7 +40,6 @@ export function getAuth(): User | null {
 export function clearAuth() {
   if (isLocalStorageAvailable()) {
     localStorage.removeItem(AUTH_KEY);
-    localStorage.removeItem(IN_APP_BALANCE_KEY);
   }
 }
 
@@ -71,36 +67,3 @@ export function clearExternalAccountId() {
   }
 }
 
-export function setInvestingChoice(choice: 'ai-wealth') {
-  const user = getAuth();
-  if (user) {
-    setAuth({
-      ...user,
-      investingChoice: choice,
-    });
-  }
-}
-
-export function getInvestingChoice(): 'ai-wealth' | null {
-  const user = getAuth();
-  return user?.investingChoice || null;
-}
-
-// In-App Balance Management
-export function getInAppBalance(): number {
-  if (isLocalStorageAvailable()) {
-    const raw = localStorage.getItem(IN_APP_BALANCE_KEY);
-    if (raw != null) {
-      const num = parseFloat(raw);
-      if (!Number.isNaN(num)) return num;
-    }
-  }
-  return typeof mockUserAccount?.balance === 'number' ? mockUserAccount.balance : 0;
-}
-
-// Persist the in-app balance to localStorage (clamped to >= 0)
-export function setInAppBalance(value: number) {
-  if (isLocalStorageAvailable()) {
-    localStorage.setItem(IN_APP_BALANCE_KEY, String(Math.max(0, value)));
-  }
-}

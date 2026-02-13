@@ -1,14 +1,12 @@
 // App constants
-export const APP_NAME = 'Neo Bank';
+export const APP_NAME = 'Bluum Invest';
 
 // Authentication constants
-export const DEFAULT_EMAIL = 'demo@xyzbank.com';
-export const INVESTOR_EMAIL = 'investor@xyzbank.com';
+export const INVESTOR_EMAIL = 'investor@bluuminvest.com';
 
 // Demo user constants
 export const DEMO_INVESTOR_ACCOUNT_ID =
   process.env.NEXT_PUBLIC_DEMO_INVESTOR_ACCOUNT_ID || 'a975cd7c-ff3b-4f93-9263-27421bb56ed8';
-export const DEMO_INVESTOR_INVESTING_CHOICE = 'ai-wealth';
 
 // API constants
 export const API_BASE_URL = 'http://localhost:3001';

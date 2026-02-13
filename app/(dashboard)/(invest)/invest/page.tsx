@@ -17,7 +17,7 @@ import { WelcomeInsightsCard } from '@/components/invest/welcome-insights-card';
 import { InvestmentService, type Position } from '@/services/investment.service';
 import { AccountService } from '@/services/account.service';
 import { WidgetService, type Insight, type Recommendation, type PerformanceDataPoint, FinancialGoal } from '@/services/widget.service';
-import { getAuth, setExternalAccountId, clearExternalAccountId, setInvestingChoice } from '@/lib/auth';
+import { getAuth, setExternalAccountId, clearExternalAccountId } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 
 export default function Invest() {
@@ -193,10 +193,6 @@ export default function Invest() {
     } else {
       setHasAccountId(false);
       setLoading(false);
-      const userWithChoice = getAuth();
-      if (!userWithChoice?.investingChoice) {
-        setInvestingChoice('ai-wealth');
-      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

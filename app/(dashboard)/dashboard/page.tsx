@@ -1,159 +1,200 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowLeftRight, Plus, Receipt, TrendingUp } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { BalanceCard } from '@/components/balance-card';
-import { TransactionItem } from '@/components/transaction-item';
-import { Separator } from '@/components/ui/separator';
-import { mockUserAccount, getTransactions, type Transaction } from '@/lib/mock-data';
-import { getInAppBalance } from '@/lib/auth';
-import { InvestingAnnouncementPopup } from '@/components/invest/announcement-popup';
-import { InvestingInvitation } from '@/components/invest/investing-invitation';
-import { getAuth, setInvestingChoice } from '@/lib/auth';
+import { toast } from 'sonner';
 
-export default function Dashboard() {
-  const router = useRouter();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+import { InvestOnboarding } from '@/components/invest/onboarding';
+import { AIWealthLanding } from '@/components/invest/ai-wealth-landing';
+import { PortfolioPerformanceChart } from '@/components/invest/portfolio-performance-chart';
+import { QuickActionsWidget } from '@/components/invest/quick-actions-widget';
+
+import { InvestmentService, type Position } from '@/services/investment.service';
+import { AccountService } from '@/services/account.service';
+import { WidgetService, type PerformanceDataPoint } from '@/services/widget.service';
+import {
+  getAuth,
+  setExternalAccountId,
+  clearExternalAccountId,
+} from '@/lib/auth';
+
+export default function Invest() {
+  const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hasInvestmentAccount, setHasInvestmentAccount] = useState(false);
+  const [accountId, setAccountId] = useState<string | null>(null);
+  const [accountBalance, setAccountBalance] = useState(0);
+  const [portfolioGains, setPortfolioGains] = useState({ totalGain: 0, totalGainPercent: 0 });
+  const [portfolioId, setPortfolioId] = useState<string | null>(null);
+  const [summaryData, setSummaryData] = useState<any | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [chartData, setChartData] = useState<PerformanceDataPoint[]>([]);
+  const [chartLoading, setChartLoading] = useState(false);
+  const [chartError, setChartError] = useState<string | null>(null);
+  const [hasAccountId, setHasAccountId] = useState(false);
+  const [showAIOnboarding, setShowAIOnboarding] = useState(false);
 
-  useEffect(() => {
-    getTransactions().then((data) => {
-      setTransactions(data);
-      setLoading(false);
-    });
-
-    // Check if user has an investment account
-    const user = getAuth();
-    setHasInvestmentAccount(!!user?.externalAccountId);
-  }, []);
-
-  const recentTransactions = transactions.slice(0, 5);
-  const [inAppBalance, setInAppBalance] = useState<number>(0);
-
-  useEffect(() => {
-    setInAppBalance(getInAppBalance());
-  }, []);
-
-  const handleGetStarted = () => {
-    // Set default to AI Wealth and navigate to invest page
-    const user = getAuth();
-    if (!user?.investingChoice) {
-      setInvestingChoice('ai-wealth');
+  const loadSummaryData = async (userAccountId: string, detectedPortfolioId: string) => {
+    setSummaryLoading(true);
+    setSummaryError(null);
+    try {
+      const summary = await WidgetService.getPortfolioSummary(
+        userAccountId,
+        detectedPortfolioId,
+      );
+      setSummaryData(summary);
+    } catch (error: any) {
+      console.error('Failed to load portfolio summary', error);
+      setSummaryError(error?.message || 'Unable to load portfolio summary');
+    } finally {
+      setSummaryLoading(false);
     }
-    router.push('/invest');
   };
 
-  const handleInvestClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const user = getAuth();
-    if (user?.externalAccountId) {
-      // User already has account, go directly to invest page
-      router.push('/invest');
-    } else {
-      // Set default to AI Wealth and navigate to invest page
-      if (!user?.investingChoice) {
-        setInvestingChoice('ai-wealth');
+  const loadChartData = async (
+    userAccountId: string,
+    detectedPortfolioId: string,
+    range: '1W' | '1M' | '3M' | '1Y' | 'All' = '1M',
+  ) => {
+    setChartLoading(true);
+    setChartError(null);
+    try {
+      const data = await WidgetService.getPortfolioPerformanceData(
+        range,
+        userAccountId,
+        detectedPortfolioId,
+      );
+      setChartData(data);
+    } catch (error: any) {
+      console.error('Failed to load performance data', error);
+      setChartError(error?.message || 'Unable to load chart data');
+    } finally {
+      setChartLoading(false);
+    }
+  };
+
+  const handleRangeChange = async (range: '1W' | '1M' | '3M' | '1Y' | 'All') => {
+    if (accountId && portfolioId) {
+      await loadChartData(accountId, portfolioId, range);
+    }
+  };
+
+  const loadPortfolio = async (userAccountId: string) => {
+    try {
+      setLoading(true);
+
+      setAccountId(userAccountId);
+      let account;
+      try {
+        account = await AccountService.getAccount(userAccountId);
+      } catch (err) {
+        toast.error('Error fetching account. Please try again later.');
+        setLoading(false);
+        return;
       }
-      router.push('/invest');
+
+      const balanceValue = account?.balance ? parseFloat(account.balance) : 0;
+      setAccountBalance(balanceValue);
+      const accountData = account as any;
+      const detectedPortfolioId =
+        accountData?.portfolios?.find((p: any) => p.status === 'active')?.id ||
+        'ptf_demo_main';
+      setPortfolioId(detectedPortfolioId);
+
+      if (detectedPortfolioId) {
+        await Promise.all([
+          loadSummaryData(userAccountId, detectedPortfolioId),
+          loadChartData(userAccountId, detectedPortfolioId),
+        ]);
+      } else {
+        setSummaryData(null);
+        setSummaryError(null);
+        setChartData([]);
+        setChartError(null);
+      }
+
+      // Fetch positions
+      const positionsData = await InvestmentService.getPositions(userAccountId);
+      setPositions(positionsData);
+
+      // Calculate portfolio gains
+      const totals = InvestmentService.calculatePortfolioTotals(positionsData);
+      setPortfolioGains({
+        totalGain: totals.totalGain,
+        totalGainPercent: totals.totalGainPercent,
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load portfolio';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const user = getAuth();
+    const userAccountId = user?.externalAccountId;
+
+    if (userAccountId) {
+      setHasAccountId(true);
+      setAccountId(userAccountId);
+      loadPortfolio(userAccountId);
+    } else {
+      setHasAccountId(false);
+      setLoading(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleAccountCreated = (newAccountId?: string) => {
+    if (!newAccountId) return;
+
+    setExternalAccountId(newAccountId);
+    setAccountId(newAccountId);
+    setHasAccountId(true);
+    loadPortfolio(newAccountId);
+    toast.success('Welcome to investing!');
+  };
+
+  // Show AI Wealth Landing if no account
+  if (!hasAccountId) {
+    if (showAIOnboarding) {
+      return <InvestOnboarding onAccept={handleAccountCreated} />;
+    }
+    // Otherwise show the landing page
+    return (
+      <AIWealthLanding
+        onStartOnboarding={() => setShowAIOnboarding(true)}
+        showOnboarding={false}
+        onAccountCreated={handleAccountCreated}
+      />
+    );
+  }
 
   return (
-    <>
-      {/* Announcement Popup */}
-      {!hasInvestmentAccount && (
-        <InvestingAnnouncementPopup onGetStarted={handleGetStarted} />
-      )}
-
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold">Welcome back!</h1>
-          <p className="text-muted-foreground mt-1">
-            Here's what's happening with your account
-          </p>
+    <div className="space-y-6 my-4">
+      <section className="pt-6 grid grid-cols-1 lg:grid-cols-[minmax(0,60%)_minmax(0,40%)] gap-y-6 lg:gap-x-6 items-stretch">
+        {/* Left (2/3 width) */}
+        <div className="lg:col-span-1">
+          <PortfolioPerformanceChart
+            portfolioValue={
+              accountBalance + positions.reduce((sum, pos) => sum + (pos.value || 0), 0)
+            }
+            data={chartData}
+            portfolioPerformance={portfolioGains.totalGainPercent}
+            summaryData={summaryData}
+            summaryLoading={summaryLoading}
+            summaryError={summaryError}
+            onRangeChange={handleRangeChange}
+            accountId={accountId || undefined}
+            portfolioId={portfolioId || undefined}
+          />
         </div>
 
-        {/* Balance Card */}
-        <BalanceCard
-          balance={inAppBalance}
-          accountNumber={mockUserAccount.accountNumber}
-        />
-
-        {/* Investing Invitation Section */}
-        {!hasInvestmentAccount && (
-          <InvestingInvitation onClick={handleGetStarted} />
-        )}
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4">
-            <Link href="/transfers">
-              <ArrowLeftRight className="h-5 w-5" />
-              <span className="text-sm">Send Money</span>
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            className="h-auto flex-col gap-2 py-4"
-            onClick={handleInvestClick}
-            style={{ backgroundColor: '#edf9cd', borderColor: '#edf9cd', color: '#083423' }}
-          >
-            <TrendingUp className="h-5 w-5" style={{ color: '#083423' }} />
-            <span className="text-sm">Invest</span>
-          </Button>
-          <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4">
-            <Link href="/savings">
-              <Plus className="h-5 w-5" />
-              <span className="text-sm">Save</span>
-            </Link>
-          </Button>
-          <Button asChild variant="outline" className="h-auto flex-col gap-2 py-4">
-            <Link href="/cards">
-              <Receipt className="h-5 w-5" />
-              <span className="text-sm">Cards</span>
-            </Link>
-          </Button>
+        {/* Right (1/3 width) */}
+        <div className="lg:col-span-1">
+          <QuickActionsWidget />
         </div>
-
-        {/* Recent Transactions */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Recent Transactions</CardTitle>
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/transfers">View All</Link>
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="py-8 text-center text-muted-foreground">
-                Loading transactions...
-              </div>
-            ) : recentTransactions.length === 0 ? (
-              <div className="py-8 text-center text-muted-foreground">
-                No transactions yet
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {recentTransactions.map((transaction, index) => (
-                  <div key={transaction.id}>
-                    <TransactionItem transaction={transaction} />
-                    {index < recentTransactions.length - 1 && <Separator />}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </>
+      </section>
+    </div>
   );
 }
-

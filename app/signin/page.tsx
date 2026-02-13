@@ -7,12 +7,7 @@ import { isAuthenticated } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, KeyRound } from 'lucide-react';
-import {
-  DEFAULT_EMAIL,
-  INVESTOR_EMAIL,
-  DEMO_INVESTOR_ACCOUNT_ID,
-  DEMO_INVESTOR_INVESTING_CHOICE,
-} from '@/lib/constants';
+import { INVESTOR_EMAIL, DEMO_INVESTOR_ACCOUNT_ID } from '@/lib/constants';
 import { setAuth } from '@/lib/auth';
 import { mockUserAccount } from '@/lib/mock-data';
 import Link from 'next/link';
@@ -28,14 +23,6 @@ export default function SignIn() {
     }
   }, [router]);
 
-  // Generate a unique email to avoid email constraint violations
-  const generateUniqueEmail = (baseEmail: string): string => {
-    const [localPart, domain] = baseEmail.split('@');
-    const timestamp = Date.now();
-    const randomSuffix = Math.random().toString(36).substring(2, 8);
-    return `${localPart}+${timestamp}-${randomSuffix}@${domain}`;
-  };
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -44,51 +31,29 @@ export default function SignIn() {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    // Demo login: check if email matches default or investor email and password is at least 8 characters
-    const isEmailValid =
-      email === DEFAULT_EMAIL ||
-      email === INVESTOR_EMAIL;
+    // Demo login: check if email matches investor email and password is at least 8 characters
+    const isEmailValid = email === INVESTOR_EMAIL;
     const isPasswordValid = password.length >= 8;
 
     if (isEmailValid && isPasswordValid) {
-      // Check user email
-      if (email === INVESTOR_EMAIL) {
-        // Investor user with completed investment account
-        setAuth({
-          email: INVESTOR_EMAIL,
-          name: mockUserAccount.name,
-          phoneNumber: mockUserAccount.phoneNumber,
-          streetAddress: mockUserAccount.streetAddress,
-          city: mockUserAccount.city,
-          state: mockUserAccount.state,
-          postalCode: mockUserAccount.postalCode,
-          country: mockUserAccount.country,
-          firstName: mockUserAccount.firstName,
-          lastName: mockUserAccount.lastName,
-          dateOfBirth: mockUserAccount.dateOfBirth,
-          countryOfBirth: mockUserAccount.countryOfBirth,
-          // Investment account already set up
-          externalAccountId: DEMO_INVESTOR_ACCOUNT_ID,
-          investingChoice: DEMO_INVESTOR_INVESTING_CHOICE,
-        });
-      } else {
-        // Regular demo user - generate a unique email to avoid email constraint violations
-        const uniqueEmail = generateUniqueEmail(email);
-        setAuth({
-          email: uniqueEmail,
-          name: mockUserAccount.name,
-          phoneNumber: mockUserAccount.phoneNumber,
-          streetAddress: mockUserAccount.streetAddress,
-          city: mockUserAccount.city,
-          state: mockUserAccount.state,
-          postalCode: mockUserAccount.postalCode,
-          country: mockUserAccount.country,
-          firstName: mockUserAccount.firstName,
-          lastName: mockUserAccount.lastName,
-          dateOfBirth: mockUserAccount.dateOfBirth,
-          countryOfBirth: mockUserAccount.countryOfBirth,
-        });
-      }
+      // Investor user with completed investment account
+      setAuth({
+        email: INVESTOR_EMAIL,
+        name: mockUserAccount.name,
+        phoneNumber: mockUserAccount.phoneNumber,
+        streetAddress: mockUserAccount.streetAddress,
+        city: mockUserAccount.city,
+        state: mockUserAccount.state,
+        postalCode: mockUserAccount.postalCode,
+        country: mockUserAccount.country,
+        firstName: mockUserAccount.firstName,
+        lastName: mockUserAccount.lastName,
+        dateOfBirth: mockUserAccount.dateOfBirth,
+        countryOfBirth: mockUserAccount.countryOfBirth,
+        // Investment account already set up
+        externalAccountId: DEMO_INVESTOR_ACCOUNT_ID,
+        investingChoice: 'ai-wealth',
+      });
 
       toast.success('Signed in successfully!');
       router.push('/dashboard');
@@ -133,7 +98,7 @@ export default function SignIn() {
                       name="email"
                       type="email"
                       placeholder="youremail@company.com"
-                      defaultValue={DEFAULT_EMAIL}
+                      defaultValue={INVESTOR_EMAIL}
                       required
                       autoComplete="email"
                       className="w-full rounded-[12px] bg-[#0E231F] px-4 py-3 outline outline-1 -outline-offset-1 text-white text-base font-light leading-6 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-0 placeholder:text-[#A1BEAD] placeholder:opacity-50"
