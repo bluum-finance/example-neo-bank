@@ -102,9 +102,9 @@ export default function SignIn() {
   return (
     <>
       <div className="flex min-h-screen w-full flex-col items-center justify-start bg-transparent">
-        <div className="header container mx-auto w-full py-4 flex justify-between items-center">
+        <div className="header container mx-auto px-4 py-4 md:px-12 xl:px-4 flex justify-between items-center">
           <Link href="/">
-            <img src="/bluum-logo.svg" alt="Bluum Finance" className="h-10" />
+            <img src="/bluum-logo.svg" alt="Bluum Finance" className="h-8 lg:h-10" />
           </Link>
           <Link href="/#" className="text-white py-2 text-base font-light leading-6">Open Account</Link>
         </div>
@@ -112,7 +112,7 @@ export default function SignIn() {
         <div className="flex w-full flex-1 items-center justify-center p-4">
           <div className="w-full max-w-[582px] py-12 rounded-xl outline-1 -outline-offset-1 inline-flex flex-col justify-center items-start gap-6" style={{ backgroundColor: '#0F2A20', outlineColor: '#1E3D2F' }}>
             {/* Form Section */}
-            <div className="self-stretch px-12 flex flex-col justify-start items-start gap-6">
+            <div className="self-stretch px-6 lg:px-12 flex flex-col justify-start items-start gap-6">
               {/* Header */}
               <div className="pb-2 flex flex-col justify-start items-start w-full">
                 <h1 className="self-stretch text-white text-[25px] font-normal leading-[25px]">
@@ -190,20 +190,18 @@ export default function SignIn() {
                     style={{ backgroundColor: '#57B75C', color: 'white' }}
                   >
                     <span className="text-base font-normal leading-6">
-                      {isSubmitting ? 'Signing in...' : 'Create new account'}
+                      {isSubmitting ? 'Signing in...' : 'Log In'}
                     </span>
                   </Button>
                 </div>
               </form>
             </div>
 
-
-
             {/* Divider */}
             <div className="w-full my-1 h-px" style={{ backgroundColor: '#1E3D2F' }} />
 
             {/* Passkey Section */}
-            <div className="px-12 flex flex-col justify-center items-start gap-3 w-full">
+            <div className="px-6 lg:px-12 flex flex-col justify-center items-start gap-3 w-full">
               <button
                 type="button"
                 className="max-w-[300px] px-4 py-3 rounded-[32px] inline-flex justify-center items-center gap-2 hover:opacity-80 transition-opacity"
