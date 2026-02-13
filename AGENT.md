@@ -119,6 +119,7 @@ types/                      # TypeScript definitions
 2. Export as named export
 3. Use TypeScript interfaces for props
 4. Include proper error handling
+5. user `name.icon.tsx` for icons (`components/icons`)
 
 ### Styling Components
 

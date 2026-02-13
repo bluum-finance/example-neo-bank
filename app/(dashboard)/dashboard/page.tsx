@@ -11,11 +11,12 @@ import { QuickActionsWidget } from '@/components/invest/quick-actions-widget';
 import { InvestmentService, type Position } from '@/services/investment.service';
 import { AccountService } from '@/services/account.service';
 import { WidgetService, type PerformanceDataPoint } from '@/services/widget.service';
-import {
-  getAuth,
-  setExternalAccountId,
-  clearExternalAccountId,
-} from '@/lib/auth';
+import { getAuth, setExternalAccountId, clearExternalAccountId } from '@/lib/auth';
+import { FundingOptionsWidget } from '@/components/dashboard/funding-options-widget';
+import { ActionsList } from '@/components/dashboard/actions-list';
+import { AccountsWidget } from '@/components/dashboard/accounts-widget';
+import { MoneyMovementWidget } from '@/components/dashboard/money-movement-widget';
+import { TransactionDatatable } from '@/components/dashboard/transaction-datatable';
 
 export default function Invest() {
   const [positions, setPositions] = useState<Position[]>([]);
@@ -172,28 +173,46 @@ export default function Invest() {
 
   return (
     <div className="space-y-6 my-4">
-      <section className="pt-6 grid grid-cols-1 lg:grid-cols-[minmax(0,60%)_minmax(0,40%)] gap-y-6 lg:gap-x-6 items-stretch">
-        {/* Left (2/3 width) */}
-        <div className="lg:col-span-1">
-          <PortfolioPerformanceChart
-            portfolioValue={
-              accountBalance + positions.reduce((sum, pos) => sum + (pos.value || 0), 0)
-            }
-            data={chartData}
-            portfolioPerformance={portfolioGains.totalGainPercent}
-            summaryData={summaryData}
-            summaryLoading={summaryLoading}
-            summaryError={summaryError}
-            onRangeChange={handleRangeChange}
-            accountId={accountId || undefined}
-            portfolioId={portfolioId || undefined}
-          />
+      <section>
+        <FundingOptionsWidget />
+      </section>
+
+      <section className="pt-6 space-y-4">
+        <div className="space-y-4">
+          <ActionsList />
         </div>
 
-        {/* Right (1/3 width) */}
-        <div className="lg:col-span-1">
-          <QuickActionsWidget />
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,60%)_minmax(0,40%)] gap-y-6 lg:gap-x-6 items-stretch">
+          {/* Left (2/3 width) */}
+          <div className="lg:col-span-1">
+            <PortfolioPerformanceChart
+              portfolioValue={
+                accountBalance + positions.reduce((sum, pos) => sum + (pos.value || 0), 0)
+              }
+              data={chartData}
+              portfolioPerformance={portfolioGains.totalGainPercent}
+              summaryData={summaryData}
+              summaryLoading={summaryLoading}
+              summaryError={summaryError}
+              onRangeChange={handleRangeChange}
+              accountId={accountId || undefined}
+              portfolioId={portfolioId || undefined}
+            />
+          </div>
+
+          {/* Right (1/3 width) */}
+          <div className="lg:col-span-1">
+            <AccountsWidget />
+          </div>
         </div>
+      </section>
+
+      <section className="pt-6">
+        <MoneyMovementWidget />
+      </section>
+
+      <section className="pt-6">
+        <TransactionDatatable />
       </section>
     </div>
   );

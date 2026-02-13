@@ -25,31 +25,28 @@ export function SidebarNav() {
       .slice(0, 2);
   };
 
-  const isHomeActive = pathname === '/dashboard';
-  const isTransactionsActive = pathname === '/transactions';
-  const isCardsActive = pathname === '/cards';
-  const isAccountsActive = pathname === '/accounts';
-
   const mainNavItems = [
     {
       label: 'Home',
       href: '/dashboard',
       Icon: DashboardIcon,
-      isActive: isHomeActive,
+      isActive: pathname === '/dashboard',
     },
     {
       label: 'Transactions',
       href: '/transactions',
       Icon: TransactionsIcon,
-      isActive: isTransactionsActive,
+      isActive: pathname === '/transactions',
     },
     {
       label: 'Cards',
       href: '/cards',
       Icon: CardIcon,
-      isActive: isCardsActive,
+      isActive: pathname === '/cards',
     },
   ];
+
+  const isInvestActive = pathname === '/invest';
 
   return (
     <aside className="hidden lg:flex lg:w-[248px] lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:border-r lg:bg-[#07120F] lg:border-[#1E3D2F]">
@@ -113,7 +110,10 @@ export function SidebarNav() {
               <div className="px-3.5 py-1.5 rounded-md">
                 <Link
                   href="/invest"
-                  className="text-sm font-medium text-[#8DA69B] leading-5 hover:text-white transition-colors"
+                  className={cn(
+                    'text-sm font-medium text-[#8DA69B] leading-5 hover:text-white transition-colors',
+                    isInvestActive ? 'text-[#30D158]' : 'text-[#8DA69B]',
+                  )}
                 >
                   Invest
                 </Link>

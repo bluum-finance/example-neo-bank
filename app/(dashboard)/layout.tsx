@@ -7,11 +7,7 @@ import { BottomNav } from '@/components/navigation/bottom-nav';
 import { SidebarNav } from '@/components/navigation/sidebar-nav';
 import { PageHeader } from '@/components/navigation/page-header';
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
@@ -34,7 +30,7 @@ export default function DashboardLayout({
     return null;
   }
 
-  const containerClassName = 'container mx-auto px-4 md:px-6 lg:px-14 lg:max-w-5xl';
+  const containerClassName = 'container mx-auto px-4 md:px-6 lg:max-w-5xl';
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -44,12 +40,9 @@ export default function DashboardLayout({
           <PageHeader />
         </div>
 
-        <div className={`${containerClassName} py-6`}>
-          {children}
-        </div>
+        <div className={`${containerClassName} py-6`}>{children}</div>
       </main>
       <BottomNav />
     </div>
   );
 }
-
