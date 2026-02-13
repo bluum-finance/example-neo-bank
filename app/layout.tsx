@@ -19,26 +19,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  const stored = localStorage.getItem('theme');
-                  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                  const shouldBeDark = stored === 'dark' || (!stored && prefersDark);
-                  if (shouldBeDark) {
-                    document.documentElement.classList.add('dark');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
-      </head>
-      <body className={`${inter.variable} ${inter.className}`}>
+    <html lang="en" suppressHydrationWarning className="dark">
+      <head />
+      <body className={`${inter.variable} ${inter.className} dark bg-[#0E231F]`}>
         {children}
         <Toaster position="top-center" richColors />
       </body>

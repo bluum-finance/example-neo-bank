@@ -19,7 +19,7 @@ function useDarkMode() {
 
   useEffect(() => {
     document.documentElement.classList.add('dark');
-    localStorage.setItem('theme', 'dark');
+    // localStorage.setItem('theme', 'dark');
     setMounted(true);
   }, []);
 
@@ -80,10 +80,14 @@ export function PageHeader() {
           </div>
           <div className="hidden sm:flex items-center gap-1 shrink-0">
             <div className="px-1 bg-gray-100 dark:bg-[#1A3A2C] rounded-lg border border-gray-200 dark:border-[#2A4D3C] flex items-center justify-center">
-              <span className="text-[10px] leading-[15px] font-normal text-gray-600 dark:text-[#A1BEAD]">⌘</span>
+              <span className="text-[10px] leading-[15px] font-normal text-gray-600 dark:text-[#A1BEAD]">
+                ⌘
+              </span>
             </div>
             <div className="px-1 bg-gray-100 dark:bg-[#1A3A2C] rounded-lg border border-gray-200 dark:border-[#2A4D3C] flex items-center justify-center">
-              <span className="text-[10px] leading-[15px] font-normal text-gray-600 dark:text-[#A1BEAD]">K</span>
+              <span className="text-[10px] leading-[15px] font-normal text-gray-600 dark:text-[#A1BEAD]">
+                K
+              </span>
             </div>
           </div>
         </div>
