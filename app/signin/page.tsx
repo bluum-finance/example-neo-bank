@@ -32,7 +32,7 @@ export default function SignIn() {
     const password = formData.get('password') as string;
 
     // Demo login: check if email matches investor email and password is at least 8 characters
-    const isEmailValid = email === INVESTOR_EMAIL;
+    const isEmailValid = email === INVESTOR_EMAIL || email === 'investor@xyzbank.com';
     const isPasswordValid = password.length >= 8;
 
     if (isEmailValid && isPasswordValid) {
