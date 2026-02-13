@@ -15,8 +15,8 @@ interface NavItem {
 const navItems: NavItem[] = [
   { path: '/dashboard', icon: Home, label: 'Home' },
   { path: '/invest', icon: TrendingUp, label: 'Invest' },
-  { path: '/accounts', icon: PiggyBank, label: 'Accounts', disabled: true },
-  { path: '/transactions', icon: ArrowLeftRight, label: 'Transactions', disabled: true },
+  { path: '/transactions', icon: ArrowLeftRight, label: 'Transactions' },
+  { path: '/cards', icon: PiggyBank, label: 'Cards' },
 ];
 
 export function BottomNav() {
@@ -28,8 +28,7 @@ export function BottomNav() {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.path;
-          const isDisabled = Boolean(item.disabled);
-          const href = isDisabled ? '#' : item.path;
+          const href = Boolean(item.disabled) ? '#' : item.path;
           const baseLinkClasses =
             'flex flex-col items-center gap-1 rounded-lg px-3 py-2 transition-colors duration-150';
           const activeClasses =
@@ -44,7 +43,7 @@ export function BottomNav() {
               className={cn(
                 baseLinkClasses,
                 isActive ? activeClasses : inactiveClasses,
-                !isDisabled && 'cursor-pointer',
+                !item.disabled && 'cursor-pointer',
                 item.disabled && 'cursor-default',
               )}
               aria-current={isActive ? 'page' : undefined}

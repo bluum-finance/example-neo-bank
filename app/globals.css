@@ -67,7 +67,7 @@ textarea {
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: #083423;
+  --primary: #57B75C;
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -86,7 +86,7 @@ textarea {
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #083423;
+  --sidebar-primary: #57B75C;
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
@@ -101,7 +101,7 @@ textarea {
   --card-foreground: oklch(0.985 0 0);
   --popover: #0E231F;
   --popover-foreground: oklch(0.985 0 0);
-  --primary: #083423;
+  --primary: #57B75C;
   --primary-foreground: oklch(0.985 0 0);
   --secondary: #152A26;
   --secondary-foreground: oklch(0.985 0 0);
@@ -120,7 +120,7 @@ textarea {
   --chart-5: oklch(0.645 0.246 16.439);
   --sidebar: #07120F;
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: #083423;
+  --sidebar-primary: #57B75C;
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: #152A26;
   --sidebar-accent-foreground: oklch(0.985 0 0);

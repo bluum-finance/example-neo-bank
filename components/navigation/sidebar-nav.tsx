@@ -4,42 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { getAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
-import Image from 'next/image';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import {
-  DashboardIcon,
   AccountsIcon,
+  CardIcon,
+  DashboardIcon,
   TransactionsIcon,
-  PortfolioIcon,
-  FinancialIcon,
-  TreasuryIcon,
-  AutoInvestIcon,
-  AnalyticsIcon,
-  TaxIcon,
-  SettingsIcon,
 } from '@/components/icons/nav-icons';
-
-interface NavItem {
-  path: string;
-  icon?: React.ComponentType<{ className?: string }>;
-  label: string;
-  badge?: string;
-  badgeColor?: 'green' | 'purple';
-  section?: string;
-  disabled?: boolean;
-}
-
-const navItems: NavItem[] = [
-  { path: '/dashboard', icon: DashboardIcon, label: 'Home' },
-  { path: '/accounts', icon: AccountsIcon, label: 'Accounts', disabled: true },
-  { path: '/transactions', icon: TransactionsIcon, label: 'Transactions', disabled: true },
-  { path: '/invest', icon: PortfolioIcon, label: 'Portfolio', badge: '+8.7%', badgeColor: 'green', section: 'Invest' },
-  { path: '/financial-plan', icon: FinancialIcon, label: 'Financial Plan', badge: 'Active', badgeColor: 'purple' },
-  { path: '/treasury', icon: TreasuryIcon, label: 'Treasury', disabled: true },
-  { path: '/auto-invest', icon: AutoInvestIcon, label: 'Auto-Invest' },
-  { path: '/analytics', icon: AnalyticsIcon, label: 'Analytics', disabled: true, section: 'Tools' },
-  { path: '/tax-documents', icon: TaxIcon, label: 'Tax Documents', disabled: true },
-  { path: '/settings', icon: SettingsIcon, label: 'Settings', disabled: true },
-];
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -54,114 +25,136 @@ export function SidebarNav() {
       .slice(0, 2);
   };
 
-  const isItemActive = (item: NavItem) => {
-    if (item.path === '/invest') {
-      return pathname === '/invest' ||
-        pathname === '/trade' ||
-        pathname === '/chat' ||
-        pathname.startsWith('/assets/');
-    }
-    return pathname === item.path || pathname.startsWith(item.path + '/');
-  };
+  const isHomeActive = pathname === '/dashboard';
+  const isTransactionsActive = pathname === '/transactions';
+  const isCardsActive = pathname === '/cards';
+  const isAccountsActive = pathname === '/accounts';
 
-  let currentSection: string | undefined;
+  const mainNavItems = [
+    {
+      label: 'Home',
+      href: '/dashboard',
+      Icon: DashboardIcon,
+      isActive: isHomeActive,
+    },
+    {
+      label: 'Transactions',
+      href: '/transactions',
+      Icon: TransactionsIcon,
+      isActive: isTransactionsActive,
+    },
+    {
+      label: 'Cards',
+      href: '/cards',
+      Icon: CardIcon,
+      isActive: isCardsActive,
+    },
+  ];
 
   return (
-    <aside
-      className="hidden lg:flex lg:w-[248px] lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:border-r lg:bg-[#07120F]"
-      style={{ borderRightColor: '#1E3D2F' }}
-    >
-      <div className="flex flex-col h-full">
-        {/* Logo/Brand Header */}
-        <div className="h-[81.5px] border-b flex items-center px-5" style={{ borderBottomColor: '#1E3D2F' }}>
-          <Link href="/dashboard" className="flex items-center gap-3 cursor-pointer">
-            <div className="w-9 h-9 rounded-[10px] bg-[#1A3A2C] flex items-center justify-center shadow-[0px_0px_20px_rgba(129,140,248,0.20)]">
-              <Image src="/logo.svg" alt="Bluum" width={20} height={20} />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-base font-bold text-white leading-6">Bluum</span>
-              <span className="text-[11px] font-semibold text-[#57B75C] uppercase leading-4 tracking-[0.5px]">
-                Invest
+    <aside className="hidden lg:flex lg:w-[248px] lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:border-r lg:bg-[#07120F] lg:border-[#1E3D2F]">
+      <div className="flex flex-col h-full w-full">
+        {/* User Header */}
+        <div className="p-6 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#1A3A2C] flex items-center justify-center pt-[5.5px] pb-[6.5px]">
+              <span className="text-sm font-normal text-white leading-5">
+                {user ? getInitials(user.name) : 'T'}
               </span>
             </div>
-          </Link>
+            <span className="text-sm font-normal text-white leading-5">
+              {user?.name ? `${user.name.split(' ')[0]}'s Account` : 'Your Account'}
+            </span>
+          </div>
+
+          <div className="flex flex-col items-start justify-center min-w-[18px]">
+            <ChevronUp className="w-3 h-3  text-[#A1BEAD] mb-[-2px]" />
+            <ChevronDown className="w-3 h-3 text-[#A1BEAD] mt-[-2px]" />
+          </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          {navItems.map((item, index) => {
-            const Icon = item.icon;
-            const isActive = isItemActive(item);
-            const showSectionHeader = item.section && item.section !== currentSection;
-
-            if (showSectionHeader) {
-              currentSection = item.section;
-            }
-
-            return (
-              <div key={item.path}>
-                {showSectionHeader && (
-                  <div className="px-3 py-2 mt-4 mb-1">
-                    <h3 className="text-[11px] font-semibold text-[#B0B8BD] uppercase tracking-[0.8px] leading-4">
-                      {item.section}
-                    </h3>
-                  </div>
-                )}
+        <nav className="flex-1 overflow-hidden px-3 pt-4 pb-[400px]">
+          <div className="w-[224px] flex flex-col gap-2">
+            {/* Main Navigation Items */}
+            <div className="flex flex-col gap-0.5">
+              {mainNavItems.map((item) => (
                 <Link
-                  href={!item.disabled ? item.path : '#'}
+                  key={item.label}
+                  href={item.href}
                   className={cn(
-                    'group flex items-center gap-3 rounded-[10px] px-3 h-[43px] text-sm font-normal transition-colors relative',
-                    !item.disabled && 'cursor-pointer',
-                    isActive
-                      ? 'bg-[#0B2219] text-[#66D07A]'
-                      : 'text-[#9CA3AF] hover:bg-[#0B2219] hover:text-white',
-                    item.disabled && 'bg-transparent! text-[#9CA3AF]!',
+                    'flex items-center gap-3 rounded-[10px] p-3 text-sm font-medium leading-[21px] transition-colors',
+                    item.isActive
+                      ? 'bg-[#0B2219] text-[#30D158]'
+                      : 'text-[#8DA69B] hover:bg-[#0B2219] hover:text-white',
                   )}
                 >
-                  {Icon && (
-                    <Icon
-                      className={cn(
-                        'h-5 w-5 transition-colors shrink-0',
-                        isActive ? 'text-[#66D07A]' : 'text-[#9CA3AF] group-hover:text-white',
-                        item.disabled && 'text-[#9CA3AF]!',
-                      )}
-                    />
-                  )}
+                  <item.Icon
+                    className={cn(
+                      'w-5 h-5 shrink-0',
+                      item.label === 'Home' && 'opacity-70',
+                      item.isActive ? 'text-[#30D158]' : 'text-[#8DA69B]',
+                    )}
+                  />
+                  <span>{item.label}</span>
+                </Link>
+              ))}
+            </div>
 
-                  <span className="flex-1">{item.label}</span>
+            {/* Accounts Section */}
+            <div className="flex flex-col gap-2 pt-8 pb-8">
+              <div className="flex items-center gap-2 px-3.5">
+                <AccountsIcon className="w-5 h-5 shrink-0" />
+                <span className="text-[11px] font-normal text-[#D1D5DB] uppercase leading-4 tracking-[0.8px]">
+                  Accounts
+                </span>
+              </div>
 
-                  {item.badge && (
-                    <div
-                      className={cn(
-                        'px-2 py-1 rounded-[10px] text-[11px] font-semibold leading-4',
-                        item.badgeColor === 'green'
-                          ? 'bg-[rgba(74,222,128,0.15)] text-[#4ADE80]'
-                          : 'bg-[rgba(129,140,248,0.15)] text-[#818CF8]'
-                      )}
-                    >
-                      {item.badge}
-                    </div>
-                  )}
+              <div className="px-3.5 py-1.5 rounded-md">
+                <Link
+                  href="/invest"
+                  className="text-sm font-medium text-[#8DA69B] leading-5 hover:text-white transition-colors"
+                >
+                  Invest
                 </Link>
               </div>
-            );
-          })}
+
+              <div className="px-3.5 py-1.5 rounded-md">
+                <div className="text-sm font-medium text-[#8DA69B] leading-5">
+                  Checking ••3168
+                </div>
+                <div className="text-xs font-normal text-[#8DA69B] leading-4 mt-0.5">
+                  $0.00
+                </div>
+              </div>
+
+              <div className="px-3.5 py-1.5 rounded-md">
+                <div className="text-sm font-medium text-[#8DA69B] leading-5">
+                  Savings ••2651
+                </div>
+                <div className="text-xs font-normal text-[#8DA69B] leading-4 mt-0.5">
+                  $0.00
+                </div>
+              </div>
+            </div>
+          </div>
         </nav>
 
         {/* User Profile Footer */}
-        <div className="border-t px-4 py-2" style={{ borderTopColor: '#1E3D2F' }}>
-          <div className="flex items-center gap-3 rounded-[10px] px-2.5 py-2.5">
-            <div className="w-[38px] h-[38px] rounded-[19px] bg-[#66D07A] flex items-center justify-center shrink-0">
+        <div className="border-t border-[#1E3D2F] p-4">
+          <div className="relative w-[216px] h-[59px] rounded-[10px]">
+            <div className="absolute left-2.5 top-2.5 w-[38px] h-[38px] rounded-[19px] bg-[#66D07A] flex items-center justify-center">
               <span className="text-sm font-semibold text-white leading-5">
                 {user ? getInitials(user.name) : 'JD'}
               </span>
             </div>
-
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white leading-5 truncate">
+            <div className="absolute left-[60px] top-2.5">
+              <p className="text-sm font-medium text-white leading-5">
                 {user?.name || 'Jane Doe'}
               </p>
-              <p className="text-xs text-[#9CA3AF] leading-[18px] truncate">
+            </div>
+            <div className="absolute left-[60px] top-[31px]">
+              <p className="text-xs font-normal text-[#8DA69B] leading-[18px]">
                 {user?.email || 'jane@acme.com'}
               </p>
             </div>

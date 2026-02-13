@@ -29,13 +29,11 @@ export default function Cards() {
       prev.map((card) =>
         card.id === cardId
           ? { ...card, status: card.status === 'frozen' ? 'active' : 'frozen' }
-          : card
-      )
+          : card,
+      ),
     );
     const card = cards.find((c) => c.id === cardId);
-    toast.success(
-      `Card ${card?.status === 'frozen' ? 'unfrozen' : 'frozen'} successfully`
-    );
+    toast.success(`Card ${card?.status === 'frozen' ? 'unfrozen' : 'frozen'} successfully`);
   };
 
   const handleSetLimit = (cardId: string) => {
@@ -48,9 +46,7 @@ export default function Cards() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Cards</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your debit cards
-          </p>
+          <p className="text-muted-foreground mt-1">Manage your debit cards</p>
         </div>
         <Button onClick={handleRequestCard}>
           <Plus className="h-4 w-4 mr-2" />
@@ -65,9 +61,7 @@ export default function Cards() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="py-8 text-center text-muted-foreground">
-              Loading cards...
-            </div>
+            <div className="py-8 text-center text-muted-foreground">Loading cards...</div>
           ) : cards.length === 0 ? (
             <div className="py-8 text-center text-muted-foreground">
               <p className="mb-4">No cards yet.</p>
@@ -109,15 +103,11 @@ export default function Cards() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-xs opacity-80">Cardholder</p>
-                            <p className="text-sm font-medium">
-                              {card.cardholderName}
-                            </p>
+                            <p className="text-sm font-medium">{card.cardholderName}</p>
                           </div>
                           <div>
                             <p className="text-xs opacity-80">Expires</p>
-                            <p className="text-sm font-medium">
-                              {card.expiryDate}
-                            </p>
+                            <p className="text-sm font-medium">{card.expiryDate}</p>
                           </div>
                         </div>
                       </div>
@@ -126,9 +116,7 @@ export default function Cards() {
                     {/* Card Info */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">
-                          Status
-                        </span>
+                        <span className="text-sm text-muted-foreground">Status</span>
                         <Badge
                           variant={
                             card.status === 'active'
@@ -138,15 +126,12 @@ export default function Cards() {
                                 : 'destructive'
                           }
                         >
-                          {card.status.charAt(0).toUpperCase() +
-                            card.status.slice(1)}
+                          {card.status.charAt(0).toUpperCase() + card.status.slice(1)}
                         </Badge>
                       </div>
                       {card.spendingLimit && (
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">
-                            Spending Limit
-                          </span>
+                          <span className="text-sm text-muted-foreground">Spending Limit</span>
                           <span className="text-sm font-medium">
                             ${card.spendingLimit.toLocaleString()}
                           </span>
@@ -176,9 +161,7 @@ export default function Cards() {
                       </Button>
                     </div>
                   </div>
-                  {index < cards.length - 1 && (
-                    <Separator className="mt-4" />
-                  )}
+                  {index < cards.length - 1 && <Separator className="mt-4" />}
                 </div>
               ))}
             </div>
@@ -188,4 +171,3 @@ export default function Cards() {
     </div>
   );
 }
-
