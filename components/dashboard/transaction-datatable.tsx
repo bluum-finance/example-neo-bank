@@ -4,7 +4,13 @@ import React, { useState } from 'react';
 import { ArrowDownIcon, ChevronRight } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
-export function TransactionDatatable() {
+export function TransactionDatatable({
+  title = 'Transactions',
+  showViewAll = true,
+}: {
+  title?: string;
+  showViewAll?: boolean;
+}) {
   const [loading, setLoading] = useState(false);
   const [transactions, setTransactions] = useState<any>([]);
 
@@ -14,11 +20,15 @@ export function TransactionDatatable() {
       <div className="flex flex-col mb-3">
         <div className="flex items-center justify-start gap-4 mb-3">
           <div className="inline-flex flex-col">
-            <div className="text-[18px] font-semibold text-white leading-7">Transactions</div>
+            <div className="text-[18px] font-semibold text-white leading-7">{title}</div>
           </div>
           <div className="inline-flex items-center gap-1 text-sm text-[#30D158] cursor-pointer">
-            <div className="text-sm text-[#30D158]">View all</div>
-            <ChevronRight className="w-4 h-4 text-[#30D158]" />
+            {showViewAll && (
+              <>
+                <div className="text-sm text-[#30D158]">View all</div>
+                <ChevronRight className="w-4 h-4 text-[#30D158]" />
+              </>
+            )}
           </div>
         </div>
 
@@ -27,10 +37,10 @@ export function TransactionDatatable() {
           <button className="px-4 py-2 bg-[#1A3A2C] rounded-md text-white text-xs font-normal">
             Recent
           </button>
-          <button className="px-4 py-2 rounded-md text-[#8DA69B] text-xs font-normal border border-transparent outline-1 outline-[#1A3A2C] outline-offset-[-1px]">
+          <button className="px-4 py-2 rounded-md text-[#8DA69B] text-xs font-normal border border-transparent outline-1 outline-[#1A3A2C] -outline-offset-1">
             Monthly money in
           </button>
-          <button className="px-4 py-2 rounded-md text-[#8DA69B] text-xs font-normal border border-transparent outline-1 outline-[#1A3A2C] outline-offset-[-1px]">
+          <button className="px-4 py-2 rounded-md text-[#8DA69B] text-xs font-normal border border-transparent outline-1 outline-[#1A3A2C] -outline-offset-1">
             Monthly money out
           </button>
         </div>
@@ -73,9 +83,12 @@ export function TransactionDatatable() {
               Recent transactions (like bank-to-bank transfers, debit card transactions, and
               check deposits) will appear here once your account has funds.
             </div>
-            <div className="mt-6">
-              <button className="px-6 py-2 bg-primary text-primary-foreground rounded-full shadow-sm font-semibold">
+            <div className="mt-6 flex justify-center items-center gap-3">
+              <button className="px-6 py-2 bg-[#1A3A2C] hover:bg-[#244d3b] text-white rounded-full shadow-sm text-sm font-light transition-colors">
                 Fund account
+              </button>
+              <button className="px-6 py-2 bg-[#1A3A2C] hover:bg-[#244d3b] text-white rounded-full shadow-sm text-sm font-light transition-colors">
+                Set up auto transfer rule
               </button>
             </div>
           </div>

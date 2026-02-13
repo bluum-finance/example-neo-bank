@@ -69,7 +69,7 @@ export function FundingOptionsWidget() {
           {fundingOptions.map((option) => (
             <div
               key={option.id}
-              className="flex-1 min-w-[200px] p-[17px] bg-[#0E231F] dark:bg-[#0E231F] rounded-lg border border-[#1E3D2F] flex flex-col gap-2"
+              className="cursor-pointer flex-1 min-w-[200px] p-[17px] bg-[#0E231F] dark:bg-[#0E231F] rounded-lg border border-[#1E3D2F] flex flex-col gap-2"
             >
               {/* Icon and Badge Row */}
               <div className="flex justify-between items-center">
@@ -79,9 +79,7 @@ export function FundingOptionsWidget() {
                   </div>
                 </div>
                 {option.badge && (
-                  <Badge
-                    className="px-2 py-0.5 bg-[#124031] text-[#30D158] rounded-full text-xs font-medium leading-4"
-                  >
+                  <Badge className="px-2 py-0.5 bg-[#124031] text-[#30D158] rounded-full text-xs font-medium leading-4">
                     {option.badge.label}
                   </Badge>
                 )}

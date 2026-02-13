@@ -46,6 +46,19 @@ export function SidebarNav() {
     },
   ];
 
+  const accounts = [
+    {
+      id: '3168',
+      label: 'Checking ••3168',
+      balance: '$0.00',
+    },
+    {
+      id: '2651',
+      label: 'Savings ••2651',
+      balance: '$0.00',
+    },
+  ];
+
   const isInvestActive = pathname === '/invest';
 
   return (
@@ -111,7 +124,7 @@ export function SidebarNav() {
                 <Link
                   href="/invest"
                   className={cn(
-                    'text-sm font-medium text-[#8DA69B] leading-5 hover:text-white transition-colors',
+                    'text-sm font-normal text-[#8DA69B] leading-5 hover:text-white transition-colors',
                     isInvestActive ? 'text-[#30D158]' : 'text-[#8DA69B]',
                   )}
                 >
@@ -119,23 +132,36 @@ export function SidebarNav() {
                 </Link>
               </div>
 
-              <div className="px-3.5 py-1.5 rounded-md">
-                <div className="text-sm font-medium text-[#8DA69B] leading-5">
-                  Checking ••3168
-                </div>
-                <div className="text-xs font-normal text-[#8DA69B] leading-4 mt-0.5">
-                  $0.00
-                </div>
-              </div>
-
-              <div className="px-3.5 py-1.5 rounded-md">
-                <div className="text-sm font-medium text-[#8DA69B] leading-5">
-                  Savings ••2651
-                </div>
-                <div className="text-xs font-normal text-[#8DA69B] leading-4 mt-0.5">
-                  $0.00
-                </div>
-              </div>
+              {accounts.map((account) => {
+                const isActive = pathname === `/accounts/${account.id}`;
+                return (
+                  <Link
+                    key={account.id}
+                    href={`/accounts/${account.id}`}
+                    className={cn(
+                      'px-3.5 py-1.5 rounded-md transition-colors hover:bg-[#0B2219]',
+                      isActive ? 'bg-[#0B2219]' : '',
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'text-sm font-normal leading-5',
+                        isActive ? 'text-[#30D158]' : 'text-[#8DA69B]',
+                      )}
+                    >
+                      {account.label}
+                    </div>
+                    <div
+                      className={cn(
+                        'text-xs font-light leading-4 mt-0.5',
+                        isActive ? 'text-[#30D158]' : 'text-[#8DA69B]',
+                      )}
+                    >
+                      {account.balance}
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </nav>

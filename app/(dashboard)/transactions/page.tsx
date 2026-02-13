@@ -122,7 +122,7 @@ export default function TransactionsPage() {
                 check deposits) will appear here once your account has funds.
               </div>
               <div className="mt-6">
-                <button className="px-6 py-2 bg-primary text-primary-foreground rounded-full shadow-sm font-semibold">
+                <button className="px-6 py-2 bg-primary text-primary-foreground rounded-full shadow-sm font-normal">
                   Fund account
                 </button>
               </div>

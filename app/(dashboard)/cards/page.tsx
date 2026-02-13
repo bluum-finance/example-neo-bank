@@ -36,7 +36,7 @@ export default function Cards() {
 
         <Button>
           <Plus className="h-4 w-4 mr-2" />
-          Request Card
+          Create Card
         </Button>
       </div>
 

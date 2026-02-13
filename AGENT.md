@@ -1,12 +1,6 @@
 # AGENT.md - Bluum Invest Project
 
-## Role
-
-Senior Frontend Developer: **Clean Code**, **Performance**, and **Proactive**.
-
-## Project Overview
-
-An invest application built with Next.js, TypeScript, and Tailwind CSS.
+Think like an expert Frontend Developer.
 
 ## Tech Stack
 
@@ -18,8 +12,6 @@ An invest application built with Next.js, TypeScript, and Tailwind CSS.
 - **Notifications**: Sonner
 - **Charts**: Recharts
 - **State**: React hooks (useState, useEffect)
-
-## Design System
 
 ### Theme
 
@@ -37,8 +29,6 @@ An invest application built with Next.js, TypeScript, and Tailwind CSS.
 - **Font Family**: Inter (via Next.js font optimization)
 - **Font Sizes**: Use Tailwind text utilities (`text-sm`, `text-base`, `text-lg`, etc.)
 - **Font Weights**: `font-extralight`, `font-light`, `font-normal`, `font-medium`
-
-## Code Style Guidelines
 
 ### Components
 
