@@ -102,7 +102,7 @@ export default function Cards() {
                     </div>
                     <div className="w-[178px] flex items-center gap-3">
                       <div className="flex h-6 w-9 items-center justify-center rounded bg-[#124031] border border-[#1E3D2F]">
-                        <div className="h-1.5 w-1.5 rounded-full bg-[#D1D5DB]" />
+                        <div className="ml-2.5 h-1.5 w-1.5 rounded-full bg-[#D1D5DB]" />
                       </div>
                       <span className="text-sm text-white">••{card.last4}</span>
                     </div>

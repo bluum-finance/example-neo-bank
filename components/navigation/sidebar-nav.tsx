@@ -93,7 +93,7 @@ export function SidebarNav() {
                   key={item.label}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 rounded-[10px] p-3 text-sm font-medium leading-[21px] transition-colors',
+                    'flex items-center gap-3 rounded-[10px] p-3 text-sm font-normal leading-[21px] transition-colors',
                     item.isActive
                       ? 'bg-[#0B2219] text-[#30D158]'
                       : 'text-[#8DA69B] hover:bg-[#0B2219] hover:text-white',
