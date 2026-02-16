@@ -2,7 +2,7 @@
 export const APP_NAME = 'Bluum Invest';
 
 // Authentication constants
-export const INVESTOR_EMAIL = 'investor@bluuminvest.com';
+export const INVESTOR_EMAIL = 'johndoe@bluuminvest.com';
 
 // Demo user constants
 export const DEMO_INVESTOR_ACCOUNT_ID =
