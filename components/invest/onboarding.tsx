@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { FileText, TrendingUp, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
@@ -8,219 +10,147 @@ import { Select } from '../ui/select';
 import { Separator } from '../ui/separator';
 import { Checkbox } from '../ui/checkbox';
 import { AccountService } from '@/services/account.service';
-import { getAuth, setAuth } from '@/lib/auth';
+import { getAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 
 interface InvestOnboardingProps {
   onAccept: (accountId?: string) => void;
+  initialStep?: number;
 }
 
-interface FinancialProfile {
-  annualIncome: string;
-  netWorth: string;
-  liquidAssets: string;
-  fundingSource: string;
+interface OnboardingState {
+  financialProfile: {
+    annualIncome: string;
+    netWorth: string;
+    liquidAssets: string;
+    fundingSource: string;
+  };
+  taxInfo: {
+    taxId: string;
+    taxIdType: string;
+    countryOfCitizenship: string;
+    countryOfTaxResidence: string;
+  };
+  employmentInfo: {
+    employmentStatus: string;
+    employer: string;
+    position: string;
+    jobFunction: string;
+    employerAddress: string;
+  };
+  disclosures: {
+    isControlPerson: boolean;
+    isAffiliatedExchangeOrFinra: boolean;
+    isPoliticallyExposed: boolean;
+    immediateFamilyExposed: boolean;
+  };
+  agreements: {
+    accountAgreement: boolean;
+  };
 }
 
-interface TaxInfo {
-  taxId: string;
-  taxIdType: string;
-  countryOfCitizenship: string;
-  countryOfTaxResidence: string;
-}
-
-interface EmploymentInfo {
-  employmentStatus: string;
-  employer: string;
-  position: string;
-  function: string;
-  employerAddress: string;
-}
-
-interface Disclosures {
-  isControlPerson: boolean;
-  isAffiliatedExchangeOrFinra: boolean;
-  isPoliticallyExposed: boolean;
-  immediateFamilyExposed: boolean;
-}
-
-interface Agreements {
-  accountAgreement: boolean;
-}
-
-export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
-  const fieldClassName =
-    'h-11 rounded-md border border-border bg-background px-3 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-0 dark:bg-card dark:border-border dark:text-foreground';
-
-  const [step, setStep] = useState(0); // Step 0 = Financial Profile, Step 1 = Tax, Step 2 = Employment, Step 3 = Disclosures
-  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
-  const [financialProfile, setFinancialProfile] = useState<FinancialProfile>({
+const INITIAL_STATE: OnboardingState = {
+  financialProfile: {
     annualIncome: '',
     netWorth: '',
     liquidAssets: '',
     fundingSource: '',
-  });
-  const [taxInfo, setTaxInfo] = useState<TaxInfo>({
+  },
+  taxInfo: {
     taxId: '',
     taxIdType: 'SSN',
     countryOfCitizenship: 'US',
     countryOfTaxResidence: 'US',
-  });
-  const [employmentInfo, setEmploymentInfo] = useState<EmploymentInfo>({
+  },
+  employmentInfo: {
     employmentStatus: '',
     employer: '',
     position: '',
-    function: '',
+    jobFunction: '',
     employerAddress: '',
-  });
-  const [disclosures, setDisclosures] = useState<Disclosures>({
+  },
+  disclosures: {
     isControlPerson: false,
     isAffiliatedExchangeOrFinra: false,
     isPoliticallyExposed: false,
     immediateFamilyExposed: false,
-  });
-  const [agreements, setAgreements] = useState<Agreements>({
+  },
+  agreements: {
     accountAgreement: false,
-  });
+  },
+};
 
+const FIELD_CLASS =
+  'h-11 rounded-md border border-border bg-background px-3 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-0 dark:bg-card dark:border-border dark:text-foreground';
+
+export function InvestOnboarding({ onAccept, initialStep = 1 }: InvestOnboardingProps) {
+  const router = useRouter();
+  const [step, setStep] = useState(initialStep);
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [formData, setFormData] = useState<OnboardingState>(INITIAL_STATE);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+
+  const updateField = useCallback(
+    (section: keyof OnboardingState, field: string, value: any) => {
+      setFormData((prev) => {
+        const sectionData = prev[section];
+        return {
+          ...prev,
+          [section]:
+            typeof sectionData === 'object' && sectionData !== null
+              ? { ...sectionData, [field]: value }
+              : value,
+        };
+      });
+      if (errors[field]) {
+        const newErrors = { ...errors };
+        delete newErrors[field];
+        setErrors(newErrors);
+      }
+    },
+    [errors],
+  );
 
   const validateStep = (stepNum: number): boolean => {
     const newErrors: Record<string, string | undefined> = {};
+    const { financialProfile, taxInfo, employmentInfo, agreements } = formData;
 
-    if (stepNum === 0) {
-      // Financial Profile
-      if (!financialProfile.annualIncome.trim()) {
-        newErrors.annualIncome = 'Annual Income is required';
-      }
-      if (!financialProfile.netWorth.trim()) {
-        newErrors.netWorth = 'Estimated Net Worth is required';
-      }
-      if (!financialProfile.liquidAssets.trim()) {
-        newErrors.liquidAssets = 'Investible / Liquid Assets is required';
-      }
-      if (!financialProfile.fundingSource) {
-        newErrors.fundingSource = 'Account Funding Source is required';
-      }
-    } else if (stepNum === 1) {
-      // Tax Information
-      if (!taxInfo.taxId.trim()) {
-        newErrors.taxId = 'Tax ID is required';
-      }
-      if (!taxInfo.taxIdType) {
-        newErrors.taxIdType = 'Tax ID Type is required';
-      }
-      if (!taxInfo.countryOfCitizenship) {
-        newErrors.countryOfCitizenship = 'Country of Citizenship is required';
-      }
-      if (!taxInfo.countryOfTaxResidence) {
-        newErrors.countryOfTaxResidence = 'Country of Tax Residence is required';
-      }
+    if (stepNum === 1) {
+      if (!financialProfile.annualIncome) newErrors.annualIncome = 'Annual Income is required';
+      if (!financialProfile.netWorth) newErrors.netWorth = 'Net Worth is required';
+      if (!financialProfile.liquidAssets) newErrors.liquidAssets = 'Liquid Assets is required';
+      if (!financialProfile.fundingSource)
+        newErrors.fundingSource = 'Funding Source is required';
     } else if (stepNum === 2) {
-      // Employment Information
-      if (!employmentInfo.employmentStatus) {
-        newErrors.employmentStatus = 'Employment Status is required';
-      }
-      if (employmentInfo.employmentStatus === 'employed') {
-        if (!employmentInfo.employer.trim()) {
-          newErrors.employer = 'Employer is required';
-        }
-        if (!employmentInfo.position.trim()) {
-          newErrors.position = 'Position is required';
-        }
-        if (!employmentInfo.function) {
-          newErrors.function = 'Function is required';
-        }
-        if (!employmentInfo.employerAddress.trim()) {
-          newErrors.employerAddress = 'Employer Address is required';
-        }
-      }
+      if (!taxInfo.taxId.trim()) newErrors.taxId = 'Tax ID is required';
+      if (!taxInfo.taxIdType) newErrors.taxIdType = 'Tax ID Type is required';
     } else if (stepNum === 3) {
-      // Disclosures and Agreements
-      if (!agreements.accountAgreement) {
-        newErrors.accountAgreement = 'You must agree to the Account Agreement';
+      if (!employmentInfo.employmentStatus)
+        newErrors.employmentStatus = 'Employment Status is required';
+      if (employmentInfo.employmentStatus === 'employed') {
+        if (!employmentInfo.employer.trim()) newErrors.employer = 'Employer is required';
+        if (!employmentInfo.position.trim()) newErrors.position = 'Position is required';
+        if (!employmentInfo.jobFunction) newErrors.jobFunction = 'Function is required';
+        if (!employmentInfo.employerAddress.trim())
+          newErrors.employerAddress = 'Address is required';
       }
+    } else if (stepNum === 4) {
+      if (!agreements.accountAgreement) newErrors.accountAgreement = 'Agreement required';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => {
-    if (step >= 0 && step < 3) {
-      if (validateStep(step)) {
-        setStep(step + 1);
-      }
-    } else if (step === 3) {
-      handleCreateAccount();
-    }
-  };
-
-  const handleBack = () => {
-    if (step > 0) {
-      setStep(step - 1);
-    }
-  };
-
-  const handleFinancialProfileChange = (field: keyof FinancialProfile, value: string) => {
-    setFinancialProfile((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
-    }
-  };
-
-  const handleTaxInfoChange = (field: keyof TaxInfo, value: string) => {
-    setTaxInfo((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
-    }
-  };
-
-  const handleEmploymentInfoChange = (field: keyof EmploymentInfo, value: string) => {
-    setEmploymentInfo((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
-    }
-  };
-
-  const handleDisclosureChange = (field: keyof Disclosures, value: boolean) => {
-    setDisclosures((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleAgreementChange = (field: keyof Agreements, value: boolean) => {
-    setAgreements((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
-    }
-  };
-
-  const mapFundingSource = (source: string): string => {
-    const mapping: Record<string, string> = {
-      employment_income: 'employment_income',
-      business_income: 'business_income',
-      savings: 'other',
-      inheritance: 'inheritance',
-      investment_returns: 'investment_income',
-      other: 'other',
-    };
-    return mapping[source] || 'other';
-  };
-
   const handleCreateAccount = async () => {
-    if (!validateStep(4)) {
-      return;
-    }
+    if (!validateStep(4)) return;
 
     setIsCreatingAccount(true);
     try {
       const user = getAuth();
-      if (!user) {
-        toast.error('Please sign in first');
-        return;
-      }
+      if (!user) throw new Error('Please sign in first');
 
-      // Build account creation payload using user data
-      const accountPayload = {
+      const payload = {
         account_type: 'trading',
         contact: {
           email_address: user.email,
@@ -235,56 +165,43 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
           first_name: user.firstName,
           last_name: user.lastName,
           date_of_birth: user.dateOfBirth,
-          tax_id: taxInfo.taxId,
-          tax_id_type: taxInfo.taxIdType as
-            | 'SSN'
-            | 'ITIN'
-            | 'EIN'
-            | 'SIN'
-            | 'NINO'
-            | 'TFN'
-            | 'VAT'
-            | 'TIN'
-            | 'OTHER',
-          country_of_citizenship: taxInfo.countryOfCitizenship || 'US',
+          tax_id: formData.taxInfo.taxId,
+          tax_id_type: formData.taxInfo.taxIdType,
+          country_of_citizenship: formData.taxInfo.countryOfCitizenship,
           country_of_birth: user.countryOfBirth || 'US',
-          country_of_tax_residence: taxInfo.countryOfTaxResidence || 'US',
-          funding_source: financialProfile.fundingSource
-            ? [mapFundingSource(financialProfile.fundingSource) as any]
-            : undefined,
+          country_of_tax_residence: formData.taxInfo.countryOfTaxResidence,
+          funding_source: [formData.financialProfile.fundingSource],
         },
         disclosures: {
-          is_control_person: disclosures.isControlPerson,
-          is_affiliated_exchange_or_finra: disclosures.isAffiliatedExchangeOrFinra,
-          is_politically_exposed: disclosures.isPoliticallyExposed,
-          immediate_family_exposed: disclosures.immediateFamilyExposed,
+          is_control_person: formData.disclosures.isControlPerson,
+          is_affiliated_exchange_or_finra: formData.disclosures.isAffiliatedExchangeOrFinra,
+          is_politically_exposed: formData.disclosures.isPoliticallyExposed,
+          immediate_family_exposed: formData.disclosures.immediateFamilyExposed,
         },
         agreements: [
           {
             agreement: 'account_agreement',
-            agreed: agreements.accountAgreement,
+            agreed: formData.agreements.accountAgreement,
             signed_at: new Date().toISOString(),
-            ip_address: '127.0.0.1', // In production, fetch actual client IP
+            ip_address: '127.0.0.1',
           },
         ],
       };
 
-      const account = await AccountService.createAccount(accountPayload);
-      toast.success('Investment account created successfully!');
+      const account = await AccountService.createAccount(payload as any);
+      toast.success('Account created successfully!');
       onAccept(account.id);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create account';
-      toast.error(errorMessage);
-      console.error('Account creation error:', error);
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to create account');
     } finally {
       setIsCreatingAccount(false);
     }
   };
 
-  const totalSteps = 4; // Financial (0), Tax (1), Employment (2), Disclosures & Agreements (3)
+  const totalSteps = 4;
 
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
+    <div className="flex min-h-[60vh] items-center justify-center p-4">
       <Card className="w-full max-w-2xl">
         <CardHeader>
           <div className="flex items-center justify-between mb-4">
@@ -295,7 +212,7 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
               <div>
                 <CardTitle className="text-2xl text-foreground">Start Investing</CardTitle>
                 <CardDescription className="text-sm text-muted-foreground">
-                  Step {step + 1} of {totalSteps}
+                  Step {step} of {totalSteps}
                 </CardDescription>
               </div>
             </div>
@@ -303,9 +220,7 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
               {Array.from({ length: totalSteps }).map((_, i) => (
                 <div
                   key={i}
-                  className={`h-2 w-8 rounded-full transition-colors ${
-                    i <= step ? 'bg-primary dark:bg-white/50' : 'bg-muted/70 dark:bg-muted/40'
-                  }`}
+                  className={`h-2 w-8 rounded-full transition-colors ${i < step ? 'bg-primary dark:bg-white/50' : 'bg-muted/70 dark:bg-muted/40'}`}
                 />
               ))}
             </div>
@@ -313,553 +228,268 @@ export function InvestOnboarding({ onAccept }: InvestOnboardingProps) {
         </CardHeader>
 
         <CardContent className="space-y-6">
-          {/* Step 0: Financial Profile */}
-          {step === 0 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-2">Financial Profile</h2>
-                <p className="text-sm text-muted-foreground">
-                  Help us understand your financial situation
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="annualIncome">
-                    Annual Income <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    id="annualIncome"
-                    value={financialProfile.annualIncome}
-                    onChange={(e) =>
-                      handleFinancialProfileChange('annualIncome', e.target.value)
-                    }
-                    aria-invalid={!!errors.annualIncome}
-                    placeholder="Select annual income range"
-                    className={fieldClassName}
-                  >
-                    <option value="under_25000">Under $25,000</option>
-                    <option value="25000_99999">$25,000 - $99,999</option>
-                    <option value="100000_249999">$100,000 - $249,999</option>
-                    <option value="250000_499999">$250,000 - $499,999</option>
-                    <option value="500000_999999">$500,000 - $999,999</option>
-                    <option value="over_1000000">Over $1,000,000</option>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Your total annual income from all sources
-                  </p>
-                  {errors.annualIncome && (
-                    <p className="text-xs text-destructive">{errors.annualIncome}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="netWorth">
-                    Estimated Net Worth <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    id="netWorth"
-                    value={financialProfile.netWorth}
-                    onChange={(e) => handleFinancialProfileChange('netWorth', e.target.value)}
-                    aria-invalid={!!errors.netWorth}
-                    placeholder="Select net worth range"
-                    className={fieldClassName}
-                  >
-                    <option value="under_25000">Under $25,000</option>
-                    <option value="25000_99999">$25,000 - $99,999</option>
-                    <option value="100000_499999">$100,000 - $499,999</option>
-                    <option value="500000_999999">$500,000 - $999,999</option>
-                    <option value="1000000_4999999">$1,000,000 - $4,999,999</option>
-                    <option value="over_5000000">Over $5,000,000</option>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Your total assets minus total liabilities
-                  </p>
-                  {errors.netWorth && (
-                    <p className="text-xs text-destructive">{errors.netWorth}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="liquidAssets">
-                    Investible / Liquid Assets <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    id="liquidAssets"
-                    value={financialProfile.liquidAssets}
-                    onChange={(e) =>
-                      handleFinancialProfileChange('liquidAssets', e.target.value)
-                    }
-                    aria-invalid={!!errors.liquidAssets}
-                    placeholder="Select liquid assets range"
-                    className={fieldClassName}
-                  >
-                    <option value="under_25000">Under $25,000</option>
-                    <option value="25000_99999">$25,000 - $99,999</option>
-                    <option value="100000_249999">$100,000 - $249,999</option>
-                    <option value="250000_499999">$250,000 - $499,999</option>
-                    <option value="500000_999999">$500,000 - $999,999</option>
-                    <option value="over_1000000">Over $1,000,000</option>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Assets readily available for investment (cash, stocks, bonds, etc.)
-                  </p>
-                  {errors.liquidAssets && (
-                    <p className="text-xs text-destructive">{errors.liquidAssets}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="fundingSource">
-                    Account Funding Source <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    id="fundingSource"
-                    value={financialProfile.fundingSource}
-                    onChange={(e) =>
-                      handleFinancialProfileChange('fundingSource', e.target.value)
-                    }
-                    aria-invalid={!!errors.fundingSource}
-                    placeholder="Select funding source"
-                    className={fieldClassName}
-                  >
-                    <option value="employment_income">Employment Income</option>
-                    <option value="business_income">Business Income</option>
-                    <option value="savings">Savings / Personal Funds</option>
-                    <option value="inheritance">Inheritance / Gift</option>
-                    <option value="investment_returns">Investment Returns</option>
-                    <option value="other">Other</option>
-                  </Select>
-                  {errors.fundingSource && (
-                    <p className="text-xs text-destructive">{errors.fundingSource}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Step 1: Tax Information */}
           {step === 1 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-2">Tax Information</h2>
-                <p className="text-sm text-muted-foreground">
-                  Required for regulatory compliance
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="taxId">
-                    Tax ID <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="taxId"
-                    type="text"
-                    placeholder="123-45-6789"
-                    value={taxInfo.taxId}
-                    onChange={(e) => handleTaxInfoChange('taxId', e.target.value)}
-                    aria-invalid={!!errors.taxId}
-                    className={fieldClassName}
-                  />
-                  {errors.taxId && <p className="text-xs text-destructive">{errors.taxId}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="taxIdType">
-                    Tax ID Type <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    id="taxIdType"
-                    value={taxInfo.taxIdType}
-                    onChange={(e) => handleTaxInfoChange('taxIdType', e.target.value)}
-                    aria-invalid={!!errors.taxIdType}
-                    placeholder="Select tax ID type"
-                    className={fieldClassName}
-                  >
-                    <option value="SSN">SSN</option>
-                    <option value="ITIN">ITIN</option>
-                    <option value="EIN">EIN</option>
-                    <option value="SIN">SIN</option>
-                    <option value="NINO">NINO</option>
-                    <option value="TFN">TFN</option>
-                    <option value="VAT">VAT</option>
-                    <option value="TIN">TIN</option>
-                    <option value="OTHER">Other</option>
-                  </Select>
-                  {errors.taxIdType && (
-                    <p className="text-xs text-destructive">{errors.taxIdType}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="countryOfCitizenship">
-                    Country of Citizenship <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    id="countryOfCitizenship"
-                    value={taxInfo.countryOfCitizenship}
-                    onChange={(e) =>
-                      handleTaxInfoChange('countryOfCitizenship', e.target.value)
-                    }
-                    aria-invalid={!!errors.countryOfCitizenship}
-                    className={fieldClassName}
-                  >
-                    <option value="NG">Nigeria</option>
-                    <option value="US">United States</option>
-                    <option value="GB">United Kingdom</option>
-                    <option value="CA">Canada</option>
-                    <option value="AU">Australia</option>
-                  </Select>
-                  {errors.countryOfCitizenship && (
-                    <p className="text-xs text-destructive">{errors.countryOfCitizenship}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="countryOfTaxResidence">
-                    Country of Tax Residence <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    id="countryOfTaxResidence"
-                    value={taxInfo.countryOfTaxResidence}
-                    onChange={(e) =>
-                      handleTaxInfoChange('countryOfTaxResidence', e.target.value)
-                    }
-                    aria-invalid={!!errors.countryOfTaxResidence}
-                    className={fieldClassName}
-                  >
-                    <option value="NG">Nigeria</option>
-                    <option value="US">United States</option>
-                    <option value="GB">United Kingdom</option>
-                    <option value="CA">Canada</option>
-                    <option value="AU">Australia</option>
-                  </Select>
-                  {errors.countryOfTaxResidence && (
-                    <p className="text-xs text-destructive">{errors.countryOfTaxResidence}</p>
-                  )}
-                </div>
-              </div>
-            </div>
+            <FinancialStep
+              data={formData.financialProfile}
+              update={updateField}
+              errors={errors}
+            />
           )}
-
-          {/* Step 2: Employment Information */}
           {step === 2 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-2">Employment Status</h2>
-                <p className="text-sm text-muted-foreground">
-                  Tell us about your current employment
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="employmentStatus">
-                    Employment Status <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    id="employmentStatus"
-                    value={employmentInfo.employmentStatus}
-                    onChange={(e) =>
-                      handleEmploymentInfoChange('employmentStatus', e.target.value)
-                    }
-                    aria-invalid={!!errors.employmentStatus}
-                    placeholder="Select employment status"
-                    className={fieldClassName}
-                  >
-                    <option value="employed">Employed</option>
-                    <option value="unemployed">Unemployed</option>
-                    <option value="retired">Retired</option>
-                    <option value="student">Student</option>
-                  </Select>
-                  {errors.employmentStatus && (
-                    <p className="text-xs text-destructive">{errors.employmentStatus}</p>
-                  )}
-                </div>
-
-                {employmentInfo.employmentStatus === 'employed' && (
-                  <>
-                    <Separator />
-                    <div>
-                      <h3 className="font-semibold mb-4">Employment Details</h3>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="employer">
-                            Employer <span className="text-destructive">*</span>
-                          </Label>
-                          <Input
-                            id="employer"
-                            type="text"
-                            placeholder="Company Name"
-                            value={employmentInfo.employer}
-                            onChange={(e) =>
-                              handleEmploymentInfoChange('employer', e.target.value)
-                            }
-                            aria-invalid={!!errors.employer}
-                            className={fieldClassName}
-                          />
-                          {errors.employer && (
-                            <p className="text-xs text-destructive">{errors.employer}</p>
-                          )}
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="position">
-                            Position <span className="text-destructive">*</span>
-                          </Label>
-                          <Input
-                            id="position"
-                            type="text"
-                            placeholder="Software Engineer, Manager, etc."
-                            value={employmentInfo.position}
-                            onChange={(e) =>
-                              handleEmploymentInfoChange('position', e.target.value)
-                            }
-                            aria-invalid={!!errors.position}
-                            className={fieldClassName}
-                          />
-                          {errors.position && (
-                            <p className="text-xs text-destructive">{errors.position}</p>
-                          )}
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="function">
-                            Function <span className="text-destructive">*</span>
-                          </Label>
-                          <Select
-                            id="function"
-                            value={employmentInfo.function}
-                            onChange={(e) =>
-                              handleEmploymentInfoChange('function', e.target.value)
-                            }
-                            aria-invalid={!!errors.function}
-                            placeholder="Select your job function"
-                            className={fieldClassName}
-                          >
-                            <option value="engineering">Engineering</option>
-                            <option value="management">Management</option>
-                            <option value="sales">Sales</option>
-                            <option value="marketing">Marketing</option>
-                            <option value="finance">Finance</option>
-                            <option value="operations">Operations</option>
-                            <option value="hr">Human Resources</option>
-                            <option value="legal">Legal</option>
-                            <option value="other">Other</option>
-                          </Select>
-                          {errors.function && (
-                            <p className="text-xs text-destructive">{errors.function}</p>
-                          )}
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="employerAddress">
-                            Employer Address <span className="text-destructive">*</span>
-                          </Label>
-                          <Input
-                            id="employerAddress"
-                            type="text"
-                            placeholder="Enter employer address"
-                            value={employmentInfo.employerAddress}
-                            onChange={(e) =>
-                              handleEmploymentInfoChange('employerAddress', e.target.value)
-                            }
-                            aria-invalid={!!errors.employerAddress}
-                            className={fieldClassName}
-                          />
-                          {errors.employerAddress && (
-                            <p className="text-xs text-destructive">
-                              {errors.employerAddress}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
+            <TaxStep data={formData.taxInfo} update={updateField} errors={errors} />
           )}
-
-          {/* Step 3: Disclosures & Agreements */}
           {step === 3 && (
-            <div className="space-y-6">
-              <div>
-                <h2 className="text-xl font-semibold mb-2">Disclosures & Agreements</h2>
-                <p className="text-sm text-muted-foreground">
-                  Regulatory compliance disclosures and account agreement
-                </p>
-              </div>
-
-              <div className="space-y-6">
-                {/* Regulatory Disclosures */}
-                <div className="space-y-4">
-                  <p className="text-sm font-medium">
-                    Do any of the following apply to you or your family?{' '}
-                    <span className="text-destructive">*</span>
-                  </p>
-
-                  <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
-                    <Checkbox
-                      id="none"
-                      checked={
-                        !disclosures.isControlPerson &&
-                        !disclosures.isAffiliatedExchangeOrFinra &&
-                        !disclosures.isPoliticallyExposed &&
-                        !disclosures.immediateFamilyExposed
-                      }
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setDisclosures({
-                            isControlPerson: false,
-                            isAffiliatedExchangeOrFinra: false,
-                            isPoliticallyExposed: false,
-                            immediateFamilyExposed: false,
-                          });
-                        }
-                      }}
-                      label="None of the below applies to me or my family"
-                    />
-
-                    <Separator />
-
-                    <Checkbox
-                      id="affiliated"
-                      checked={disclosures.isAffiliatedExchangeOrFinra}
-                      onChange={(e) => {
-                        handleDisclosureChange(
-                          'isAffiliatedExchangeOrFinra',
-                          e.target.checked
-                        );
-                      }}
-                      label="Affiliated or work with a US registered broker dealer or FINRA."
-                    />
-
-                    <Checkbox
-                      id="controlPerson"
-                      checked={disclosures.isControlPerson}
-                      onChange={(e) => {
-                        handleDisclosureChange('isControlPerson', e.target.checked);
-                      }}
-                      label="Senior executive at or 10% shareholder of a publicly traded company."
-                    />
-
-                    <Checkbox
-                      id="politicallyExposed"
-                      checked={disclosures.isPoliticallyExposed}
-                      onChange={(e) => {
-                        handleDisclosureChange('isPoliticallyExposed', e.target.checked);
-                      }}
-                      label="I am a senior political figure."
-                    />
-
-                    <Checkbox
-                      id="familyExposed"
-                      checked={disclosures.immediateFamilyExposed}
-                      onChange={(e) => {
-                        handleDisclosureChange('immediateFamilyExposed', e.target.checked);
-                      }}
-                      label="I am a family member or relative of a senior political figure."
-                    />
-                  </div>
-
-                  <p className="text-xs text-muted-foreground">
-                    These disclosures are required for regulatory compliance. Your information
-                    will be kept confidential and used only for account verification purposes.
-                  </p>
-                </div>
-
-                <Separator />
-
-                {/* Account Agreement */}
-                <div className="space-y-4">
-                  <div className="p-4 rounded-lg border bg-muted/30">
-                    <div className="flex items-start gap-3">
-                      <FileText className="h-5 w-5 text-primary mt-0.5 shrink-0" />
-                      <div className="flex-1 space-y-2">
-                        <h3 className="font-semibold">Terms and Conditions</h3>
-                        <div className="text-sm text-muted-foreground space-y-2">
-                          <p>
-                            Investing in stocks involves risk, including the possible loss of
-                            principal. Past performance does not guarantee future results.
-                          </p>
-                          <p>
-                            By proceeding, you acknowledge that you understand the risks
-                            associated with stock market investing and agree to our Terms of
-                            Service and Privacy Policy.
-                          </p>
-                          <Separator />
-                          <div>
-                            <p className="font-medium mb-2">Important Information:</p>
-                            <ul className="list-disc list-inside space-y-1 ml-2">
-                              <li>Minimum deposit: $20</li>
-                              <li>Minimum withdrawal: $5</li>
-                              <li>Market hours: 9:30 AM - 4:00 PM EST</li>
-                              <li>All investments are subject to market volatility</li>
-                              <li>You may lose some or all of your investment</li>
-                              <li>Past performance is not indicative of future results</li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Checkbox
-                      id="accountAgreement"
-                      checked={agreements.accountAgreement}
-                      onChange={(e) =>
-                        handleAgreementChange('accountAgreement', e.target.checked)
-                      }
-                      label="I have read and agree to the Account Agreement *"
-                    />
-                    {errors.accountAgreement && (
-                      <p className="text-xs text-destructive">{errors.accountAgreement}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <EmploymentStep
+              data={formData.employmentInfo}
+              update={updateField}
+              errors={errors}
+            />
+          )}
+          {step === 4 && (
+            <DisclosureStep data={formData} update={updateField} errors={errors} />
           )}
 
-          {/* Navigation Buttons */}
           <div className="flex items-center justify-between pt-4 border-t">
             <Button
               variant="outline"
-              onClick={handleBack}
+              onClick={() => setStep((s) => s - 1)}
+              disabled={step === 1}
               className="flex items-center gap-2"
-              disabled={step === 0}
             >
-              <ArrowLeft className="h-4 w-4" />
-              Back
+              <ArrowLeft className="h-4 w-4" /> Back
             </Button>
-            {step < totalSteps - 1 ? (
-              <Button onClick={handleNext} className="flex items-center gap-2">
-                Next
-                <ArrowRight className="h-4 w-4" />
+            {step < totalSteps ? (
+              <Button
+                onClick={() => validateStep(step) && setStep((s) => s + 1)}
+                className="flex items-center gap-2"
+              >
+                Next <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
               <Button
                 onClick={handleCreateAccount}
                 size="lg"
-                className="flex items-center gap-2"
                 disabled={isCreatingAccount}
+                className="flex items-center gap-2"
               >
-                {isCreatingAccount ? (
-                  <>
-                    <span className="animate-spin">⏳</span>
-                    Creating Account...
-                  </>
-                ) : (
-                  <>Continue</>
-                )}
+                {isCreatingAccount ? 'Creating Account...' : 'Continue'}
               </Button>
             )}
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// Sub-components for cleaner structure
+
+function FinancialStep({ data, update, errors }: any) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold mb-2">Financial Profile</h2>
+        <p className="text-sm text-muted-foreground">
+          Help us understand your financial situation
+        </p>
+      </div>
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>Annual Income *</Label>
+          <Select
+            value={data.annualIncome}
+            onChange={(e) => update('financialProfile', 'annualIncome', e.target.value)}
+            className={FIELD_CLASS}
+          >
+            <option value="">Select range</option>
+            <option value="under_25000">Under $25,000</option>
+            <option value="25000_99999">$25,000 - $99,999</option>
+            <option value="100000_249999">$100,000 - $249,999</option>
+            <option value="over_250000">Over $250,000</option>
+          </Select>
+          {errors.annualIncome && (
+            <p className="text-xs text-destructive">{errors.annualIncome}</p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label>Net Worth *</Label>
+          <Select
+            value={data.netWorth}
+            onChange={(e) => update('financialProfile', 'netWorth', e.target.value)}
+            className={FIELD_CLASS}
+          >
+            <option value="">Select range</option>
+            <option value="under_50000">Under $50,000</option>
+            <option value="50000_249999">$50,000 - $249,999</option>
+            <option value="over_250000">Over $250,000</option>
+          </Select>
+          {errors.netWorth && <p className="text-xs text-destructive">{errors.netWorth}</p>}
+        </div>
+        <div className="space-y-2">
+          <Label>Funding Source *</Label>
+          <Select
+            value={data.fundingSource}
+            onChange={(e) => update('financialProfile', 'fundingSource', e.target.value)}
+            className={FIELD_CLASS}
+          >
+            <option value="">Select source</option>
+            <option value="employment_income">Employment Income</option>
+            <option value="savings">Savings</option>
+            <option value="investment_returns">Investment Returns</option>
+          </Select>
+          {errors.fundingSource && (
+            <p className="text-xs text-destructive">{errors.fundingSource}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TaxStep({ data, update, errors }: any) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold mb-2">Tax Information</h2>
+        <p className="text-sm text-muted-foreground">Required for regulatory compliance</p>
+      </div>
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>Tax ID *</Label>
+          <Input
+            placeholder="SSN / ITIN"
+            value={data.taxId}
+            onChange={(e) => update('taxInfo', 'taxId', e.target.value)}
+            className={FIELD_CLASS}
+          />
+          {errors.taxId && <p className="text-xs text-destructive">{errors.taxId}</p>}
+        </div>
+        <div className="space-y-2">
+          <Label>Tax ID Type *</Label>
+          <Select
+            value={data.taxIdType}
+            onChange={(e) => update('taxInfo', 'taxIdType', e.target.value)}
+            className={FIELD_CLASS}
+          >
+            <option value="SSN">SSN</option>
+            <option value="ITIN">ITIN</option>
+          </Select>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmploymentStep({ data, update, errors }: any) {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold mb-2">Employment Status</h2>
+        <p className="text-sm text-muted-foreground">Tell us about your current employment</p>
+      </div>
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>Status *</Label>
+          <Select
+            value={data.employmentStatus}
+            onChange={(e) => update('employmentInfo', 'employmentStatus', e.target.value)}
+            className={FIELD_CLASS}
+          >
+            <option value="">Select status</option>
+            <option value="employed">Employed</option>
+            <option value="unemployed">Unemployed</option>
+            <option value="retired">Retired</option>
+          </Select>
+          {errors.employmentStatus && (
+            <p className="text-xs text-destructive">{errors.employmentStatus}</p>
+          )}
+        </div>
+        {data.employmentStatus === 'employed' && (
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>Employer *</Label>
+              <Input
+                value={data.employer}
+                onChange={(e) => update('employmentInfo', 'employer', e.target.value)}
+                className={FIELD_CLASS}
+              />
+              {errors.employer && (
+                <p className="text-xs text-destructive">{errors.employer}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Position *</Label>
+              <Input
+                value={data.position}
+                onChange={(e) => update('employmentInfo', 'position', e.target.value)}
+                className={FIELD_CLASS}
+              />
+              {errors.position && (
+                <p className="text-xs text-destructive">{errors.position}</p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DisclosureStep({ data, update, errors }: any) {
+  const { disclosures, agreements } = data;
+  const isNoneChecked =
+    !disclosures.isControlPerson &&
+    !disclosures.isAffiliatedExchangeOrFinra &&
+    !disclosures.isPoliticallyExposed &&
+    !disclosures.immediateFamilyExposed;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-semibold mb-2">Disclosures & Agreements</h2>
+        <p className="text-sm text-muted-foreground">
+          Regulatory compliance and account agreement
+        </p>
+      </div>
+      <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
+        <Checkbox
+          id="none"
+          checked={isNoneChecked}
+          onChange={(e) =>
+            (e.target.checked && update('disclosures', 'isControlPerson', false)) ||
+            update('disclosures', 'isAffiliatedExchangeOrFinra', false) ||
+            update('disclosures', 'isPoliticallyExposed', false) ||
+            update('disclosures', 'immediateFamilyExposed', false)
+          }
+          label="None of the below applies to me"
+        />
+        <Separator />
+        <Checkbox
+          id="affiliated"
+          checked={disclosures.isAffiliatedExchangeOrFinra}
+          onChange={(e) =>
+            update('disclosures', 'isAffiliatedExchangeOrFinra', e.target.checked)
+          }
+          label="Affiliated with a broker dealer"
+        />
+        <Checkbox
+          id="control"
+          checked={disclosures.isControlPerson}
+          onChange={(e) => update('disclosures', 'isControlPerson', e.target.checked)}
+          label="Senior executive of a public company"
+        />
+      </div>
+      <div className="pt-4">
+        <Checkbox
+          id="agreement"
+          checked={agreements.accountAgreement}
+          onChange={(e) => update('agreements', 'accountAgreement', e.target.checked)}
+          label="I agree to the Account Agreement *"
+        />
+        {errors.accountAgreement && (
+          <p className="text-xs text-destructive mt-2">{errors.accountAgreement}</p>
+        )}
+      </div>
     </div>
   );
 }

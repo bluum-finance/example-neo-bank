@@ -23,11 +23,14 @@ import {
 } from '@/services/widget.service';
 import { getAuth, clearExternalAccountId } from '@/lib/auth';
 
+import { OnboardingLandingPage } from '@/components/invest/onboarding-landing-page';
+
 export default function Invest() {
   const router = useRouter();
 
   // Account & Portfolio State
   const [accountId, setAccountId] = useState<string | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [portfolioId, setPortfolioId] = useState<string | null>(null);
   const [accountBalance, setAccountBalance] = useState(0);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -121,7 +124,6 @@ export default function Invest() {
     async (userAccountId: string) => {
       try {
         const account = await AccountService.getAccount(userAccountId);
-
         const balanceValue = account?.balance ? parseFloat(account.balance) : 0;
         setAccountBalance(balanceValue);
 
@@ -161,7 +163,7 @@ export default function Invest() {
     const userAccountId = user?.externalAccountId;
 
     if (!userAccountId) {
-      router.push('/onboarding');
+      setShowOnboarding(true);
       return;
     }
 
@@ -178,6 +180,18 @@ export default function Invest() {
   const insightsList = widgetInsights?.insights || [];
   const totalPortfolioValue =
     accountBalance + positions.reduce((sum, pos) => sum + (pos.value || 0), 0);
+
+  if (showOnboarding) {
+    return (
+      <div className="max-w-5xl mx-auto">
+        <OnboardingLandingPage />
+      </div>
+    );
+  }
+
+  if (!accountId) {
+    return null;
+  }
 
   return (
     <div className="space-y-6 my-4 lg:px-8 max-w-5xl mx-auto">

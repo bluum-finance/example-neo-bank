@@ -17,8 +17,6 @@ export default function OnboardingPage() {
     // Set the external account ID in auth
     setExternalAccountId(accountId);
     toast.success('Account created successfully!');
-
-    // Redirect to /invest page
     router.push('/invest');
   };
 
