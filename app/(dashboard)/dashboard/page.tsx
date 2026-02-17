@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { InvestOnboarding } from '@/components/invest/onboarding';
-import { AIWealthLanding } from '@/components/invest/ai-wealth-landing';
 import { PortfolioPerformanceChart } from '@/components/invest/portfolio-performance-chart';
 import { QuickActionsWidget } from '@/components/invest/quick-actions-widget';
 
@@ -145,31 +144,6 @@ export default function Invest() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handleAccountCreated = (newAccountId?: string) => {
-    if (!newAccountId) return;
-
-    setExternalAccountId(newAccountId);
-    setAccountId(newAccountId);
-    setHasAccountId(true);
-    loadPortfolio(newAccountId);
-    toast.success('Welcome to investing!');
-  };
-
-  // Show AI Wealth Landing if no account
-  if (!hasAccountId) {
-    if (showAIOnboarding) {
-      return <InvestOnboarding onAccept={handleAccountCreated} />;
-    }
-    // Otherwise show the landing page
-    return (
-      <AIWealthLanding
-        onStartOnboarding={() => setShowAIOnboarding(true)}
-        showOnboarding={false}
-        onAccountCreated={handleAccountCreated}
-      />
-    );
-  }
 
   return (
     <div className="space-y-6 my-4">

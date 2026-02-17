@@ -65,10 +65,6 @@ export interface AllocationData {
   [key: string]: any;
 }
 
-// Re-export InvestmentPolicy type from investment-policy service for backward compatibility
-import type { InvestmentPolicy } from './investment-policy.service';
-export type { InvestmentPolicy } from './investment-policy.service';
-
 export interface PerformanceDataPoint {
   date: string;
   portfolio: number;
@@ -117,6 +113,36 @@ export interface Recommendation {
 export interface WidgetInsightsResponse {
   insights: Insight[];
   recommendations: Recommendation[];
+}
+
+export interface InvestmentPolicy {
+  risk_profile: {
+    risk_tolerance: string;
+    risk_score: number;
+  };
+  time_horizon: {
+    years: number;
+    category: string;
+  };
+  constraints: {
+    liquidity_requirements: {
+      minimum_cash_percent: string;
+    };
+  };
+  target_allocation: {
+    stocks: {
+      target_percent: string;
+    };
+    bonds: {
+      target_percent: string;
+    };
+    treasury: {
+      target_percent: string;
+    };
+    alternatives: {
+      target_percent: string;
+    };
+  };
 }
 
 // Widget Service
@@ -234,7 +260,6 @@ export class WidgetService {
 
   /**
    * Get investment policy data for InvestmentPolicyWidget
-   * @deprecated Use InvestmentPolicyService.getInvestmentPolicy instead
    * This method is kept for backward compatibility and delegates to InvestmentPolicyService
    */
   static async getInvestmentPolicy(accountId?: string): Promise<InvestmentPolicy> {
@@ -263,7 +288,7 @@ export class WidgetService {
       '1Y': '1y',
       'All': 'all',
     };
-    
+
     const queryParams = new URLSearchParams({
       range: rangeMap[range],
       ...(accountId && { account_id: accountId }),
@@ -271,7 +296,7 @@ export class WidgetService {
     });
     const response = await fetch(`/api/widget/portfolio-performance?${queryParams}`);
     const data = await handleResponse<any>(response);
-    
+
     // Transform balance_history into PerformanceDataPoint[]
     if (data?.balance_history?.dates && data?.balance_history?.values) {
       return data.balance_history.dates.map((date: string, index: number) => ({
@@ -279,7 +304,7 @@ export class WidgetService {
         portfolio: data.balance_history.values[index] || 0,
       }));
     }
-    
+
     // Fallback to empty array if structure doesn't match
     return [];
   }

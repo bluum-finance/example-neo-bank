@@ -5,6 +5,7 @@ export interface User {
   email: string;
   name: string;
   externalAccountId?: string;
+  investmentChoice?: 'ai-wealth' | 'self-directed';
   phoneNumber?: string;
   streetAddress?: string[];
   city?: string;
@@ -15,7 +16,6 @@ export interface User {
   lastName?: string;
   dateOfBirth?: string;
   countryOfBirth?: string;
-  investingChoice?: 'ai-wealth';
 }
 
 // Helper to check if localStorage is available (client-side only)

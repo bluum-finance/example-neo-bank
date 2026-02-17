@@ -6,40 +6,56 @@ import { Info, CheckCircle2, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Insight } from '@/services/widget.service';
+import { getAuth } from '@/lib/auth';
+import { useState } from 'react';
 
 interface WelcomeInsightsCardProps {
   insights: Insight[];
-  userName: string;
-  aiInputValue: string;
-  onAiInputChange: (value: string) => void;
-  onAiSend: () => void;
-  onPromptClick: (prompt: string) => void;
-  suggestedPrompts: string[];
   insightsLoading?: boolean;
 }
 
-export function WelcomeInsightsCard({
-  insights,
-  userName,
-  aiInputValue,
-  onAiInputChange,
-  onAiSend,
-  onPromptClick,
-  suggestedPrompts,
-  insightsLoading,
-}: WelcomeInsightsCardProps) {
+export function WelcomeInsightsCard({ insights, insightsLoading }: WelcomeInsightsCardProps) {
   const router = useRouter();
+  const [aiInputValue, setAiInputValue] = useState('');
+
   const insightVisibleCount = Math.min(insights.length, 3);
   const insightsToShow = insights.slice(0, insightVisibleCount);
   const hasInsights = insights.length > 0;
+
+  // Get user's first name
+  const getUserFirstName = () => {
+    const user = getAuth();
+    if (user?.firstName) return user.firstName;
+    if (user?.name) return user.name.split(' ')[0];
+    return 'Jessie'; // Default fallback
+  };
+
+  const handleAISend = () => {
+    if (aiInputValue.trim()) {
+      router.push(`/chat?message=${encodeURIComponent(aiInputValue.trim())}`);
+      setAiInputValue('');
+    }
+  };
+
+  const handlePromptClick = (prompt: string) => {
+    router.push(`/chat?message=${encodeURIComponent(prompt)}`);
+  };
+
+  const SUGGESTED_PROMPTS = [
+    'What is the next billion-dollar company?',
+    'How can I invest in private AI companies with  minimal funds?',
+  ];
 
   return (
     <Card className="py-6 dark:bg-[#0F2A20] border-[#1E3D2F] overflow-hidden">
       <CardContent className="px-4 md:px-6">
         <div className="flex flex-col gap-6">
           {/* Welcome Heading */}
-          <div className="text-2xl md:text-[30px] font-normal text-white leading-tight md:leading-9" style={{ fontFamily: 'Inter' }}>
-            Welcome, {userName}
+          <div
+            className="text-2xl md:text-[30px] font-normal text-white leading-tight md:leading-9"
+            style={{ fontFamily: 'Inter' }}
+          >
+            Welcome, {getUserFirstName()}
           </div>
 
           {/* Two Column Layout */}
@@ -47,7 +63,10 @@ export function WelcomeInsightsCard({
             {/* Left: Your Insights */}
             <div className="flex-1 min-w-0">
               <div className="flex flex-col gap-4">
-                <div className="text-lg font-normal text-[#B0B8BD] leading-[27px]" style={{ fontFamily: 'Inter' }}>
+                <div
+                  className="text-lg font-normal text-[#B0B8BD] leading-[27px]"
+                  style={{ fontFamily: 'Inter' }}
+                >
                   Your Insights
                 </div>
 
@@ -70,7 +89,9 @@ export function WelcomeInsightsCard({
                       if (category === 'tax') {
                         IconComponent = <Info className="w-3.5 h-3.5 text-[#4CAF50]" />;
                       } else if (category === 'opportunity') {
-                        IconComponent = <CheckCircle2 className="w-3.5 h-3.5 text-[#4CAF50]" />;
+                        IconComponent = (
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#4CAF50]" />
+                        );
                       } else if (category === 'rebalancing') {
                         IconComponent = <Clock className="w-3.5 h-3.5 text-[#4CAF50]" />;
                       } else {
@@ -93,24 +114,35 @@ export function WelcomeInsightsCard({
                               <div className="w-7 h-7 bg-[#124031] rounded-md flex items-center justify-center">
                                 {IconComponent}
                               </div>
-                              <div className="text-xs font-medium text-[#D1D5DB] leading-[19.5px]" style={{ fontFamily: 'Inter' }}>
+                              <div
+                                className="text-xs font-medium text-[#D1D5DB] leading-[19.5px]"
+                                style={{ fontFamily: 'Inter' }}
+                              >
                                 {item.title}
                               </div>
                             </div>
 
                             {/* Description */}
-                            <div className="text-[13px] font-light text-[#A1BEAD] leading-[19.5px]" style={{ fontFamily: 'Inter' }}>
-                              {description.split('<br/>').map((line: string, lineIndex: number, array: string[]) => (
-                                <span key={lineIndex}>
-                                  {line}
-                                  {lineIndex < array.length - 1 && <br />}
-                                </span>
-                              ))}
+                            <div
+                              className="text-[13px] font-light text-[#A1BEAD] leading-[19.5px]"
+                              style={{ fontFamily: 'Inter' }}
+                            >
+                              {description
+                                .split('<br/>')
+                                .map((line: string, lineIndex: number, array: string[]) => (
+                                  <span key={lineIndex}>
+                                    {line}
+                                    {lineIndex < array.length - 1 && <br />}
+                                  </span>
+                                ))}
                             </div>
 
                             {/* Action Link */}
                             {hasAction && item.action?.cta_label && (
-                              <div className="text-[13px] font-medium text-[#66D07A] leading-[19.5px] cursor-pointer hover:opacity-80 transition-opacity" style={{ fontFamily: 'Inter' }}>
+                              <div
+                                className="text-[13px] font-medium text-[#66D07A] leading-[19.5px] cursor-pointer hover:opacity-80 transition-opacity"
+                                style={{ fontFamily: 'Inter' }}
+                              >
                                 <button onClick={handleActionClick}>
                                   {item.action.cta_label} →
                                 </button>
@@ -119,9 +151,7 @@ export function WelcomeInsightsCard({
                           </div>
 
                           {/* Divider */}
-                          {showDivider && (
-                            <div className="w-full h-px bg-[#1E3D2F] my-4" />
-                          )}
+                          {showDivider && <div className="w-full h-px bg-[#1E3D2F] my-4" />}
                         </div>
                       );
                     })
@@ -145,7 +175,12 @@ export function WelcomeInsightsCard({
                   }}
                 />
                 <div className="relative w-[140px] h-[140px] md:w-[190px] md:h-[190px]">
-                  <Image src="/ai-icon.svg" alt="AI Icon" fill className="z-10 object-contain" />
+                  <Image
+                    src="/ai-icon.svg"
+                    alt="AI Icon"
+                    fill
+                    className="z-10 object-contain"
+                  />
                 </div>
               </div>
 
@@ -154,8 +189,18 @@ export function WelcomeInsightsCard({
                 <div className="flex-1 h-14 md:h-16 relative bg-[#0E231F] rounded-full border border-[#1E3D2F] px-4 md:px-5 flex items-center gap-2 md:gap-3">
                   {/* Plus icon */}
                   <div className="w-5 h-5 md:w-6 md:h-6 flex items-center justify-center shrink-0">
-                    <svg width="20" height="20" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg" className="md:w-[25px] md:h-[25px]">
-                      <path d="M5.39062 19.5703C7.38281 21.5234 9.74609 22.5 12.4805 22.5C15.2148 22.5 17.5586 21.5234 19.5117 19.5703C21.5039 17.5781 22.5 15.2148 22.5 12.4805C22.5 9.74609 21.5039 7.40234 19.5117 5.44922C17.5586 3.45703 15.2148 2.46094 12.4805 2.46094C9.74609 2.46094 7.38281 3.45703 5.39062 5.44922C3.4375 7.40234 2.46094 9.74609 2.46094 12.4805C2.46094 15.2148 3.4375 17.5781 5.39062 19.5703ZM3.63281 3.69141C6.09375 1.23047 9.04297 0 12.4805 0C15.918 0 18.8477 1.23047 21.2695 3.69141C23.7305 6.11328 24.9609 9.04297 24.9609 12.4805C24.9609 15.918 23.7305 18.8672 21.2695 21.3281C18.8477 23.75 15.918 24.9609 12.4805 24.9609C9.04297 24.9609 6.09375 23.75 3.63281 21.3281C1.21094 18.8672 0 15.918 0 12.4805C0 9.04297 1.21094 6.11328 3.63281 3.69141ZM13.7109 6.21094V11.25H18.75V13.7109H13.7109V18.75H11.25V13.7109H6.21094V11.25H11.25V6.21094H13.7109Z" fill="#A1BEAD" />
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 25 25"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="md:w-[25px] md:h-[25px]"
+                    >
+                      <path
+                        d="M5.39062 19.5703C7.38281 21.5234 9.74609 22.5 12.4805 22.5C15.2148 22.5 17.5586 21.5234 19.5117 19.5703C21.5039 17.5781 22.5 15.2148 22.5 12.4805C22.5 9.74609 21.5039 7.40234 19.5117 5.44922C17.5586 3.45703 15.2148 2.46094 12.4805 2.46094C9.74609 2.46094 7.38281 3.45703 5.39062 5.44922C3.4375 7.40234 2.46094 9.74609 2.46094 12.4805C2.46094 15.2148 3.4375 17.5781 5.39062 19.5703ZM3.63281 3.69141C6.09375 1.23047 9.04297 0 12.4805 0C15.918 0 18.8477 1.23047 21.2695 3.69141C23.7305 6.11328 24.9609 9.04297 24.9609 12.4805C24.9609 15.918 23.7305 18.8672 21.2695 21.3281C18.8477 23.75 15.918 24.9609 12.4805 24.9609C9.04297 24.9609 6.09375 23.75 3.63281 21.3281C1.21094 18.8672 0 15.918 0 12.4805C0 9.04297 1.21094 6.11328 3.63281 3.69141ZM13.7109 6.21094V11.25H18.75V13.7109H13.7109V18.75H11.25V13.7109H6.21094V11.25H11.25V6.21094H13.7109Z"
+                        fill="#A1BEAD"
+                      />
                     </svg>
                   </div>
 
@@ -163,23 +208,34 @@ export function WelcomeInsightsCard({
                   <input
                     type="text"
                     value={aiInputValue}
-                    onChange={(e) => onAiInputChange(e.target.value)}
+                    onChange={(e) => setAiInputValue(e.target.value)}
                     placeholder="Ask AI"
                     className="flex-1 min-w-0 pl-2 md:pl-4 bg-transparent text-[#A1BEAD] placeholder:text-[#A1BEAD] placeholder:font-extralight outline-none text-base md:text-xl font-light"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
-                        onAiSend();
+                        handleAISend();
                       }
                     }}
                   />
                   {/* Send icon */}
                   <button
                     className="w-7 h-8 md:w-8 md:h-9 flex items-center justify-center shrink-0 disabled:cursor-not-allowed hover:opacity-80 transition-opacity"
-                    onClick={onAiSend}
+                    onClick={handleAISend}
                     disabled={!aiInputValue.trim()}
                   >
-                    <svg width="24" height="18" viewBox="0 0 29 22" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-[#A1BEAD] md:w-[29px] md:h-[22px]" style={{ transform: 'rotate(-12deg)' }}>
-                      <path d="M4.67801 22.0083L2.86285 13.4686L20.6793 7.10582L1.81517 8.53969L0 0L28.0154 5.54648L4.67801 22.0083Z" fill="#A1BEAD" />
+                    <svg
+                      width="24"
+                      height="18"
+                      viewBox="0 0 29 22"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="text-[#A1BEAD] md:w-[29px] md:h-[22px]"
+                      style={{ transform: 'rotate(-12deg)' }}
+                    >
+                      <path
+                        d="M4.67801 22.0083L2.86285 13.4686L20.6793 7.10582L1.81517 8.53969L0 0L28.0154 5.54648L4.67801 22.0083Z"
+                        fill="#A1BEAD"
+                      />
                     </svg>
                   </button>
                 </div>
@@ -188,15 +244,13 @@ export function WelcomeInsightsCard({
               {/* Suggested Prompts */}
               <div className="w-full mt-4 max-w-3xl flex flex-col items-center gap-3 md:gap-4">
                 <div className="w-full flex flex-col items-center gap-2 md:gap-4">
-                  {suggestedPrompts.map((prompt, index) => (
+                  {SUGGESTED_PROMPTS.map((prompt, index) => (
                     <button
                       key={index}
-                      onClick={() => onPromptClick(prompt)}
+                      onClick={() => handlePromptClick(prompt)}
                       className="w-full md:w-auto cursor-pointer transition-colors rounded-full border border-[#1E3D2F] bg-[#0E231F] flex px-4 md:px-6 py-2"
                     >
-                      <span
-                        className="w-full text-center justify-center text-[#A1BEAD] text-[10px] md:text-xs font-light leading-5"
-                      >
+                      <span className="w-full text-center justify-center text-[#A1BEAD] text-[10px] md:text-xs font-light leading-5">
                         {prompt}
                       </span>
                     </button>
@@ -218,7 +272,7 @@ const InsightSkeleton = () => {
         <div key={i}>
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <Skeleton className="w-7 h-7 rounded-md bg-[#124031]" />
+              <Skeleton className="w-7 h-7 rounded-md" />
               <Skeleton className="h-4 w-32" />
             </div>
             <Skeleton className="h-4 w-full" />

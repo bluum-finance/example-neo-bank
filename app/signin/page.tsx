@@ -32,13 +32,15 @@ export default function SignIn() {
     const password = formData.get('password') as string;
 
     // Demo login: check if email matches investor email and password is at least 8 characters
-    const isEmailValid = email === INVESTOR_EMAIL || email === 'investor@xyzbank.com';
+    const isEmailValid = email === INVESTOR_EMAIL || email === 'investor@bluuminvest.com';
     const isPasswordValid = password.length >= 8;
 
     if (isEmailValid && isPasswordValid) {
+      const isNewInvestor = email === 'investor@bluuminvest.com';
+
       // Investor user with completed investment account
       setAuth({
-        email: INVESTOR_EMAIL,
+        email: email,
         name: mockUserAccount.name,
         phoneNumber: mockUserAccount.phoneNumber,
         streetAddress: mockUserAccount.streetAddress,
@@ -50,9 +52,9 @@ export default function SignIn() {
         lastName: mockUserAccount.lastName,
         dateOfBirth: mockUserAccount.dateOfBirth,
         countryOfBirth: mockUserAccount.countryOfBirth,
-        // Investment account already set up
-        externalAccountId: DEMO_INVESTOR_ACCOUNT_ID,
-        investingChoice: 'ai-wealth',
+        // Investment account already set up only for existing investor
+        externalAccountId: isNewInvestor ? undefined : DEMO_INVESTOR_ACCOUNT_ID,
+        investmentChoice: 'ai-wealth',
       });
 
       toast.success('Signed in successfully!');

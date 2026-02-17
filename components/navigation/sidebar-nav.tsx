@@ -113,24 +113,24 @@ export function SidebarNav() {
 
             {/* Accounts Section */}
             <div className="flex flex-col gap-2 pt-8 pb-8">
-              <div className="flex items-center gap-2 px-3.5">
+              <div className="flex items-center gap-2 px-3.5 mb-2">
                 <AccountsIcon className="w-5 h-5 shrink-0" />
                 <span className="text-[11px] font-normal text-[#D1D5DB] uppercase leading-4 tracking-[0.8px]">
                   Accounts
                 </span>
               </div>
 
-              <div className="px-3.5 py-1.5 rounded-md">
-                <Link
-                  href="/invest"
-                  className={cn(
-                    'text-sm font-normal text-[#8DA69B] leading-5 hover:text-white transition-colors',
-                    isInvestActive ? 'text-[#30D158]' : 'text-[#8DA69B]',
-                  )}
-                >
-                  Invest
-                </Link>
-              </div>
+              <Link
+                href="/invest"
+                className={cn(
+                  'w-full rounded-[10px] px-3 py-2.5 text-sm font-normal transition-colors',
+                  isInvestActive
+                    ? 'bg-[#0B2219] text-[#30D158]'
+                    : 'text-[#8DA69B] hover:bg-[#0B2219] hover:text-white',
+                )}
+              >
+                Invest
+              </Link>
 
               {accounts.map((account) => {
                 const isActive = pathname === `/accounts/${account.id}`;
@@ -139,8 +139,10 @@ export function SidebarNav() {
                     key={account.id}
                     href={`/accounts/${account.id}`}
                     className={cn(
-                      'px-3.5 py-1.5 rounded-md transition-colors hover:bg-[#0B2219]',
-                      isActive ? 'bg-[#0B2219]' : '',
+                      'w-full rounded-[10px] px-3 py-2.5 text-sm font-normal transition-colors',
+                      isActive
+                        ? 'bg-[#0B2219] text-[#30D158]'
+                        : 'text-[#8DA69B] hover:bg-[#0B2219] hover:text-white',
                     )}
                   >
                     <div
