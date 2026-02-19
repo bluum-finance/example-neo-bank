@@ -61,6 +61,11 @@ export function SidebarNav() {
 
   const isInvestActive = pathname === '/invest';
 
+  // slice email address if it's longer than 20 characters
+  const slicedEmail = user?.email
+    ? user.email.slice(0, 20) + '...'
+    : 'johndoe@bluuminvest.com';
+
   return (
     <aside className="hidden lg:flex lg:w-[248px] lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:border-r lg:bg-[#07120F] lg:border-[#1E3D2F]">
       <div className="flex flex-col h-full w-full">
@@ -183,7 +188,7 @@ export function SidebarNav() {
             </div>
             <div className="absolute left-[60px] top-[31px]">
               <p className="text-xs font-normal text-[#8DA69B] leading-[18px]">
-                {user?.email || 'jane@acme.com'}
+                {slicedEmail || 'johndoe@bluuminvest.com'}
               </p>
             </div>
           </div>

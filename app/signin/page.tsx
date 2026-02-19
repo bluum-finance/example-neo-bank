@@ -35,12 +35,17 @@ export default function SignIn() {
     const isEmailValid = email === INVESTOR_EMAIL || email === 'investor@bluuminvest.com';
     const isPasswordValid = password.length >= 8;
 
+    const generateRandomEmail = () => {
+      // investor<random-string-4-numbers>@bluuminvest.com
+      return `investor${Math.floor(1000 + Math.random() * 9000)}@bluuminvest.com`;
+    };
     if (isEmailValid && isPasswordValid) {
       const isNewInvestor = email === 'investor@bluuminvest.com';
+      const userEmail = isNewInvestor ? generateRandomEmail() : email;
 
       // Investor user with completed investment account
       setAuth({
-        email: email,
+        email: userEmail,
         name: mockUserAccount.name,
         phoneNumber: mockUserAccount.phoneNumber,
         streetAddress: mockUserAccount.streetAddress,

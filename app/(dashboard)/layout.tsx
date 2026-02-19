@@ -1,6 +1,6 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { isAuthenticated } from '@/lib/auth';
 import { BottomNav } from '@/components/navigation/bottom-nav';
@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/navigation/page-header';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
 
@@ -28,6 +29,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (!authenticated) {
     return null;
+  }
+
+  const excludePaths = ['/onboarding'];
+  if (excludePaths.includes(pathname)) {
+    return <>{children}</>;
   }
 
   const containerClassName = 'container mx-auto px-4 md:px-6 lg:max-w-6xl';

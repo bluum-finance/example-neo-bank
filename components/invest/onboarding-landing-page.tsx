@@ -60,7 +60,7 @@ export function OnboardingLandingPage() {
             needed.
           </p>
           <button
-            onClick={() => router.push('/onboarding')}
+            onClick={() => router.push('/onboarding?choice=self-directed')}
             className="bg-primary px-8 h-11 flex justify-center items-center text-primary-foreground hover:bg-primary/90 rounded-full text-base font-medium"
           >
             Begin application <ArrowRight className="ml-2 h-4 w-4" />
@@ -99,7 +99,7 @@ export function OnboardingLandingPage() {
             investment portfolio on Mercury Personal.
           </p>
           <button
-            onClick={() => router.push('/onboarding')}
+            onClick={() => router.push('/onboarding?choice=ai-wealth')}
             className="border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-full px-8 h-11 flex justify-center items-center text-base font-medium"
           >
             Begin application <ArrowRight className="ml-2 h-4 w-4" />

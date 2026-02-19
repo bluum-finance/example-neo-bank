@@ -120,10 +120,6 @@ types/                      # TypeScript definitions
 
 ## Important Notes
 
-### Dark Theme
-
-- **Use dark theme** - it's the default and only theme at the moment.
-
 ### Figma Integration
 
 - When converting Figma designs, preserve exact colors, spacing, and typography
@@ -131,7 +127,11 @@ types/                      # TypeScript definitions
 - Remove unnecessary wrappers and styling properties, and redundant divs
 - Maintain visual fidelity to designs
 
-### Performance
+## Dos
+
+- Think like an expert Frontend Developer
+- Try to avoid repeating duplicate code
+- Use dark theme, it's the default and only theme at the moment.
 
 ## Don'ts
 

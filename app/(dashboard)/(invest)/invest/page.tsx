@@ -30,7 +30,6 @@ export default function Invest() {
 
   // Account & Portfolio State
   const [accountId, setAccountId] = useState<string | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [portfolioId, setPortfolioId] = useState<string | null>(null);
   const [accountBalance, setAccountBalance] = useState(0);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -162,10 +161,7 @@ export default function Invest() {
     const user = getAuth();
     const userAccountId = user?.externalAccountId;
 
-    if (!userAccountId) {
-      setShowOnboarding(true);
-      return;
-    }
+    if (!userAccountId) return;
 
     setAccountId(userAccountId);
     loadPortfolioData(userAccountId);
@@ -181,16 +177,12 @@ export default function Invest() {
   const totalPortfolioValue =
     accountBalance + positions.reduce((sum, pos) => sum + (pos.value || 0), 0);
 
-  if (showOnboarding) {
+  if (!accountId) {
     return (
       <div className="max-w-5xl mx-auto">
         <OnboardingLandingPage />
       </div>
     );
-  }
-
-  if (!accountId) {
-    return null;
   }
 
   return (

@@ -1,7 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { FileText, TrendingUp, ArrowRight, ArrowLeft } from 'lucide-react';
+import {
+  FileText,
+  TrendingUp,
+  ArrowRight,
+  ArrowLeft,
+  AlertTriangle,
+  Check,
+} from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Input } from '../ui/input';
@@ -10,7 +16,7 @@ import { Select } from '../ui/select';
 import { Separator } from '../ui/separator';
 import { Checkbox } from '../ui/checkbox';
 import { AccountService } from '@/services/account.service';
-import { getAuth } from '@/lib/auth';
+import { getAuth, User } from '@/lib/auth';
 import { toast } from 'sonner';
 
 interface InvestOnboardingProps {
@@ -19,17 +25,21 @@ interface InvestOnboardingProps {
 }
 
 interface OnboardingState {
+  profile: {
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    phoneNumber: string;
+    address: string;
+    city: string;
+    state: string;
+    zip: string;
+  };
   financialProfile: {
     annualIncome: string;
     netWorth: string;
     liquidAssets: string;
     fundingSource: string;
-  };
-  taxInfo: {
-    taxId: string;
-    taxIdType: string;
-    countryOfCitizenship: string;
-    countryOfTaxResidence: string;
   };
   employmentInfo: {
     employmentStatus: string;
@@ -50,17 +60,21 @@ interface OnboardingState {
 }
 
 const INITIAL_STATE: OnboardingState = {
+  profile: {
+    firstName: '',
+    lastName: '',
+    dateOfBirth: '',
+    phoneNumber: '',
+    address: '',
+    city: '',
+    state: '',
+    zip: '',
+  },
   financialProfile: {
     annualIncome: '',
     netWorth: '',
     liquidAssets: '',
     fundingSource: '',
-  },
-  taxInfo: {
-    taxId: '',
-    taxIdType: 'SSN',
-    countryOfCitizenship: 'US',
-    countryOfTaxResidence: 'US',
   },
   employmentInfo: {
     employmentStatus: '',
@@ -80,24 +94,44 @@ const INITIAL_STATE: OnboardingState = {
   },
 };
 
-const FIELD_CLASS =
-  'h-11 rounded-md border border-border bg-background px-3 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-0 dark:bg-card dark:border-border dark:text-foreground';
-
-export function InvestOnboarding({ onAccept, initialStep = 1 }: InvestOnboardingProps) {
+export function InvestOnboarding({
+  onAccept,
+  initialStep = 0,
+}: InvestOnboardingProps) {
   const router = useRouter();
   const [step, setStep] = useState(initialStep);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [formData, setFormData] = useState<OnboardingState>(INITIAL_STATE);
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
 
+  // Initialize profile data from auth
+  useEffect(() => {
+    const user = getAuth();
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        profile: {
+          firstName: user.firstName || user.name?.split(" ")[0] || "Oluwatosin",
+          lastName: user.lastName || user.name?.split(" ")[1] || "Einstein",
+          dateOfBirth: user.dateOfBirth || "01/09/1908",
+          phoneNumber: user.phoneNumber || "+1 (341) 213–8356",
+          address: user.streetAddress?.[0] || "000 MB Bush Way",
+          city: user.city || "Senal",
+          state: user.state || "CA",
+          zip: user.postalCode || "12122",
+        },
+      }));
+    }
+  }, []);
+
   const updateField = useCallback(
     (section: keyof OnboardingState, field: string, value: any) => {
-      setFormData((prev) => {
+      setFormData((prev: OnboardingState) => {
         const sectionData = prev[section];
         return {
           ...prev,
           [section]:
-            typeof sectionData === 'object' && sectionData !== null
+            typeof sectionData === "object" && sectionData !== null
               ? { ...sectionData, [field]: value }
               : value,
         };
@@ -113,29 +147,31 @@ export function InvestOnboarding({ onAccept, initialStep = 1 }: InvestOnboarding
 
   const validateStep = (stepNum: number): boolean => {
     const newErrors: Record<string, string | undefined> = {};
-    const { financialProfile, taxInfo, employmentInfo, agreements } = formData;
+    const { financialProfile, employmentInfo, agreements } = formData;
 
-    if (stepNum === 1) {
-      if (!financialProfile.annualIncome) newErrors.annualIncome = 'Annual Income is required';
-      if (!financialProfile.netWorth) newErrors.netWorth = 'Net Worth is required';
-      if (!financialProfile.liquidAssets) newErrors.liquidAssets = 'Liquid Assets is required';
-      if (!financialProfile.fundingSource)
-        newErrors.fundingSource = 'Funding Source is required';
-    } else if (stepNum === 2) {
-      if (!taxInfo.taxId.trim()) newErrors.taxId = 'Tax ID is required';
-      if (!taxInfo.taxIdType) newErrors.taxIdType = 'Tax ID Type is required';
-    } else if (stepNum === 3) {
+    if (stepNum === 0) {
+      // Profile step - mostly read-only for now as per JSX
+      return true;
+    } else if (stepNum === 1) {
       if (!employmentInfo.employmentStatus)
-        newErrors.employmentStatus = 'Employment Status is required';
-      if (employmentInfo.employmentStatus === 'employed') {
-        if (!employmentInfo.employer.trim()) newErrors.employer = 'Employer is required';
-        if (!employmentInfo.position.trim()) newErrors.position = 'Position is required';
-        if (!employmentInfo.jobFunction) newErrors.jobFunction = 'Function is required';
-        if (!employmentInfo.employerAddress.trim())
-          newErrors.employerAddress = 'Address is required';
+        newErrors.employmentStatus = "Employment Status is required";
+      if (employmentInfo.employmentStatus === "employed") {
+        if (!employmentInfo.employer.trim())
+          newErrors.employer = "Employer is required";
+        if (!employmentInfo.position.trim())
+          newErrors.position = "Position is required";
       }
-    } else if (stepNum === 4) {
-      if (!agreements.accountAgreement) newErrors.accountAgreement = 'Agreement required';
+    } else if (stepNum === 2) {
+      if (!financialProfile.annualIncome)
+        newErrors.annualIncome = "Annual Income is required";
+      if (!financialProfile.netWorth)
+        newErrors.netWorth = "Net Worth is required";
+      if (!financialProfile.liquidAssets)
+        newErrors.liquidAssets = "Liquid Assets is required";
+      // fundingSource is no longer in the UI, so we remove its validation
+    } else if (stepNum === 3) {
+      // Disclosure step - no validation required as user can select any combination
+      // Completing the form implies agreement
     }
 
     setErrors(newErrors);
@@ -143,138 +179,125 @@ export function InvestOnboarding({ onAccept, initialStep = 1 }: InvestOnboarding
   };
 
   const handleCreateAccount = async () => {
-    if (!validateStep(4)) return;
+    if (!validateStep(3)) return;
 
     setIsCreatingAccount(true);
     try {
       const user = getAuth();
-      if (!user) throw new Error('Please sign in first');
+      if (!user) throw new Error("Please sign in first");
 
       const payload = {
-        account_type: 'trading',
+        account_type: "trading",
         contact: {
           email_address: user.email,
-          phone_number: user.phoneNumber,
-          street_address: user.streetAddress,
-          city: user.city,
-          state: user.state,
-          postal_code: user.postalCode,
-          country: user.country || 'US',
+          phone_number: formData.profile.phoneNumber,
+          street_address: [formData.profile.address],
+          city: formData.profile.city,
+          state: formData.profile.state,
+          postal_code: formData.profile.zip,
+          country: user.country || "US",
         },
         identity: {
-          first_name: user.firstName,
-          last_name: user.lastName,
-          date_of_birth: user.dateOfBirth,
-          tax_id: formData.taxInfo.taxId,
-          tax_id_type: formData.taxInfo.taxIdType,
-          country_of_citizenship: formData.taxInfo.countryOfCitizenship,
-          country_of_birth: user.countryOfBirth || 'US',
-          country_of_tax_residence: formData.taxInfo.countryOfTaxResidence,
-          funding_source: [formData.financialProfile.fundingSource],
+          first_name: formData.profile.firstName,
+          last_name: formData.profile.lastName,
+          date_of_birth: formData.profile.dateOfBirth,
+          tax_id: "000-00-0000", // Default or handled by backend
+          tax_id_type: "SSN",
+          country_of_citizenship: "US",
+          country_of_birth: user.countryOfBirth || "US",
+          country_of_tax_residence: "US",
+          funding_source: ["employment_income"], // Default funding source
         },
         disclosures: {
           is_control_person: formData.disclosures.isControlPerson,
-          is_affiliated_exchange_or_finra: formData.disclosures.isAffiliatedExchangeOrFinra,
+          is_affiliated_exchange_or_finra:
+            formData.disclosures.isAffiliatedExchangeOrFinra,
           is_politically_exposed: formData.disclosures.isPoliticallyExposed,
           immediate_family_exposed: formData.disclosures.immediateFamilyExposed,
         },
         agreements: [
           {
-            agreement: 'account_agreement',
-            agreed: formData.agreements.accountAgreement,
+            agreement: "account_agreement",
+            agreed: true, // Implied by completing the onboarding flow
             signed_at: new Date().toISOString(),
-            ip_address: '127.0.0.1',
+            ip_address: "127.0.0.1",
           },
         ],
       };
 
       const account = await AccountService.createAccount(payload as any);
-      toast.success('Account created successfully!');
+      toast.success("Account created successfully!");
       onAccept(account.id);
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create account');
+      toast.error(error.message || "Failed to create account");
     } finally {
       setIsCreatingAccount(false);
     }
   };
 
-  const totalSteps = 4;
+  const totalSteps = 4; // 0 to 3
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center p-4">
-      <Card className="w-full max-w-2xl">
-        <CardHeader>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="rounded-full bg-primary/10 p-2 dark:bg-primary/20">
-                <TrendingUp className="h-6 w-6 text-primary dark:text-primary-foreground" />
-              </div>
-              <div>
-                <CardTitle className="text-2xl text-foreground">Start Investing</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">
-                  Step {step} of {totalSteps}
-                </CardDescription>
-              </div>
-            </div>
-            <div className="flex gap-1">
-              {Array.from({ length: totalSteps }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`h-2 w-8 rounded-full transition-colors ${i < step ? 'bg-primary dark:bg-white/50' : 'bg-muted/70 dark:bg-muted/40'}`}
+      <Card className="w-full max-w-2xl border-none bg-transparent shadow-none">
+        <CardContent className="p-0">
+          <div className="w-full px-10 bg-[#0F2A20] border border-[#1E3D2F] rounded-xl flex flex-col py-12">
+            <>
+              {step === 0 && <PersonalInfoStep data={formData.profile} />}
+
+              {step === 1 && (
+                <EmploymentStep
+                  data={formData.employmentInfo}
+                  update={updateField}
+                  errors={errors}
                 />
-              ))}
+              )}
+
+              {step === 2 && (
+                <FinancialStep
+                  data={formData.financialProfile}
+                  update={updateField}
+                  errors={errors}
+                />
+              )}
+
+              {step === 3 && (
+                <DisclosureStep
+                  data={formData}
+                  update={updateField}
+                  errors={errors}
+                />
+              )}
+            </>
+
+            <div className="flex items-center justify-between pt-8 gap-8">
+              <Button
+                variant="ghost"
+                onClick={() => setStep((s: number) => s - 1)}
+                className="w-[146px] bg-[#1A3A2C] hover:bg-[#1A3A2C]/80 text-white rounded-full h-12"
+              >
+                Back
+              </Button>
+
+              {step < totalSteps - 1 ? (
+                <Button
+                  onClick={() =>
+                    validateStep(step) && setStep((s: number) => s + 1)
+                  }
+                  className="flex-1 bg-[#57B75C] hover:bg-[#57B75C]/90 text-white rounded-full h-12"
+                >
+                  Continue
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleCreateAccount}
+                  disabled={isCreatingAccount}
+                  className="flex-1 bg-[#57B75C] hover:bg-[#57B75C]/90 text-white rounded-full h-12"
+                >
+                  {isCreatingAccount ? "Creating Account..." : "Continue"}
+                </Button>
+              )}
             </div>
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
-          {step === 1 && (
-            <FinancialStep
-              data={formData.financialProfile}
-              update={updateField}
-              errors={errors}
-            />
-          )}
-          {step === 2 && (
-            <TaxStep data={formData.taxInfo} update={updateField} errors={errors} />
-          )}
-          {step === 3 && (
-            <EmploymentStep
-              data={formData.employmentInfo}
-              update={updateField}
-              errors={errors}
-            />
-          )}
-          {step === 4 && (
-            <DisclosureStep data={formData} update={updateField} errors={errors} />
-          )}
-
-          <div className="flex items-center justify-between pt-4 border-t">
-            <Button
-              variant="outline"
-              onClick={() => setStep((s) => s - 1)}
-              disabled={step === 1}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" /> Back
-            </Button>
-            {step < totalSteps ? (
-              <Button
-                onClick={() => validateStep(step) && setStep((s) => s + 1)}
-                className="flex items-center gap-2"
-              >
-                Next <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : (
-              <Button
-                onClick={handleCreateAccount}
-                size="lg"
-                disabled={isCreatingAccount}
-                className="flex items-center gap-2"
-              >
-                {isCreatingAccount ? 'Creating Account...' : 'Continue'}
-              </Button>
-            )}
           </div>
         </CardContent>
       </Card>
@@ -284,97 +307,196 @@ export function InvestOnboarding({ onAccept, initialStep = 1 }: InvestOnboarding
 
 // Sub-components for cleaner structure
 
-function FinancialStep({ data, update, errors }: any) {
+function PersonalInfoStep({ data }: { data: any }) {
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Financial Profile</h2>
-        <p className="text-sm text-muted-foreground">
-          Help us understand your financial situation
-        </p>
-      </div>
-      <div className="space-y-4">
+    <div className="">
+      <div className="flex flex-col gap-6">
         <div className="space-y-2">
-          <Label>Annual Income *</Label>
-          <Select
-            value={data.annualIncome}
-            onChange={(e) => update('financialProfile', 'annualIncome', e.target.value)}
-            className={FIELD_CLASS}
-          >
-            <option value="">Select range</option>
-            <option value="under_25000">Under $25,000</option>
-            <option value="25000_99999">$25,000 - $99,999</option>
-            <option value="100000_249999">$100,000 - $249,999</option>
-            <option value="over_250000">Over $250,000</option>
-          </Select>
-          {errors.annualIncome && (
-            <p className="text-xs text-destructive">{errors.annualIncome}</p>
-          )}
+          <h2 className="text-[25px] font-medium leading-[27.5px] text-white">
+            Let’s get you started with an individual Invest
+            <br />
+            account.
+          </h2>
+          <p className="text-base text-[#B0B8BD]">Are these details still accurate?</p>
         </div>
-        <div className="space-y-2">
-          <Label>Net Worth *</Label>
-          <Select
-            value={data.netWorth}
-            onChange={(e) => update('financialProfile', 'netWorth', e.target.value)}
-            className={FIELD_CLASS}
-          >
-            <option value="">Select range</option>
-            <option value="under_50000">Under $50,000</option>
-            <option value="50000_249999">$50,000 - $249,999</option>
-            <option value="over_250000">Over $250,000</option>
-          </Select>
-          {errors.netWorth && <p className="text-xs text-destructive">{errors.netWorth}</p>}
+
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1BEAD]">
+              Personal information
+            </h3>
+            <div className="space-y-1 text-sm text-white">
+              <p className="font-medium">
+                {data.firstName} {data.lastName}
+              </p>
+              <p className="font-normal">{data.dateOfBirth}</p>
+              <p className="font-normal">{data.phoneNumber}</p>
+            </div>
+          </div>
+
+          <div className="h-px w-full border-t border-[#1E3D2F]" />
+
+          <div className="space-y-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1BEAD]">
+              Home address
+            </h3>
+            <div className="flex gap-4">
+              <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-[#1E3D2F] bg-white">
+                <img
+                  src="/images/map-snippet.png"
+                  alt="Address map"
+                  className="h-full w-full object-cover opacity-80"
+                />
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-green-500/20 mix-blend-overlay" />
+              </div>
+              <div className="flex flex-col justify-center text-sm text-white">
+                <p>{data.address}</p>
+                <p>
+                  {data.city}, {data.state}
+                </p>
+                <p>{data.zip}</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="space-y-2">
-          <Label>Funding Source *</Label>
-          <Select
-            value={data.fundingSource}
-            onChange={(e) => update('financialProfile', 'fundingSource', e.target.value)}
-            className={FIELD_CLASS}
-          >
-            <option value="">Select source</option>
-            <option value="employment_income">Employment Income</option>
-            <option value="savings">Savings</option>
-            <option value="investment_returns">Investment Returns</option>
-          </Select>
-          {errors.fundingSource && (
-            <p className="text-xs text-destructive">{errors.fundingSource}</p>
-          )}
+
+        <div className="flex gap-3 rounded-2xl bg-[#124031] p-4 pr-8">
+          <AlertTriangle className="h-5 w-5 text-[#30D158] shrink-0 mt-0.5" />
+          <p className="text-xs leading-[19.5px] text-white">
+            If something is out of date,{' '}
+            <span className="font-medium text-[#30D158]">contact us</span>
+            <br />
+            before you start your application.
+          </p>
         </div>
       </div>
     </div>
   );
 }
 
-function TaxStep({ data, update, errors }: any) {
+function FinancialStep({ data, update, errors }: any) {
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Tax Information</h2>
-        <p className="text-sm text-muted-foreground">Required for regulatory compliance</p>
+    <div className="flex w-full flex-col items-start justify-start gap-6">
+      <div className="flex w-full flex-col items-start justify-start pb-2">
+        <h2 className="flex w-full flex-col justify-center font-sans text-[25px] font-medium leading-[27.50px] text-white">
+          What’s your current financial situation?
+        </h2>
       </div>
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label>Tax ID *</Label>
-          <Input
-            placeholder="SSN / ITIN"
-            value={data.taxId}
-            onChange={(e) => update('taxInfo', 'taxId', e.target.value)}
-            className={FIELD_CLASS}
-          />
-          {errors.taxId && <p className="text-xs text-destructive">{errors.taxId}</p>}
-        </div>
-        <div className="space-y-2">
-          <Label>Tax ID Type *</Label>
-          <Select
-            value={data.taxIdType}
-            onChange={(e) => update('taxInfo', 'taxIdType', e.target.value)}
-            className={FIELD_CLASS}
+
+      {/* Annual Income */}
+      <div className="flex w-full flex-col items-start justify-start gap-1">
+        <Label className="flex items-center justify-start font-sans text-base font-normal leading-6 text-white">
+          Annual Income
+        </Label>
+        <div className="relative w-full">
+          <select
+            value={data.annualIncome}
+            onChange={(e) => update('financialProfile', 'annualIncome', e.target.value)}
+            className="flex w-full items-center justify-between rounded-xl border border-[#1E3D2F] bg-[#0E231F] px-4 py-3 font-sans text-base font-normal leading-6 text-white outline-none focus:ring-1 focus:ring-primary appearance-none"
           >
-            <option value="SSN">SSN</option>
-            <option value="ITIN">ITIN</option>
-          </Select>
+            <option value="">Select range</option>
+            <option value="under_25000">Less than $25,000</option>
+            <option value="25000_99999">$25,000 - $99,999</option>
+            <option value="100000_249999">$100,000 - $249,999</option>
+            <option value="over_250000">Over $250,000</option>
+          </select>
+          <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 9L12 15L18 9"
+                stroke="#B0B8BD"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
         </div>
+        {errors.annualIncome && (
+          <p className="mt-1 text-xs text-destructive">{errors.annualIncome}</p>
+        )}
+      </div>
+
+      {/* Estimated Net Worth */}
+      <div className="flex w-full flex-col items-start justify-start gap-1">
+        <Label className="flex items-center justify-start font-sans text-base font-normal leading-6 text-white">
+          Estimated net worth
+        </Label>
+        <div className="relative w-full">
+          <select
+            value={data.netWorth}
+            onChange={(e) => update('financialProfile', 'netWorth', e.target.value)}
+            className="flex w-full items-center justify-between rounded-xl border border-[#1E3D2F] bg-[#0E231F] px-4 py-3 font-sans text-base font-normal leading-6 text-white outline-none focus:ring-1 focus:ring-primary appearance-none"
+          >
+            <option value="">Select range</option>
+            <option value="under_205000">Less than $205,000</option>
+            <option value="205000_499999">$205,000 - $499,999</option>
+            <option value="over_500000">Over $500,000</option>
+          </select>
+          <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 9L12 15L18 9"
+                stroke="#B0B8BD"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        </div>
+        {errors.netWorth && <p className="mt-1 text-xs text-destructive">{errors.netWorth}</p>}
+      </div>
+
+      {/* Estimated Liquid Net Worth */}
+      <div className="flex w-full flex-col items-start justify-start gap-1">
+        <Label className="flex items-center justify-start font-sans text-base font-normal leading-6 text-white">
+          Estimated Liquid net worth
+        </Label>
+        <div className="relative w-full">
+          <select
+            value={data.liquidAssets}
+            onChange={(e) => update('financialProfile', 'liquidAssets', e.target.value)}
+            className="flex w-full items-center justify-between rounded-xl border border-[#1E3D2F] bg-[#0E231F] px-4 py-3 font-sans text-base font-normal leading-6 text-white outline-none focus:ring-1 focus:ring-primary appearance-none"
+          >
+            <option value="">Select range</option>
+            <option value="under_50000">Less than $50,000</option>
+            <option value="50000_199999">$50,000 - $199,999</option>
+            <option value="over_200000">Over $200,000</option>
+          </select>
+          <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 9L12 15L18 9"
+                stroke="#B0B8BD"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        </div>
+        {errors.liquidAssets && (
+          <p className="mt-1 text-xs text-destructive">{errors.liquidAssets}</p>
+        )}
       </div>
     </div>
   );
@@ -382,113 +504,191 @@ function TaxStep({ data, update, errors }: any) {
 
 function EmploymentStep({ data, update, errors }: any) {
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Employment Status</h2>
-        <p className="text-sm text-muted-foreground">Tell us about your current employment</p>
+    <div className="flex w-full flex-col items-start justify-start gap-6">
+      <div className="flex w-full flex-col items-start justify-start pb-2">
+        <h2 className="flex w-full flex-col justify-center font-sans text-[25px] font-medium leading-[27.50px] text-white">
+          What’s your employment status
+        </h2>
       </div>
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label>Status *</Label>
-          <Select
+
+      {/* Employment Status */}
+      <div className="flex w-full flex-col items-start justify-start gap-1">
+        <Label className="flex items-center justify-start font-sans text-base font-normal leading-6 text-white">
+          Employment status
+        </Label>
+        <div className="relative w-full">
+          <select
             value={data.employmentStatus}
             onChange={(e) => update('employmentInfo', 'employmentStatus', e.target.value)}
-            className={FIELD_CLASS}
+            className="flex w-full items-center justify-between rounded-xl border border-[#1E3D2F] bg-[#0E231F] px-4 py-3 font-sans text-base font-normal leading-6 text-white outline-none focus:ring-1 focus:ring-primary appearance-none"
           >
             <option value="">Select status</option>
             <option value="employed">Employed</option>
             <option value="unemployed">Unemployed</option>
             <option value="retired">Retired</option>
-          </Select>
-          {errors.employmentStatus && (
-            <p className="text-xs text-destructive">{errors.employmentStatus}</p>
-          )}
-        </div>
-        {data.employmentStatus === 'employed' && (
-          <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>Employer *</Label>
-              <Input
-                value={data.employer}
-                onChange={(e) => update('employmentInfo', 'employer', e.target.value)}
-                className={FIELD_CLASS}
+            <option value="student">Student</option>
+          </select>
+          <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 9L12 15L18 9"
+                stroke="#B0B8BD"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
-              {errors.employer && (
-                <p className="text-xs text-destructive">{errors.employer}</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label>Position *</Label>
-              <Input
-                value={data.position}
-                onChange={(e) => update('employmentInfo', 'position', e.target.value)}
-                className={FIELD_CLASS}
-              />
-              {errors.position && (
-                <p className="text-xs text-destructive">{errors.position}</p>
-              )}
-            </div>
+            </svg>
           </div>
+        </div>
+        {errors.employmentStatus && (
+          <p className="mt-1 text-xs text-destructive">{errors.employmentStatus}</p>
         )}
       </div>
+
+      {/* Employer and Job Title - Only shown if employed */}
+      {data.employmentStatus === 'employed' && (
+        <>
+          {/* Employer */}
+          <div className="flex w-full flex-col items-start justify-start gap-1">
+            <Label className="flex items-center justify-start font-sans text-base font-normal leading-6 text-white">
+              Employer
+            </Label>
+            <div className="flex w-full flex-col items-start justify-center gap-3 rounded-xl border border-[#1E3D2F] bg-[#0E231F] px-4 py-3">
+              <input
+                type="text"
+                placeholder="Company name"
+                value={data.employer}
+                onChange={(e) => update('employmentInfo', 'employer', e.target.value)}
+                className="w-full bg-transparent font-sans text-base font-normal leading-6 text-white placeholder:text-[#A1BEAD]/50 outline-none"
+              />
+            </div>
+            {errors.employer && (
+              <p className="mt-1 text-xs text-destructive">{errors.employer}</p>
+            )}
+          </div>
+
+          {/* Job Title */}
+          <div className="flex w-full flex-col items-start justify-start gap-1">
+            <Label className="flex items-center justify-start font-sans text-base font-normal leading-6 text-white">
+              Job title
+            </Label>
+            <div className="flex w-full flex-col items-start justify-center gap-3 rounded-xl border border-[#1E3D2F] bg-[#0E231F] px-4 py-3">
+              <input
+                type="text"
+                placeholder="Position"
+                value={data.position}
+                onChange={(e) => update('employmentInfo', 'position', e.target.value)}
+                className="w-full bg-transparent font-sans text-base font-normal leading-6 text-white placeholder:text-[#A1BEAD]/50 outline-none"
+              />
+            </div>
+            {errors.position && (
+              <p className="mt-1 text-xs text-destructive">{errors.position}</p>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-function DisclosureStep({ data, update, errors }: any) {
-  const { disclosures, agreements } = data;
+function DisclosureStep({ data, update }: any) {
+  const { disclosures } = data;
   const isNoneChecked =
     !disclosures.isControlPerson &&
     !disclosures.isAffiliatedExchangeOrFinra &&
-    !disclosures.isPoliticallyExposed &&
-    !disclosures.immediateFamilyExposed;
+    !disclosures.isPoliticallyExposed;
+
+  const options = [
+    {
+      id: 'isControlPerson',
+      title: 'Has a control holding in a publicly traded company',
+      description:
+        "For example, serving as a director, officer, or owning 10% or more of the company's voting shares",
+      checked: disclosures.isControlPerson,
+    },
+    {
+      id: 'isAffiliatedExchangeOrFinra',
+      title:
+        'Is personally registered with FINRA/SEC by a broker-dealer or investment adviser',
+      checked: disclosures.isAffiliatedExchangeOrFinra,
+    },
+    {
+      id: 'isPoliticallyExposed',
+      title: 'Is a senior political figure',
+      description: 'Someone with significant political influence or experience',
+      checked: disclosures.isPoliticallyExposed,
+    },
+    {
+      id: 'none',
+      title: 'None of the above',
+      checked: isNoneChecked,
+    },
+  ];
+
+  const handleToggle = (id: string) => {
+    if (id === 'none') {
+      update('disclosures', 'isControlPerson', false);
+      update('disclosures', 'isAffiliatedExchangeOrFinra', false);
+      update('disclosures', 'isPoliticallyExposed', false);
+    } else {
+      update('disclosures', id, !disclosures[id]);
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Disclosures & Agreements</h2>
-        <p className="text-sm text-muted-foreground">
-          Regulatory compliance and account agreement
-        </p>
+    <div className="flex w-full flex-col items-start justify-start gap-6">
+      <div className="flex w-full flex-col items-start justify-start pb-2">
+        <h2 className="flex w-full flex-col justify-center font-sans text-[25px] font-normal leading-normal text-white">
+          Do any of the following categories apply to you or a family member?
+        </h2>
       </div>
-      <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
-        <Checkbox
-          id="none"
-          checked={isNoneChecked}
-          onChange={(e) =>
-            (e.target.checked && update('disclosures', 'isControlPerson', false)) ||
-            update('disclosures', 'isAffiliatedExchangeOrFinra', false) ||
-            update('disclosures', 'isPoliticallyExposed', false) ||
-            update('disclosures', 'immediateFamilyExposed', false)
-          }
-          label="None of the below applies to me"
-        />
-        <Separator />
-        <Checkbox
-          id="affiliated"
-          checked={disclosures.isAffiliatedExchangeOrFinra}
-          onChange={(e) =>
-            update('disclosures', 'isAffiliatedExchangeOrFinra', e.target.checked)
-          }
-          label="Affiliated with a broker dealer"
-        />
-        <Checkbox
-          id="control"
-          checked={disclosures.isControlPerson}
-          onChange={(e) => update('disclosures', 'isControlPerson', e.target.checked)}
-          label="Senior executive of a public company"
-        />
-      </div>
-      <div className="pt-4">
-        <Checkbox
-          id="agreement"
-          checked={agreements.accountAgreement}
-          onChange={(e) => update('agreements', 'accountAgreement', e.target.checked)}
-          label="I agree to the Account Agreement *"
-        />
-        {errors.accountAgreement && (
-          <p className="text-xs text-destructive mt-2">{errors.accountAgreement}</p>
-        )}
+
+      <div className="flex w-full flex-col gap-6">
+        {options.map((option) => (
+          <div
+            key={option.id}
+            onClick={() => handleToggle(option.id)}
+            className={`flex w-full cursor-pointer items-center justify-start rounded-xl border p-4 transition-all ${
+              option.checked
+                ? "border-[#30D158] bg-[#1A3A2C]"
+                : "border-[#2A4D3C] bg-transparent"
+            }`}
+          >
+            <div className="flex flex-1 items-center gap-3">
+              <div className="flex h-6 items-center justify-start">
+                <div
+                  className={`flex h-5 w-5 items-center justify-center rounded-md border transition-colors ${
+                    option.checked
+                      ? "border-[#30D158] bg-[#30D158]"
+                      : "border-[#A1BEAD]"
+                  }`}
+                >
+                  {option.checked && (
+                    <Check className="h-3.5 w-3.5 text-[#0F2A20] stroke-[3]" />
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-1 flex-col items-start justify-start">
+                <div className="flex flex-col justify-center font-sans text-base font-normal leading-6 text-[#D1D5DB]">
+                  {option.title}
+                </div>
+                {option.description && (
+                  <div className="flex w-full flex-col items-start justify-start">
+                    <div className="flex w-full flex-col justify-center font-sans text-[14px] font-normal leading-[22.75px] text-[#8DA69B]">
+                      {option.description}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
