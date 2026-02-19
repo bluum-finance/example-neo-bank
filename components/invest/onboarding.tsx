@@ -98,22 +98,21 @@ export function InvestOnboarding({ onAccept, initialStep = 0, investmentChoice }
 
   // Initialize profile data from auth
   useEffect(() => {
-    if (user) {
-      setFormData((prev) => ({
-        ...prev,
-        profile: {
-          firstName: user.firstName || user.name?.split(' ')[0] || 'Oluwatosin',
-          lastName: user.lastName || user.name?.split(' ')[1] || 'Einstein',
-          dateOfBirth: user.dateOfBirth || '01/09/1908',
-          phoneNumber: user.phoneNumber || '+1 (341) 213–8356',
-          address: user.streetAddress?.[0] || '000 MB Bush Way',
-          city: user.city || 'Senal',
-          state: user.state || 'CA',
-          zip: user.postalCode || '12122',
-        },
-      }));
-    }
-  }, []);
+    if (!user) return;
+    setFormData((prev) => ({
+      ...prev,
+      profile: {
+        firstName: user.firstName || user.name?.split(' ')[0] || 'Oluwatosin',
+        lastName: user.lastName || user.name?.split(' ')[1] || 'Einstein',
+        dateOfBirth: user.dateOfBirth || '01/09/1908',
+        phoneNumber: user.phoneNumber || '+1 (341) 213–8356',
+        address: user.streetAddress?.[0] || '000 MB Bush Way',
+        city: user.city || 'Senal',
+        state: user.state || 'CA',
+        zip: user.postalCode || '12122',
+      },
+    }));
+  }, [user]);
 
   const updateField = useCallback(
     (section: keyof OnboardingState, field: string, value: any) => {
@@ -219,7 +218,7 @@ export function InvestOnboarding({ onAccept, initialStep = 0, investmentChoice }
 
   const handleBack = () => {
     if (step === 0) {
-      router.push(`/invest?choice=${investmentChoice.toLowerCase()}`);
+      router.push(`/invest`);
       return;
     }
 
@@ -241,11 +240,11 @@ export function InvestOnboarding({ onAccept, initialStep = 0, investmentChoice }
               {step === 3 && <DisclosureStep data={formData} update={updateField} errors={errors} />}
             </>
 
-            <div className="flex items-center justify-between pt-8 gap-8">
+            <div className="flex items-center justify-between pt-8 gap-6">
               <Button
                 variant="ghost"
                 onClick={handleBack}
-                className={'w-[146px] bg-[#1A3A2C] hover:bg-[#1A3A2C]/80! text-white rounded-full h-12'}
+                className="w-38 bg-[#1A3A2C] hover:bg-[#1A3A2C]/80! text-white rounded-full h-12"
               >
                 Back
               </Button>
@@ -308,7 +307,7 @@ function PersonalInfoStep({ data }: { data: any }) {
             <div className="flex gap-4">
               <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-[#1E3D2F] bg-white">
                 <img src="/images/map-snippet.png" alt="Address map" className="h-full w-full object-cover opacity-80" />
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-green-500/20 mix-blend-overlay" />
+                <div className="absolute inset-0 bg-linear-to-br from-blue-500/20 to-green-500/20 mix-blend-overlay" />
               </div>
               <div className="flex flex-col justify-center text-sm text-white">
                 <p>{data.address}</p>
@@ -552,7 +551,7 @@ function DisclosureStep({ data, update }: any) {
                     option.checked ? 'border-[#30D158] bg-[#30D158]' : 'border-[#A1BEAD]'
                   }`}
                 >
-                  {option.checked && <Check className="h-3.5 w-3.5 text-[#0F2A20] stroke-[3]" />}
+                  {option.checked && <Check className="h-3.5 w-3.5 text-[#0F2A20] stroke-3" />}
                 </div>
               </div>
               <div className="flex flex-1 flex-col items-start justify-start">

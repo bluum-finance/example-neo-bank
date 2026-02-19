@@ -39,16 +39,16 @@ interface UserState {
 // Mock user account data for demo
 const mockUserAccount = {
   name: 'John Doe',
-  phoneNumber: '+1 (555) 123-4567',
+  phoneNumber: '+15551234567',
   streetAddress: ['123 Investment Ave'],
   city: 'San Francisco',
   state: 'CA',
   postalCode: '94105',
-  country: 'United States',
+  country: 'US',
   firstName: 'John',
   lastName: 'Doe',
   dateOfBirth: '1990-01-15',
-  countryOfBirth: 'United States',
+  countryOfBirth: 'US',
 };
 
 const generateRandomEmail = () => {
