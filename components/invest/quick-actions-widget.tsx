@@ -2,16 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  ArrowUp,
-  ArrowDown,
-  TrendingUp,
-  Clock,
-  ChevronRight,
-} from 'lucide-react';
+import { ArrowUp, ArrowDown, TrendingUp, Clock, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Deposit } from '@/components/payment/deposit';
-import { Withdrawal } from '@/components/payment/withdrawal';
+import { DepositDialog } from '@/components/payment/deposit-dialog';
+import { WithdrawalDialog } from '@/components/payment/withdrawal-dialog';
 import { getAuth } from '@/lib/auth';
 import { AccountService } from '@/services/account.service';
 
@@ -156,7 +150,9 @@ export function QuickActionsWidget() {
     <>
       <Card className="h-full gap-2">
         <CardHeader>
-          <div className="text-base font-medium text-foreground/70 dark:text-white/70">Quick Actions</div>
+          <div className="text-base font-medium text-foreground/70 dark:text-white/70">
+            Quick Actions
+          </div>
         </CardHeader>
 
         <CardContent>
@@ -171,13 +167,13 @@ export function QuickActionsWidget() {
                   className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
                   style={{ backgroundColor: '#1A3A2C' }}
                 >
-                  <div className="text-white">
-                    {action.icon}
-                  </div>
+                  <div className="text-white">{action.icon}</div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[#D1D5DB] font-medium text-sm">{action.title}</p>
-                  <p className="text-xs font-light text-[#A1BEAD] mt-1.5">{action.description}</p>
+                  <p className="text-xs font-light text-[#A1BEAD] mt-1.5">
+                    {action.description}
+                  </p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
               </button>
@@ -188,33 +184,21 @@ export function QuickActionsWidget() {
 
       {/* Deposit Modal */}
       {showDepositModal && accountId && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(8, 52, 35, 0.5)' }}>
-          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <CardContent className="p-6">
-              <Deposit
-                accountId={accountId}
-                onSuccess={handleDepositSuccess}
-                onCancel={() => setShowDepositModal(false)}
-              />
-            </CardContent>
-          </Card>
-        </div>
+        <DepositDialog
+          accountId={accountId}
+          onSuccess={handleDepositSuccess}
+          onCancel={() => setShowDepositModal(false)}
+        />
       )}
 
       {/* Withdraw Modal */}
       {showWithdrawModal && accountId && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(8, 52, 35, 0.5)' }}>
-          <Card className="w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <CardContent className="p-6">
-              <Withdrawal
-                accountId={accountId}
-                availableBalance={availableBalance}
-                onSuccess={handleWithdrawSuccess}
-                onCancel={() => setShowWithdrawModal(false)}
-              />
-            </CardContent>
-          </Card>
-        </div>
+        <WithdrawalDialog
+          accountId={accountId}
+          availableBalance={availableBalance}
+          onSuccess={handleWithdrawSuccess}
+          onCancel={() => setShowWithdrawModal(false)}
+        />
       )}
     </>
   );
