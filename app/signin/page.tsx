@@ -3,72 +3,43 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { isAuthenticated } from '@/lib/auth';
+import {
+  useUserStore,
+  useIsAuthenticated,
+  INVESTOR_EMAIL1,
+} from '@/store/user.store';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, KeyRound } from 'lucide-react';
-import { INVESTOR_EMAIL, DEMO_INVESTOR_ACCOUNT_ID } from '@/lib/constants';
-import { setAuth } from '@/lib/auth';
-import { mockUserAccount } from '@/lib/mock-data';
 import Link from 'next/link';
 
 export default function SignIn() {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const isAuthenticated = useIsAuthenticated();
+  const { login, isLoading } = useUserStore();
 
   useEffect(() => {
-    if (isAuthenticated()) {
+    if (isAuthenticated) {
       router.replace('/dashboard');
     }
-  }, [router]);
+  }, [router, isAuthenticated]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    // Demo login: check if email matches investor email and password is at least 8 characters
-    const isEmailValid = email === INVESTOR_EMAIL || email === 'investor@bluuminvest.com';
-    const isPasswordValid = password.length >= 8;
+    const result = await login(email, password);
 
-    const generateRandomEmail = () => {
-      // investor<random-string-4-numbers>@bluuminvest.com
-      return `investor${Math.floor(1000 + Math.random() * 9000)}@bluuminvest.com`;
-    };
-    if (isEmailValid && isPasswordValid) {
-      const isNewInvestor = email === 'investor@bluuminvest.com';
-      const userEmail = isNewInvestor ? generateRandomEmail() : email;
-
-      // Investor user with completed investment account
-      setAuth({
-        email: userEmail,
-        name: mockUserAccount.name,
-        phoneNumber: mockUserAccount.phoneNumber,
-        streetAddress: mockUserAccount.streetAddress,
-        city: mockUserAccount.city,
-        state: mockUserAccount.state,
-        postalCode: mockUserAccount.postalCode,
-        country: mockUserAccount.country,
-        firstName: mockUserAccount.firstName,
-        lastName: mockUserAccount.lastName,
-        dateOfBirth: mockUserAccount.dateOfBirth,
-        countryOfBirth: mockUserAccount.countryOfBirth,
-        // Investment account already set up only for existing investor
-        externalAccountId: isNewInvestor ? undefined : DEMO_INVESTOR_ACCOUNT_ID,
-        investmentChoice: 'ai-wealth',
-      });
-
+    if (result.success) {
       toast.success('Signed in successfully!');
       router.push('/dashboard');
     } else {
-      toast.error('Invalid email or password.');
+      toast.error(result.error || 'Invalid email or password.');
     }
-
-    setIsSubmitting(false);
   };
 
   return (
@@ -76,9 +47,16 @@ export default function SignIn() {
       <div className="flex min-h-screen w-full flex-col items-center justify-start bg-transparent">
         <div className="header container mx-auto px-4 py-4 md:px-12 xl:px-4 flex justify-between items-center">
           <Link href="/">
-            <img src="/bluum-logo.svg" alt="Bluum Finance" className="h-8 lg:h-10" />
+            <img
+              src="/bluum-logo.svg"
+              alt="Bluum Finance"
+              className="h-8 lg:h-10"
+            />
           </Link>
-          <Link href="/#" className="text-white py-2 text-base font-light leading-6">
+          <Link
+            href="/#"
+            className="text-white py-2 text-base font-light leading-6"
+          >
             Open Account
           </Link>
         </div>
@@ -120,7 +98,7 @@ export default function SignIn() {
                         name="email"
                         type="email"
                         placeholder="youremail@company.com"
-                        defaultValue={INVESTOR_EMAIL}
+                        defaultValue={INVESTOR_EMAIL1}
                         required
                         autoComplete="email"
                         className="w-full rounded-[12px] bg-[#0E231F] px-4 py-3 outline-[#1E3D2F] outline-1 outline-offset-1
@@ -176,12 +154,12 @@ export default function SignIn() {
                     <Button
                       type="submit"
                       form="signin-form"
-                      disabled={isSubmitting}
+                      disabled={isLoading}
                       className="w-full px-4 py-3 rounded-[32px] inline-flex justify-center items-center gap-2 h-auto hover:opacity-90 transition-opacity"
                       style={{ backgroundColor: '#57B75C', color: 'white' }}
                     >
                       <span className="text-base font-normal leading-6">
-                        {isSubmitting ? 'Signing in...' : 'Log In'}
+                        {isLoading ? 'Signing in...' : 'Log In'}
                       </span>
                     </Button>
                   </div>
@@ -189,7 +167,10 @@ export default function SignIn() {
               </div>
 
               {/* Divider */}
-              <div className="w-full my-1 h-px" style={{ backgroundColor: '#1E3D2F' }} />
+              <div
+                className="w-full my-1 h-px"
+                style={{ backgroundColor: '#1E3D2F' }}
+              />
 
               {/* Passkey Section */}
               <div className="px-6 lg:px-12 flex flex-col justify-center items-start gap-3 w-full">

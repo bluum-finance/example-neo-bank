@@ -6,7 +6,7 @@ import { Info, CheckCircle2, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Insight } from '@/services/widget.service';
-import { getAuth } from '@/lib/auth';
+import { useUser } from '@/store/user.store';
 import { useState } from 'react';
 
 interface WelcomeInsightsCardProps {
@@ -16,6 +16,7 @@ interface WelcomeInsightsCardProps {
 
 export function WelcomeInsightsCard({ insights, insightsLoading }: WelcomeInsightsCardProps) {
   const router = useRouter();
+  const user = useUser();
   const [aiInputValue, setAiInputValue] = useState('');
 
   const insightVisibleCount = Math.min(insights.length, 3);
@@ -24,7 +25,6 @@ export function WelcomeInsightsCard({ insights, insightsLoading }: WelcomeInsigh
 
   // Get user's first name
   const getUserFirstName = () => {
-    const user = getAuth();
     if (user?.firstName) return user.firstName;
     if (user?.name) return user.name.split(' ')[0];
     return 'Jessie'; // Default fallback
@@ -41,20 +41,14 @@ export function WelcomeInsightsCard({ insights, insightsLoading }: WelcomeInsigh
     router.push(`/chat?message=${encodeURIComponent(prompt)}`);
   };
 
-  const SUGGESTED_PROMPTS = [
-    'What is the next billion-dollar company?',
-    'How can I invest in private AI companies with  minimal funds?',
-  ];
+  const SUGGESTED_PROMPTS = ['What is the next billion-dollar company?', 'How can I invest in private AI companies with  minimal funds?'];
 
   return (
     <Card className="py-6 dark:bg-[#0F2A20] border-[#1E3D2F] overflow-hidden">
       <CardContent className="px-4 md:px-6">
         <div className="flex flex-col gap-6">
           {/* Welcome Heading */}
-          <div
-            className="text-2xl md:text-[30px] font-normal text-white leading-tight md:leading-9"
-            style={{ fontFamily: 'Inter' }}
-          >
+          <div className="text-2xl md:text-[30px] font-normal text-white leading-tight md:leading-9" style={{ fontFamily: 'Inter' }}>
             Welcome, {getUserFirstName()}
           </div>
 
@@ -63,10 +57,7 @@ export function WelcomeInsightsCard({ insights, insightsLoading }: WelcomeInsigh
             {/* Left: Your Insights */}
             <div className="flex-1 min-w-0">
               <div className="flex flex-col gap-4">
-                <div
-                  className="text-lg font-normal text-[#B0B8BD] leading-[27px]"
-                  style={{ fontFamily: 'Inter' }}
-                >
+                <div className="text-lg font-normal text-[#B0B8BD] leading-[27px]" style={{ fontFamily: 'Inter' }}>
                   Your Insights
                 </div>
 
@@ -74,9 +65,7 @@ export function WelcomeInsightsCard({ insights, insightsLoading }: WelcomeInsigh
                   {insightsLoading ? (
                     <InsightSkeleton />
                   ) : !hasInsights ? (
-                    <div className="text-base py-2 text-muted-foreground">
-                      No insights data available
-                    </div>
+                    <div className="text-base py-2 text-muted-foreground">No insights data available</div>
                   ) : (
                     insightsToShow.map((item, index) => {
                       const description = item.summary || '';
@@ -89,9 +78,7 @@ export function WelcomeInsightsCard({ insights, insightsLoading }: WelcomeInsigh
                       if (category === 'tax') {
                         IconComponent = <Info className="w-3.5 h-3.5 text-[#4CAF50]" />;
                       } else if (category === 'opportunity') {
-                        IconComponent = (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#4CAF50]" />
-                        );
+                        IconComponent = <CheckCircle2 className="w-3.5 h-3.5 text-[#4CAF50]" />;
                       } else if (category === 'rebalancing') {
                         IconComponent = <Clock className="w-3.5 h-3.5 text-[#4CAF50]" />;
                       } else {
@@ -111,30 +98,20 @@ export function WelcomeInsightsCard({ insights, insightsLoading }: WelcomeInsigh
                           <div className="flex flex-col gap-2">
                             {/* Header with Icon and Title */}
                             <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 bg-[#124031] rounded-md flex items-center justify-center">
-                                {IconComponent}
-                              </div>
-                              <div
-                                className="text-xs font-medium text-[#D1D5DB] leading-[19.5px]"
-                                style={{ fontFamily: 'Inter' }}
-                              >
+                              <div className="w-7 h-7 bg-[#124031] rounded-md flex items-center justify-center">{IconComponent}</div>
+                              <div className="text-xs font-medium text-[#D1D5DB] leading-[19.5px]" style={{ fontFamily: 'Inter' }}>
                                 {item.title}
                               </div>
                             </div>
 
                             {/* Description */}
-                            <div
-                              className="text-[13px] font-light text-[#A1BEAD] leading-[19.5px]"
-                              style={{ fontFamily: 'Inter' }}
-                            >
-                              {description
-                                .split('<br/>')
-                                .map((line: string, lineIndex: number, array: string[]) => (
-                                  <span key={lineIndex}>
-                                    {line}
-                                    {lineIndex < array.length - 1 && <br />}
-                                  </span>
-                                ))}
+                            <div className="text-[13px] font-light text-[#A1BEAD] leading-[19.5px]" style={{ fontFamily: 'Inter' }}>
+                              {description.split('<br/>').map((line: string, lineIndex: number, array: string[]) => (
+                                <span key={lineIndex}>
+                                  {line}
+                                  {lineIndex < array.length - 1 && <br />}
+                                </span>
+                              ))}
                             </div>
 
                             {/* Action Link */}
@@ -143,9 +120,7 @@ export function WelcomeInsightsCard({ insights, insightsLoading }: WelcomeInsigh
                                 className="text-[13px] font-medium text-[#66D07A] leading-[19.5px] cursor-pointer hover:opacity-80 transition-opacity"
                                 style={{ fontFamily: 'Inter' }}
                               >
-                                <button onClick={handleActionClick}>
-                                  {item.action.cta_label} →
-                                </button>
+                                <button onClick={handleActionClick}>{item.action.cta_label} →</button>
                               </div>
                             )}
                           </div>
@@ -175,12 +150,7 @@ export function WelcomeInsightsCard({ insights, insightsLoading }: WelcomeInsigh
                   }}
                 />
                 <div className="relative w-[140px] h-[140px] md:w-[190px] md:h-[190px]">
-                  <Image
-                    src="/ai-icon.svg"
-                    alt="AI Icon"
-                    fill
-                    className="z-10 object-contain"
-                  />
+                  <Image src="/ai-icon.svg" alt="AI Icon" fill className="z-10 object-contain" />
                 </div>
               </div>
 

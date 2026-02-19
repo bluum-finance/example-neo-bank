@@ -10,7 +10,7 @@ import { QuickActionsWidget } from '@/components/invest/quick-actions-widget';
 import { InvestmentService, type Position } from '@/services/investment.service';
 import { AccountService } from '@/services/account.service';
 import { WidgetService, type PerformanceDataPoint } from '@/services/widget.service';
-import { getAuth, setExternalAccountId, clearExternalAccountId } from '@/lib/auth';
+import { useUser } from '@/store/user.store';
 import { FundingOptionsWidget } from '@/components/dashboard/funding-options-widget';
 import { ActionsList } from '@/components/dashboard/actions-list';
 import { AccountsWidget } from '@/components/dashboard/accounts-widget';
@@ -32,15 +32,13 @@ export default function Invest() {
   const [chartError, setChartError] = useState<string | null>(null);
   const [hasAccountId, setHasAccountId] = useState(false);
   const [showAIOnboarding, setShowAIOnboarding] = useState(false);
+  const user = useUser();
 
   const loadSummaryData = async (userAccountId: string, detectedPortfolioId: string) => {
     setSummaryLoading(true);
     setSummaryError(null);
     try {
-      const summary = await WidgetService.getPortfolioSummary(
-        userAccountId,
-        detectedPortfolioId,
-      );
+      const summary = await WidgetService.getPortfolioSummary(userAccountId, detectedPortfolioId);
       setSummaryData(summary);
     } catch (error: any) {
       console.error('Failed to load portfolio summary', error);
@@ -50,19 +48,11 @@ export default function Invest() {
     }
   };
 
-  const loadChartData = async (
-    userAccountId: string,
-    detectedPortfolioId: string,
-    range: '1W' | '1M' | '3M' | '1Y' | 'All' = '1M',
-  ) => {
+  const loadChartData = async (userAccountId: string, detectedPortfolioId: string, range: '1W' | '1M' | '3M' | '1Y' | 'All' = '1M') => {
     setChartLoading(true);
     setChartError(null);
     try {
-      const data = await WidgetService.getPortfolioPerformanceData(
-        range,
-        userAccountId,
-        detectedPortfolioId,
-      );
+      const data = await WidgetService.getPortfolioPerformanceData(range, userAccountId, detectedPortfolioId);
       setChartData(data);
     } catch (error: any) {
       console.error('Failed to load performance data', error);
@@ -95,16 +85,11 @@ export default function Invest() {
       const balanceValue = account?.balance ? parseFloat(account.balance) : 0;
       setAccountBalance(balanceValue);
       const accountData = account as any;
-      const detectedPortfolioId =
-        accountData?.portfolios?.find((p: any) => p.status === 'active')?.id ||
-        'ptf_demo_main';
+      const detectedPortfolioId = accountData?.portfolios?.find((p: any) => p.status === 'active')?.id || 'ptf_demo_main';
       setPortfolioId(detectedPortfolioId);
 
       if (detectedPortfolioId) {
-        await Promise.all([
-          loadSummaryData(userAccountId, detectedPortfolioId),
-          loadChartData(userAccountId, detectedPortfolioId),
-        ]);
+        await Promise.all([loadSummaryData(userAccountId, detectedPortfolioId), loadChartData(userAccountId, detectedPortfolioId)]);
       } else {
         setSummaryData(null);
         setSummaryError(null);
@@ -131,7 +116,6 @@ export default function Invest() {
   };
 
   useEffect(() => {
-    const user = getAuth();
     const userAccountId = user?.externalAccountId;
 
     if (userAccountId) {
@@ -143,7 +127,7 @@ export default function Invest() {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user?.externalAccountId]);
 
   return (
     <div className="space-y-6 my-4">
@@ -160,9 +144,7 @@ export default function Invest() {
           {/* Left (2/3 width) */}
           <div className="lg:col-span-1">
             <PortfolioPerformanceChart
-              portfolioValue={
-                accountBalance + positions.reduce((sum, pos) => sum + (pos.value || 0), 0)
-              }
+              portfolioValue={accountBalance + positions.reduce((sum, pos) => sum + (pos.value || 0), 0)}
               data={chartData}
               portfolioPerformance={portfolioGains.totalGainPercent}
               summaryData={summaryData}

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { getAuth } from '@/lib/auth';
+import { useUser } from '@/store/user.store';
 import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import {
@@ -14,7 +14,7 @@ import {
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const user = getAuth();
+  const user = useUser();
 
   const getInitials = (name: string) => {
     return name

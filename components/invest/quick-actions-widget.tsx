@@ -6,7 +6,7 @@ import { ArrowUp, ArrowDown, TrendingUp, Clock, ChevronRight } from 'lucide-reac
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DepositDialog } from '@/components/payment/deposit-dialog';
 import { WithdrawalDialog } from '@/components/payment/withdrawal-dialog';
-import { getAuth } from '@/lib/auth';
+import { useUser } from '@/store/user.store';
 import { AccountService } from '@/services/account.service';
 
 interface QuickAction {
@@ -52,6 +52,7 @@ const defaultQuickActions: Omit<QuickAction, 'icon'>[] = [
 
 export function QuickActionsWidget() {
   const router = useRouter();
+  const user = useUser();
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [accountId, setAccountId] = useState<string | null>(null);
@@ -60,7 +61,6 @@ export function QuickActionsWidget() {
   // Get account ID and balance
   useEffect(() => {
     const loadAccount = async () => {
-      const user = getAuth();
       const userAccountId = user?.externalAccountId;
 
       if (userAccountId) {
@@ -77,7 +77,7 @@ export function QuickActionsWidget() {
     };
 
     loadAccount();
-  }, []);
+  }, [user?.externalAccountId]);
 
   // Map action IDs to their corresponding icons
   const getIconForAction = (id: string): React.ReactNode => {
@@ -150,9 +150,7 @@ export function QuickActionsWidget() {
     <>
       <Card className="h-full gap-2">
         <CardHeader>
-          <div className="text-base font-medium text-foreground/70 dark:text-white/70">
-            Quick Actions
-          </div>
+          <div className="text-base font-medium text-foreground/70 dark:text-white/70">Quick Actions</div>
         </CardHeader>
 
         <CardContent>
@@ -163,17 +161,12 @@ export function QuickActionsWidget() {
                 onClick={() => handleActionClick(action)}
                 className="w-full flex items-center gap-3 py-3 rounded-lg hover:bg-muted/50 transition-colors text-left group"
               >
-                <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: '#1A3A2C' }}
-                >
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: '#1A3A2C' }}>
                   <div className="text-white">{action.icon}</div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[#D1D5DB] font-medium text-sm">{action.title}</p>
-                  <p className="text-xs font-light text-[#A1BEAD] mt-1.5">
-                    {action.description}
-                  </p>
+                  <p className="text-xs font-light text-[#A1BEAD] mt-1.5">{action.description}</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
               </button>
@@ -184,11 +177,7 @@ export function QuickActionsWidget() {
 
       {/* Deposit Modal */}
       {showDepositModal && accountId && (
-        <DepositDialog
-          accountId={accountId}
-          onSuccess={handleDepositSuccess}
-          onCancel={() => setShowDepositModal(false)}
-        />
+        <DepositDialog accountId={accountId} onSuccess={handleDepositSuccess} onCancel={() => setShowDepositModal(false)} />
       )}
 
       {/* Withdraw Modal */}

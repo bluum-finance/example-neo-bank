@@ -9,8 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ChatSuggestions } from '@/components/ai-wealth/chat-suggestions';
 import { AssistantService } from '@/services/assistant.service';
-import { getAuth } from '@/lib/auth';
 import { toast } from 'sonner';
+import { useUserStore } from '@/store/user.store';
 
 interface Message {
   id: string;
@@ -111,8 +111,8 @@ export default function ChatPage() {
 
   const sendMessage = async (messageText: string) => {
     setIsLoading(true);
-    const account = getAuth();
-    const accountId = account?.externalAccountId;
+    const user = useUserStore.getState().user;
+    const accountId = user?.externalAccountId;
     const portfolioId = searchParams.get('portfolio_id') || undefined;
 
     try {

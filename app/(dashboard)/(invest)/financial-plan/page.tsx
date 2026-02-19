@@ -5,11 +5,12 @@ import { WidgetService, type FinancialGoal } from '@/services/widget.service';
 import { FinancialPlan } from '@/components/invest/financial-plan';
 import { GoalDetailsModal } from '@/components/invest/goal-details-modal';
 import { GoalFormModal } from '@/components/invest/goal-form-modal';
-import { getAuth } from '@/lib/auth';
+import { useUser } from '@/store/user.store';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function FinancialPlanPage() {
+  const user = useUser();
   const [financialGoals, setFinancialGoals] = useState<FinancialGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +21,6 @@ export default function FinancialPlanPage() {
   const loadFinancialGoals = async () => {
     try {
       setError(null);
-      const user = getAuth();
       const accountId = user?.externalAccountId;
       if (!accountId) {
         setError('Account ID not found');
@@ -38,7 +38,7 @@ export default function FinancialPlanPage() {
 
   useEffect(() => {
     loadFinancialGoals();
-  }, []);
+  }, [user?.externalAccountId]);
 
   const handleCreateGoal = async (goalData: {
     name: string;
@@ -50,7 +50,6 @@ export default function FinancialPlanPage() {
   }): Promise<void> => {
     try {
       setError(null);
-      const user = getAuth();
       const accountId = user?.externalAccountId;
       if (!accountId) {
         throw new Error('Account ID not found');
@@ -103,15 +102,12 @@ export default function FinancialPlanPage() {
   ) => {
     try {
       setError(null);
-      const user = getAuth();
       const accountId = user?.externalAccountId;
       if (!accountId) {
         throw new Error('Account ID not found');
       }
       const updatedGoal = await WidgetService.updateFinancialGoal(accountId, goalId, goalData);
-      setFinancialGoals((prev) =>
-        prev.map((goal) => (goal.goal_id === goalId ? updatedGoal : goal))
-      );
+      setFinancialGoals((prev) => prev.map((goal) => (goal.goal_id === goalId ? updatedGoal : goal)));
       setIsModalOpen(false);
       setEditingGoal(null);
       return updatedGoal;
@@ -125,7 +121,6 @@ export default function FinancialPlanPage() {
   const handleDeleteGoal = async (goalId: string) => {
     try {
       setError(null);
-      const user = getAuth();
       const accountId = user?.externalAccountId;
       if (!accountId) {
         throw new Error('Account ID not found');
@@ -172,14 +167,10 @@ export default function FinancialPlanPage() {
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Financial Plan</h1>
-          <p className="text-muted-foreground mt-1">
-            Track your financial goals and progress
-          </p>
+          <p className="text-muted-foreground mt-1">Track your financial goals and progress</p>
         </div>
 
-        <Button
-          onClick={handleOpenCreateModal}
-        >
+        <Button onClick={handleOpenCreateModal}>
           <Plus className="h-4 w-4" />
           Create Goal
         </Button>

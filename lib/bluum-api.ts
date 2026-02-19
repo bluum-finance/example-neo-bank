@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import { config } from './config';
 
 /**
  * Bluum API Client
@@ -6,10 +7,9 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
  * - Use in: app/api route.ts files (server-side only)
  * - Never import this module in client components or client-side code
  */
-const BLUUM_API_BASE_URL =
-  process.env.BLUUM_API_BASE_URL || 'https://test-service.bluumfinance.com/v1';
-const BLUUM_API_KEY = process.env.BLUUM_API_KEY || '';
-const BLUUM_SECRET_KEY = process.env.BLUUM_SECRET_KEY || '';
+const BLUUM_API_BASE_URL = config.apiBaseUrl;
+const BLUUM_API_KEY = config.apiKey;
+const BLUUM_SECRET_KEY = config.secretKey;
 
 class BluumApiClient {
   private client: AxiosInstance;

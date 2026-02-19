@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { isAuthenticated } from '@/lib/auth';
+import { useHasLoaded, useIsAuthenticated } from '@/store/user.store';
 import { BottomNav } from '@/components/navigation/bottom-nav';
 import { SidebarNav } from '@/components/navigation/sidebar-nav';
 import { PageHeader } from '@/components/navigation/page-header';
@@ -10,24 +10,18 @@ import { PageHeader } from '@/components/navigation/page-header';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
-  const [authenticated, setAuthenticated] = useState(false);
+  const isAuthenticated = useIsAuthenticated();
+  const hasLoaded = useHasLoaded();
 
   useEffect(() => {
-    setMounted(true);
-    const authStatus = isAuthenticated();
-    setAuthenticated(authStatus);
-    if (!authStatus) {
+    if (!hasLoaded) return;
+
+    if (!isAuthenticated) {
       router.push('/signin');
     }
-  }, [router]);
+  }, [router, hasLoaded, isAuthenticated]);
 
-  // Don't render anything until we're on the client side
-  if (!mounted) {
-    return null;
-  }
-
-  if (!authenticated) {
+  if (!hasLoaded) {
     return null;
   }
 

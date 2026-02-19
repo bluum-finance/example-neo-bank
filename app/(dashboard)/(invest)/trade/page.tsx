@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { InvestmentService, type Position } from '@/services/investment.service';
 import { AccountService } from '@/services/account.service';
-import { getAuth } from '@/lib/auth';
+import { useUser } from '@/store/user.store';
 import { toast } from 'sonner';
 import { HoldingsWidget } from '@/components/invest/holdings-widget';
 
@@ -52,6 +52,7 @@ export default function TradeStock() {
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasAutoLookedUp, setHasAutoLookedUp] = useState(false);
+  const user = useUser();
 
   // Order form state
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
@@ -64,11 +65,12 @@ export default function TradeStock() {
   useEffect(() => {
     const loadAccount = async () => {
       try {
-        const user = getAuth();
         const accId = user?.externalAccountId;
 
         if (!accId) {
-          toast.error('No investment account found. Please create an account first.');
+          toast.error(
+            'No investment account found. Please create an account first.',
+          );
           router.push('/invest');
           return;
         }

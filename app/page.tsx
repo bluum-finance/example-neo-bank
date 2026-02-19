@@ -2,19 +2,19 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { isAuthenticated } from '@/lib/auth';
+import { useIsAuthenticated } from '@/store/user.store';
 
 export default function Home() {
   const router = useRouter();
+  const isAuthenticated = useIsAuthenticated();
 
   useEffect(() => {
-    if (isAuthenticated()) {
+    if (isAuthenticated) {
       router.replace('/dashboard');
     } else {
       router.replace('/signin');
     }
-  }, [router]);
+  }, [router, isAuthenticated]);
 
   return null;
 }
-

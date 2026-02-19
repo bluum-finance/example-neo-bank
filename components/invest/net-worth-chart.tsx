@@ -6,12 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getNetWorthChartData, type NetWorthDataPoint } from '@/lib/mock-data';
 import { TrendingUp, Target, Zap, Calendar } from 'lucide-react';
-import { getAuth } from '@/lib/auth';
+import { useUser } from '@/store/user.store';
 
 export function NetWorthChart({ accountBalance }: { accountBalance?: number }) {
   const [data, setData] = useState<NetWorthDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
-  const user = getAuth();
+  const user = useUser();
   const accountId = user?.externalAccountId;
 
   useEffect(() => {

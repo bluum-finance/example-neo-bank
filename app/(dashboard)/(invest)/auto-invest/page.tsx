@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AutoInvestService, type AutoInvestSchedule } from '@/services/auto-invest.service';
-import { getAuth } from '@/lib/auth';
+import { useUser } from '@/store/user.store';
 import { AccountService } from '@/services/account.service';
 import { PlaidService } from '@/services/plaid.service';
 import { AutoInvestFormModal } from '@/components/invest/auto-invest-form-modal';
@@ -42,6 +42,7 @@ type UpdateScheduleData = Partial<{
 }>;
 
 export default function AutoInvestPage() {
+  const user = useUser();
   const [schedules, setSchedules] = useState<AutoInvestSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +58,6 @@ export default function AutoInvestPage() {
     const loadData = async () => {
       try {
         setError(null);
-        const user = getAuth();
         const accId = user?.externalAccountId;
 
         if (!accId) {

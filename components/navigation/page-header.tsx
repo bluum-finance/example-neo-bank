@@ -2,7 +2,7 @@
 
 import { Search, ChevronDown, Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getAuth, clearAuth } from '@/lib/auth';
+import { useUserStore, useUser } from '@/store/user.store';
 import { toast } from 'sonner';
 import {
   DropdownMenu,
@@ -15,6 +15,8 @@ import { EyeOffIcon } from '../icons/eyeoff.icon';
 
 export function PageHeader() {
   const router = useRouter();
+  const user = useUser();
+  const logout = useUserStore((state) => state.logout);
 
   const investLinks = [
     { label: 'Portfolio', path: '/invest' },
@@ -23,14 +25,13 @@ export function PageHeader() {
   ];
 
   const handleLogout = () => {
-    clearAuth();
+    logout();
     toast.success('Logged out successfully');
     router.push('/signin');
   };
 
   // Get user initials for avatar
   const getUserInitials = () => {
-    const user = getAuth();
     if (user?.firstName && user?.lastName) {
       return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
     }

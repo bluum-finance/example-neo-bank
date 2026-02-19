@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { InvestmentService, type Position } from '@/services/investment.service';
-import { getAuth } from '@/lib/auth';
+import { useUser } from '@/store/user.store';
 
 export type AssetCategory = 'all' | 'treasury' | 'stocks' | 'bonds';
 
@@ -19,7 +19,7 @@ interface ExtendedPosition extends Position {
 export function HoldingsWidget() {
   const [holdings, setHoldings] = useState<ExtendedPosition[]>([]);
   const [loading, setLoading] = useState(true);
-  const user = getAuth();
+  const user = useUser();
   const accountId = user?.externalAccountId;
 
   useEffect(() => {
