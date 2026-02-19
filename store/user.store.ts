@@ -56,8 +56,8 @@ const generateRandomEmail = () => {
 };
 
 // Demo credentials
-export const INVESTOR_EMAIL1 = 'johndoe@bluuminvest.com'; // AI Wealth flow
-export const INVESTOR_EMAIL2 = 'johndoe2@bluuminvest.com'; // Self Directed flow
+export const INVESTOR_EMAIL1 = 'wealth@bluuminvest.com'; // AI Wealth flow
+export const INVESTOR_EMAIL2 = 'self@bluuminvest.com'; // Self Directed flow
 export const INVESTOR_EMAIL_NEW = 'demo@bluuminvest.com'; // New investor flow
 export const DEFAULT_SIGNIN_EMAIL = INVESTOR_EMAIL_NEW;
 const DEMO_INVESTOR_ACCOUNT_ID = config.demoInvestorAccountId;
