@@ -1,13 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  FileText,
-  TrendingUp,
-  ArrowRight,
-  ArrowLeft,
-  AlertTriangle,
-  Check,
-} from 'lucide-react';
+import { FileText, TrendingUp, ArrowRight, ArrowLeft, AlertTriangle, Check } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Input } from '../ui/input';
@@ -16,12 +9,13 @@ import { Select } from '../ui/select';
 import { Separator } from '../ui/separator';
 import { Checkbox } from '../ui/checkbox';
 import { AccountService } from '@/services/account.service';
-import { getAuth, User } from '@/lib/auth';
 import { toast } from 'sonner';
+import { InvestmentChoice, useUser } from '@/store/user.store';
 
 interface InvestOnboardingProps {
   onAccept: (accountId?: string) => void;
   initialStep?: number;
+  investmentChoice: InvestmentChoice;
 }
 
 interface OnboardingState {
@@ -94,11 +88,9 @@ const INITIAL_STATE: OnboardingState = {
   },
 };
 
-export function InvestOnboarding({
-  onAccept,
-  initialStep = 0,
-}: InvestOnboardingProps) {
+export function InvestOnboarding({ onAccept, initialStep = 0, investmentChoice }: InvestOnboardingProps) {
   const router = useRouter();
+  const user = useUser();
   const [step, setStep] = useState(initialStep);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [formData, setFormData] = useState<OnboardingState>(INITIAL_STATE);
@@ -106,19 +98,18 @@ export function InvestOnboarding({
 
   // Initialize profile data from auth
   useEffect(() => {
-    const user = getAuth();
     if (user) {
       setFormData((prev) => ({
         ...prev,
         profile: {
-          firstName: user.firstName || user.name?.split(" ")[0] || "Oluwatosin",
-          lastName: user.lastName || user.name?.split(" ")[1] || "Einstein",
-          dateOfBirth: user.dateOfBirth || "01/09/1908",
-          phoneNumber: user.phoneNumber || "+1 (341) 213–8356",
-          address: user.streetAddress?.[0] || "000 MB Bush Way",
-          city: user.city || "Senal",
-          state: user.state || "CA",
-          zip: user.postalCode || "12122",
+          firstName: user.firstName || user.name?.split(' ')[0] || 'Oluwatosin',
+          lastName: user.lastName || user.name?.split(' ')[1] || 'Einstein',
+          dateOfBirth: user.dateOfBirth || '01/09/1908',
+          phoneNumber: user.phoneNumber || '+1 (341) 213–8356',
+          address: user.streetAddress?.[0] || '000 MB Bush Way',
+          city: user.city || 'Senal',
+          state: user.state || 'CA',
+          zip: user.postalCode || '12122',
         },
       }));
     }
@@ -130,10 +121,7 @@ export function InvestOnboarding({
         const sectionData = prev[section];
         return {
           ...prev,
-          [section]:
-            typeof sectionData === "object" && sectionData !== null
-              ? { ...sectionData, [field]: value }
-              : value,
+          [section]: typeof sectionData === 'object' && sectionData !== null ? { ...sectionData, [field]: value } : value,
         };
       });
       if (errors[field]) {
@@ -142,7 +130,7 @@ export function InvestOnboarding({
         setErrors(newErrors);
       }
     },
-    [errors],
+    [errors]
   );
 
   const validateStep = (stepNum: number): boolean => {
@@ -153,21 +141,15 @@ export function InvestOnboarding({
       // Profile step - mostly read-only for now as per JSX
       return true;
     } else if (stepNum === 1) {
-      if (!employmentInfo.employmentStatus)
-        newErrors.employmentStatus = "Employment Status is required";
-      if (employmentInfo.employmentStatus === "employed") {
-        if (!employmentInfo.employer.trim())
-          newErrors.employer = "Employer is required";
-        if (!employmentInfo.position.trim())
-          newErrors.position = "Position is required";
+      if (!employmentInfo.employmentStatus) newErrors.employmentStatus = 'Employment Status is required';
+      if (employmentInfo.employmentStatus === 'employed') {
+        if (!employmentInfo.employer.trim()) newErrors.employer = 'Employer is required';
+        if (!employmentInfo.position.trim()) newErrors.position = 'Position is required';
       }
     } else if (stepNum === 2) {
-      if (!financialProfile.annualIncome)
-        newErrors.annualIncome = "Annual Income is required";
-      if (!financialProfile.netWorth)
-        newErrors.netWorth = "Net Worth is required";
-      if (!financialProfile.liquidAssets)
-        newErrors.liquidAssets = "Liquid Assets is required";
+      if (!financialProfile.annualIncome) newErrors.annualIncome = 'Annual Income is required';
+      if (!financialProfile.netWorth) newErrors.netWorth = 'Net Worth is required';
+      if (!financialProfile.liquidAssets) newErrors.liquidAssets = 'Liquid Assets is required';
       // fundingSource is no longer in the UI, so we remove its validation
     } else if (stepNum === 3) {
       // Disclosure step - no validation required as user can select any combination
@@ -183,11 +165,10 @@ export function InvestOnboarding({
 
     setIsCreatingAccount(true);
     try {
-      const user = getAuth();
-      if (!user) throw new Error("Please sign in first");
+      if (!user) throw new Error('Please sign in first');
 
       const payload = {
-        account_type: "trading",
+        account_type: 'trading',
         contact: {
           email_address: user.email,
           phone_number: formData.profile.phoneNumber,
@@ -195,47 +176,55 @@ export function InvestOnboarding({
           city: formData.profile.city,
           state: formData.profile.state,
           postal_code: formData.profile.zip,
-          country: user.country || "US",
+          country: user.country || 'US',
         },
         identity: {
           first_name: formData.profile.firstName,
           last_name: formData.profile.lastName,
           date_of_birth: formData.profile.dateOfBirth,
-          tax_id: "000-00-0000", // Default or handled by backend
-          tax_id_type: "SSN",
-          country_of_citizenship: "US",
-          country_of_birth: user.countryOfBirth || "US",
-          country_of_tax_residence: "US",
-          funding_source: ["employment_income"], // Default funding source
+          tax_id: '000-00-0000', // Default or handled by backend
+          tax_id_type: 'SSN',
+          country_of_citizenship: 'US',
+          country_of_birth: user.countryOfBirth || 'US',
+          country_of_tax_residence: 'US',
+          funding_source: ['employment_income'], // Default funding source
         },
         disclosures: {
           is_control_person: formData.disclosures.isControlPerson,
-          is_affiliated_exchange_or_finra:
-            formData.disclosures.isAffiliatedExchangeOrFinra,
+          is_affiliated_exchange_or_finra: formData.disclosures.isAffiliatedExchangeOrFinra,
           is_politically_exposed: formData.disclosures.isPoliticallyExposed,
           immediate_family_exposed: formData.disclosures.immediateFamilyExposed,
         },
         agreements: [
           {
-            agreement: "account_agreement",
+            agreement: 'account_agreement',
             agreed: true, // Implied by completing the onboarding flow
             signed_at: new Date().toISOString(),
-            ip_address: "127.0.0.1",
+            ip_address: '127.0.0.1',
           },
         ],
       };
 
       const account = await AccountService.createAccount(payload as any);
-      toast.success("Account created successfully!");
+      toast.success('Account created successfully!');
       onAccept(account.id);
     } catch (error: any) {
-      toast.error(error.message || "Failed to create account");
+      toast.error(error.message || 'Failed to create account');
     } finally {
       setIsCreatingAccount(false);
     }
   };
 
   const totalSteps = 4; // 0 to 3
+
+  const handleBack = () => {
+    if (step === 0) {
+      router.push(`/invest?choice=${investmentChoice.toLowerCase()}`);
+      return;
+    }
+
+    setStep((s: number) => s - 1);
+  };
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center p-4">
@@ -245,45 +234,25 @@ export function InvestOnboarding({
             <>
               {step === 0 && <PersonalInfoStep data={formData.profile} />}
 
-              {step === 1 && (
-                <EmploymentStep
-                  data={formData.employmentInfo}
-                  update={updateField}
-                  errors={errors}
-                />
-              )}
+              {step === 1 && <EmploymentStep data={formData.employmentInfo} update={updateField} errors={errors} />}
 
-              {step === 2 && (
-                <FinancialStep
-                  data={formData.financialProfile}
-                  update={updateField}
-                  errors={errors}
-                />
-              )}
+              {step === 2 && <FinancialStep data={formData.financialProfile} update={updateField} errors={errors} />}
 
-              {step === 3 && (
-                <DisclosureStep
-                  data={formData}
-                  update={updateField}
-                  errors={errors}
-                />
-              )}
+              {step === 3 && <DisclosureStep data={formData} update={updateField} errors={errors} />}
             </>
 
             <div className="flex items-center justify-between pt-8 gap-8">
               <Button
                 variant="ghost"
-                onClick={() => setStep((s: number) => s - 1)}
-                className="w-[146px] bg-[#1A3A2C] hover:bg-[#1A3A2C]/80 text-white rounded-full h-12"
+                onClick={handleBack}
+                className={'w-[146px] bg-[#1A3A2C] hover:bg-[#1A3A2C]/80! text-white rounded-full h-12'}
               >
                 Back
               </Button>
 
               {step < totalSteps - 1 ? (
                 <Button
-                  onClick={() =>
-                    validateStep(step) && setStep((s: number) => s + 1)
-                  }
+                  onClick={() => validateStep(step) && setStep((s: number) => s + 1)}
                   className="flex-1 bg-[#57B75C] hover:bg-[#57B75C]/90 text-white rounded-full h-12"
                 >
                   Continue
@@ -294,7 +263,7 @@ export function InvestOnboarding({
                   disabled={isCreatingAccount}
                   className="flex-1 bg-[#57B75C] hover:bg-[#57B75C]/90 text-white rounded-full h-12"
                 >
-                  {isCreatingAccount ? "Creating Account..." : "Continue"}
+                  {isCreatingAccount ? 'Creating Account...' : 'Continue'}
                 </Button>
               )}
             </div>
@@ -322,9 +291,7 @@ function PersonalInfoStep({ data }: { data: any }) {
 
         <div className="space-y-6">
           <div className="space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1BEAD]">
-              Personal information
-            </h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1BEAD]">Personal information</h3>
             <div className="space-y-1 text-sm text-white">
               <p className="font-medium">
                 {data.firstName} {data.lastName}
@@ -337,16 +304,10 @@ function PersonalInfoStep({ data }: { data: any }) {
           <div className="h-px w-full border-t border-[#1E3D2F]" />
 
           <div className="space-y-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1BEAD]">
-              Home address
-            </h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-[#A1BEAD]">Home address</h3>
             <div className="flex gap-4">
               <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-[#1E3D2F] bg-white">
-                <img
-                  src="/images/map-snippet.png"
-                  alt="Address map"
-                  className="h-full w-full object-cover opacity-80"
-                />
+                <img src="/images/map-snippet.png" alt="Address map" className="h-full w-full object-cover opacity-80" />
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-green-500/20 mix-blend-overlay" />
               </div>
               <div className="flex flex-col justify-center text-sm text-white">
@@ -363,8 +324,7 @@ function PersonalInfoStep({ data }: { data: any }) {
         <div className="flex gap-3 rounded-2xl bg-[#124031] p-4 pr-8">
           <AlertTriangle className="h-5 w-5 text-[#30D158] shrink-0 mt-0.5" />
           <p className="text-xs leading-[19.5px] text-white">
-            If something is out of date,{' '}
-            <span className="font-medium text-[#30D158]">contact us</span>
+            If something is out of date, <span className="font-medium text-[#30D158]">contact us</span>
             <br />
             before you start your application.
           </p>
@@ -385,9 +345,7 @@ function FinancialStep({ data, update, errors }: any) {
 
       {/* Annual Income */}
       <div className="flex w-full flex-col items-start justify-start gap-1">
-        <Label className="flex items-center justify-start font-sans text-base font-normal leading-6 text-white">
-          Annual Income
-        </Label>
+        <Label className="flex items-center justify-start font-sans text-base font-normal leading-6 text-white">Annual Income</Label>
         <div className="relative w-full">
           <select
             value={data.annualIncome}
@@ -401,33 +359,17 @@ function FinancialStep({ data, update, errors }: any) {
             <option value="over_250000">Over $250,000</option>
           </select>
           <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M6 9L12 15L18 9"
-                stroke="#B0B8BD"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 9L12 15L18 9" stroke="#B0B8BD" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
         </div>
-        {errors.annualIncome && (
-          <p className="mt-1 text-xs text-destructive">{errors.annualIncome}</p>
-        )}
+        {errors.annualIncome && <p className="mt-1 text-xs text-destructive">{errors.annualIncome}</p>}
       </div>
 
       {/* Estimated Net Worth */}
       <div className="flex w-full flex-col items-start justify-start gap-1">
-        <Label className="flex items-center justify-start font-sans text-base font-normal leading-6 text-white">
-          Estimated net worth
-        </Label>
+        <Label className="flex items-center justify-start font-sans text-base font-normal leading-6 text-white">Estimated net worth</Label>
         <div className="relative w-full">
           <select
             value={data.netWorth}
@@ -440,20 +382,8 @@ function FinancialStep({ data, update, errors }: any) {
             <option value="over_500000">Over $500,000</option>
           </select>
           <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M6 9L12 15L18 9"
-                stroke="#B0B8BD"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 9L12 15L18 9" stroke="#B0B8BD" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
         </div>
@@ -477,26 +407,12 @@ function FinancialStep({ data, update, errors }: any) {
             <option value="over_200000">Over $200,000</option>
           </select>
           <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M6 9L12 15L18 9"
-                stroke="#B0B8BD"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 9L12 15L18 9" stroke="#B0B8BD" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
         </div>
-        {errors.liquidAssets && (
-          <p className="mt-1 text-xs text-destructive">{errors.liquidAssets}</p>
-        )}
+        {errors.liquidAssets && <p className="mt-1 text-xs text-destructive">{errors.liquidAssets}</p>}
       </div>
     </div>
   );
@@ -513,9 +429,7 @@ function EmploymentStep({ data, update, errors }: any) {
 
       {/* Employment Status */}
       <div className="flex w-full flex-col items-start justify-start gap-1">
-        <Label className="flex items-center justify-start font-sans text-base font-normal leading-6 text-white">
-          Employment status
-        </Label>
+        <Label className="flex items-center justify-start font-sans text-base font-normal leading-6 text-white">Employment status</Label>
         <div className="relative w-full">
           <select
             value={data.employmentStatus}
@@ -529,26 +443,12 @@ function EmploymentStep({ data, update, errors }: any) {
             <option value="student">Student</option>
           </select>
           <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M6 9L12 15L18 9"
-                stroke="#B0B8BD"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 9L12 15L18 9" stroke="#B0B8BD" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
         </div>
-        {errors.employmentStatus && (
-          <p className="mt-1 text-xs text-destructive">{errors.employmentStatus}</p>
-        )}
+        {errors.employmentStatus && <p className="mt-1 text-xs text-destructive">{errors.employmentStatus}</p>}
       </div>
 
       {/* Employer and Job Title - Only shown if employed */}
@@ -556,9 +456,7 @@ function EmploymentStep({ data, update, errors }: any) {
         <>
           {/* Employer */}
           <div className="flex w-full flex-col items-start justify-start gap-1">
-            <Label className="flex items-center justify-start font-sans text-base font-normal leading-6 text-white">
-              Employer
-            </Label>
+            <Label className="flex items-center justify-start font-sans text-base font-normal leading-6 text-white">Employer</Label>
             <div className="flex w-full flex-col items-start justify-center gap-3 rounded-xl border border-[#1E3D2F] bg-[#0E231F] px-4 py-3">
               <input
                 type="text"
@@ -568,16 +466,12 @@ function EmploymentStep({ data, update, errors }: any) {
                 className="w-full bg-transparent font-sans text-base font-normal leading-6 text-white placeholder:text-[#A1BEAD]/50 outline-none"
               />
             </div>
-            {errors.employer && (
-              <p className="mt-1 text-xs text-destructive">{errors.employer}</p>
-            )}
+            {errors.employer && <p className="mt-1 text-xs text-destructive">{errors.employer}</p>}
           </div>
 
           {/* Job Title */}
           <div className="flex w-full flex-col items-start justify-start gap-1">
-            <Label className="flex items-center justify-start font-sans text-base font-normal leading-6 text-white">
-              Job title
-            </Label>
+            <Label className="flex items-center justify-start font-sans text-base font-normal leading-6 text-white">Job title</Label>
             <div className="flex w-full flex-col items-start justify-center gap-3 rounded-xl border border-[#1E3D2F] bg-[#0E231F] px-4 py-3">
               <input
                 type="text"
@@ -587,9 +481,7 @@ function EmploymentStep({ data, update, errors }: any) {
                 className="w-full bg-transparent font-sans text-base font-normal leading-6 text-white placeholder:text-[#A1BEAD]/50 outline-none"
               />
             </div>
-            {errors.position && (
-              <p className="mt-1 text-xs text-destructive">{errors.position}</p>
-            )}
+            {errors.position && <p className="mt-1 text-xs text-destructive">{errors.position}</p>}
           </div>
         </>
       )}
@@ -599,23 +491,18 @@ function EmploymentStep({ data, update, errors }: any) {
 
 function DisclosureStep({ data, update }: any) {
   const { disclosures } = data;
-  const isNoneChecked =
-    !disclosures.isControlPerson &&
-    !disclosures.isAffiliatedExchangeOrFinra &&
-    !disclosures.isPoliticallyExposed;
+  const isNoneChecked = !disclosures.isControlPerson && !disclosures.isAffiliatedExchangeOrFinra && !disclosures.isPoliticallyExposed;
 
   const options = [
     {
       id: 'isControlPerson',
       title: 'Has a control holding in a publicly traded company',
-      description:
-        "For example, serving as a director, officer, or owning 10% or more of the company's voting shares",
+      description: "For example, serving as a director, officer, or owning 10% or more of the company's voting shares",
       checked: disclosures.isControlPerson,
     },
     {
       id: 'isAffiliatedExchangeOrFinra',
-      title:
-        'Is personally registered with FINRA/SEC by a broker-dealer or investment adviser',
+      title: 'Is personally registered with FINRA/SEC by a broker-dealer or investment adviser',
       checked: disclosures.isAffiliatedExchangeOrFinra,
     },
     {
@@ -655,29 +542,21 @@ function DisclosureStep({ data, update }: any) {
             key={option.id}
             onClick={() => handleToggle(option.id)}
             className={`flex w-full cursor-pointer items-center justify-start rounded-xl border p-4 transition-all ${
-              option.checked
-                ? "border-[#30D158] bg-[#1A3A2C]"
-                : "border-[#2A4D3C] bg-transparent"
+              option.checked ? 'border-[#30D158] bg-[#1A3A2C]' : 'border-[#2A4D3C] bg-transparent'
             }`}
           >
             <div className="flex flex-1 items-center gap-3">
               <div className="flex h-6 items-center justify-start">
                 <div
                   className={`flex h-5 w-5 items-center justify-center rounded-md border transition-colors ${
-                    option.checked
-                      ? "border-[#30D158] bg-[#30D158]"
-                      : "border-[#A1BEAD]"
+                    option.checked ? 'border-[#30D158] bg-[#30D158]' : 'border-[#A1BEAD]'
                   }`}
                 >
-                  {option.checked && (
-                    <Check className="h-3.5 w-3.5 text-[#0F2A20] stroke-[3]" />
-                  )}
+                  {option.checked && <Check className="h-3.5 w-3.5 text-[#0F2A20] stroke-[3]" />}
                 </div>
               </div>
               <div className="flex flex-1 flex-col items-start justify-start">
-                <div className="flex flex-col justify-center font-sans text-base font-normal leading-6 text-[#D1D5DB]">
-                  {option.title}
-                </div>
+                <div className="flex flex-col justify-center font-sans text-base font-normal leading-6 text-[#D1D5DB]">{option.title}</div>
                 {option.description && (
                   <div className="flex w-full flex-col items-start justify-start">
                     <div className="flex w-full flex-col justify-center font-sans text-[14px] font-normal leading-[22.75px] text-[#8DA69B]">

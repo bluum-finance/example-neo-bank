@@ -1,9 +1,8 @@
 // Mock data service - re-exports from centralized data folder
 
-export type { Transaction, Stock, SavingsPlan, Card, UserData } from '@/data';
+export type { Transaction, Stock, SavingsPlan, Card } from '@/data';
 
 export {
-  userData as mockUserAccount,
   transactions as mockTransactions,
   stocks as mockStocks,
   savingsPlans as mockSavingsPlans,
@@ -145,14 +144,14 @@ export async function getPersonalizedInsights(): Promise<PersonalizedInsight[]> 
 export async function getTrendingStocks(): Promise<TrendingStock[]> {
   return new Promise((resolve) => {
     const trending: TrendingStock[] = [
-      { symbol: 'NVDA', name: 'NVIDIA Corp', price: 485.20, change: 12.50, changePercent: 2.65 },
-      { symbol: 'AAPL', name: 'Apple Inc', price: 175.50, change: 3.20, changePercent: 1.86 },
+      { symbol: 'NVDA', name: 'NVIDIA Corp', price: 485.2, change: 12.5, changePercent: 2.65 },
+      { symbol: 'AAPL', name: 'Apple Inc', price: 175.5, change: 3.2, changePercent: 1.86 },
       { symbol: 'MSFT', name: 'Microsoft', price: 380.25, change: 5.75, changePercent: 1.53 },
-      { symbol: 'GOOGL', name: 'Alphabet', price: 142.30, change: -2.10, changePercent: -1.45 },
-      { symbol: 'AMZN', name: 'Amazon.com', price: 148.90, change: 4.30, changePercent: 2.97 },
-      { symbol: 'TSLA', name: 'Tesla Inc', price: 245.80, change: 8.50, changePercent: 3.58 },
-      { symbol: 'META', name: 'Meta Platforms', price: 312.40, change: 6.20, changePercent: 2.02 },
-      { symbol: 'NFLX', name: 'Netflix Inc', price: 425.60, change: -5.30, changePercent: -1.23 },
+      { symbol: 'GOOGL', name: 'Alphabet', price: 142.3, change: -2.1, changePercent: -1.45 },
+      { symbol: 'AMZN', name: 'Amazon.com', price: 148.9, change: 4.3, changePercent: 2.97 },
+      { symbol: 'TSLA', name: 'Tesla Inc', price: 245.8, change: 8.5, changePercent: 3.58 },
+      { symbol: 'META', name: 'Meta Platforms', price: 312.4, change: 6.2, changePercent: 2.02 },
+      { symbol: 'NFLX', name: 'Netflix Inc', price: 425.6, change: -5.3, changePercent: -1.23 },
     ];
     setTimeout(() => resolve(trending), 300);
   });

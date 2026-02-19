@@ -2,11 +2,12 @@ import { config } from '@/lib/config';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
+export type InvestmentChoice = 'AI-WEALTH' | 'SELF-DIRECTED';
 export interface User {
   email: string;
   name: string;
   externalAccountId?: string;
-  investmentChoice?: 'ai-wealth' | 'self-directed';
+  investmentChoice?: InvestmentChoice;
   phoneNumber?: string;
   streetAddress?: string[];
   city?: string;
@@ -35,30 +36,31 @@ interface UserState {
   logout: () => void;
 }
 
-// Demo credentials
-export const INVESTOR_EMAIL1 = 'johndoe@bluuminvest.com'; // AI Wealth flow
-export const INVESTOR_EMAIL2 = 'investor@bluuminvest.com'; // New investor flow
-
-const DEMO_INVESTOR_ACCOUNT_ID = config.demoInvestorAccountId;
-
 // Mock user account data for demo
 const mockUserAccount = {
-  name: 'Demo Investor',
+  name: 'John Doe',
   phoneNumber: '+1 (555) 123-4567',
   streetAddress: ['123 Investment Ave'],
   city: 'San Francisco',
   state: 'CA',
   postalCode: '94105',
   country: 'United States',
-  firstName: 'Demo',
-  lastName: 'Investor',
+  firstName: 'John',
+  lastName: 'Doe',
   dateOfBirth: '1990-01-15',
   countryOfBirth: 'United States',
 };
 
 const generateRandomEmail = () => {
-  return `investor${Math.floor(1000 + Math.random() * 9000)}@bluuminvest.com`;
+  return `demo${Math.floor(1000 + Math.random() * 9000)}@bluuminvest.com`;
 };
+
+// Demo credentials
+export const INVESTOR_EMAIL1 = 'johndoe@bluuminvest.com'; // AI Wealth flow
+export const INVESTOR_EMAIL2 = 'johndoe2@bluuminvest.com'; // Self Directed flow
+export const INVESTOR_EMAIL_NEW = 'demo@bluuminvest.com'; // New investor flow
+export const DEFAULT_SIGNIN_EMAIL = INVESTOR_EMAIL_NEW;
+const DEMO_INVESTOR_ACCOUNT_ID = config.demoInvestorAccountId;
 
 export const useUserStore = create<UserState>()(
   persist(
@@ -104,7 +106,7 @@ export const useUserStore = create<UserState>()(
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         // Demo login validation
-        const isEmailValid = email === INVESTOR_EMAIL1 || email === INVESTOR_EMAIL2;
+        const isEmailValid = [INVESTOR_EMAIL1, INVESTOR_EMAIL2, INVESTOR_EMAIL_NEW].includes(email);
         const isPasswordValid = password.length >= 8;
 
         if (!isEmailValid || !isPasswordValid) {
@@ -112,9 +114,10 @@ export const useUserStore = create<UserState>()(
           return { success: false, error: 'Invalid email or password.' };
         }
 
-        const isNewInvestor = email === INVESTOR_EMAIL2;
+        const isNewInvestor = email === INVESTOR_EMAIL_NEW;
         const userEmail = isNewInvestor ? generateRandomEmail() : email;
-        const investmentChoice = isNewInvestor ? 'ai-wealth' : undefined;
+        const isSelfDirected = email === INVESTOR_EMAIL2;
+        const investmentChoice = isSelfDirected ? 'SELF-DIRECTED' : 'AI-WEALTH';
 
         set({
           user: {
@@ -131,7 +134,7 @@ export const useUserStore = create<UserState>()(
             dateOfBirth: mockUserAccount.dateOfBirth,
             countryOfBirth: mockUserAccount.countryOfBirth,
             externalAccountId: isNewInvestor ? undefined : DEMO_INVESTOR_ACCOUNT_ID,
-            investmentChoice: investmentChoice,
+            investmentChoice: isNewInvestor ? undefined : investmentChoice,
           },
           isAuthenticated: true,
           isLoading: false,

@@ -8,11 +8,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
     const error = await response.json().catch(() => ({
       error: `HTTP ${response.status}: ${response.statusText}`,
     }));
-    throw new Error(
-      typeof error.error === 'string'
-        ? error.error
-        : error.error?.message || 'An error occurred'
-    );
+    throw new Error(typeof error.error === 'string' ? error.error : error.error?.message || 'An error occurred');
   }
   return response.json();
 }
@@ -116,33 +112,86 @@ export interface WidgetInsightsResponse {
 }
 
 export interface InvestmentPolicy {
+  ips_id: string;
+  account_id: string;
+  version: number;
   risk_profile: {
     risk_tolerance: string;
     risk_score: number;
+    volatility_tolerance: string;
   };
   time_horizon: {
     years: number;
     category: string;
   };
-  constraints: {
-    liquidity_requirements: {
-      minimum_cash_percent: string;
-    };
+  investment_objectives: {
+    primary: string;
+    secondary: string[];
+    target_annual_return: string;
   };
   target_allocation: {
     stocks: {
       target_percent: string;
+      min_percent: string;
+      max_percent: string;
+      sub_allocations: {
+        us_large_cap: string;
+        us_mid_cap: string;
+        international: string;
+      };
     };
     bonds: {
       target_percent: string;
+      min_percent: string;
+      max_percent: string;
+      sub_allocations: {
+        investment_grade: string;
+        treasury: string;
+        high_yield: string;
+      };
     };
     treasury: {
       target_percent: string;
+      min_percent: string;
+      max_percent: string;
     };
     alternatives: {
       target_percent: string;
+      min_percent: string;
+      max_percent: string;
+      sub_allocations: {
+        real_estate: string;
+        commodities: string;
+      };
     };
   };
+  constraints: {
+    liquidity_requirements: {
+      minimum_cash_percent: string;
+      emergency_fund_months: number;
+    };
+    tax_considerations: {
+      tax_loss_harvesting: boolean;
+      tax_bracket: string;
+      prefer_tax_advantaged: boolean;
+    };
+    restrictions: {
+      excluded_sectors: string[];
+      excluded_securities: string[];
+      no_individual_stocks: boolean;
+      esg_screening: boolean;
+      esg_criteria: string[];
+    };
+    rebalancing_policy: {
+      frequency: string;
+      threshold_percent: string;
+      tax_aware: boolean;
+    };
+  };
+  effective_date: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // Widget Service
@@ -286,7 +335,7 @@ export class WidgetService {
       '1M': '1m',
       '3M': '3m',
       '1Y': '1y',
-      'All': 'all',
+      All: 'all',
     };
 
     const queryParams = new URLSearchParams({
@@ -312,11 +361,7 @@ export class WidgetService {
   /**
    * Get portfolio summary data from Bluum API via widget endpoint.
    */
-  static async getPortfolioSummary(
-    accountId: string,
-    portfolioId: string,
-    refreshPrices?: boolean
-  ): Promise<any> {
+  static async getPortfolioSummary(accountId: string, portfolioId: string, refreshPrices?: boolean): Promise<any> {
     const queryParams = new URLSearchParams({
       account_id: accountId,
       portfolio_id: portfolioId,
