@@ -4,13 +4,14 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ArrowDownLeft, ArrowUpRight, Plus, ArrowLeftRight } from 'lucide-react';
 
 import { PortfolioPerformanceChart } from '@/components/invest/portfolio-performance-chart';
 import { FinancialPlan } from '@/components/invest/financial-plan';
 import { InvestmentPolicyWidget } from '@/components/invest/investment-policy-widget';
 import { QuickActionsWidget } from '@/components/invest/quick-actions-widget';
 import { WelcomeInsightsCard } from '@/components/invest/welcome-insights-card';
+import { MarketMoversOverview } from '@/components/widget/market-movers-overview';
 
 import { InvestmentService, type Position } from '@/services/investment.service';
 import { AccountService } from '@/services/account.service';
@@ -19,6 +20,11 @@ import { useUser, useUserStore } from '@/store/user.store';
 
 import { OnboardingLandingPage } from '@/components/invest/onboarding-landing-page';
 import HoldingsOverview from '@/components/widget/HoldingsOverview';
+import { Watchlist } from '@/components/widget/watchlist';
+import QuickTrade from '@/components/invest/quick-trade';
+import { RecentTrades } from '@/components/widget/recent-trades';
+import { NewsInsights } from '@/components/widget/news-insights';
+import { PersonalizedStrategyCTA } from '@/components/invest/personalized-strategy-cta';
 
 export default function Invest() {
   const router = useRouter();
@@ -241,7 +247,28 @@ const SelfDirectedDashboard = ({
 
   return (
     <div className="space-y-6 my-4 lg:px-8 max-w-5xl mx-auto">
-      <section className="pt-6 grid grid-cols-1 lg:grid-cols-[minmax(0,60%)_minmax(0,40%)] gap-y-6 lg:gap-x-6 items-stretch">
+      <section className="pt-6">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            className="px-3 py-2 bg-[#1A3A2C] rounded-full flex items-center gap-2 font-inter text-sm font-light text-white hover:bg-[#244d3a] transition-colors"
+            aria-label="Withdraw funds"
+          >
+            <ArrowLeftRight className="w-4 h-4 text-white" />
+            <span>Withdraw funds</span>
+          </button>
+          <button
+            type="button"
+            className="px-3 py-2 bg-[#57B75C] rounded-[32px] flex items-center gap-2 font-inter text-sm font-light text-white hover:bg-[#4ca651] transition-colors"
+            aria-label="Deposit funds"
+          >
+            <Plus className="w-4 h-4 text-white" />
+            <span>Deposit Funds</span>
+          </button>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 lg:grid-cols-[minmax(0,60%)_minmax(0,40%)] gap-y-6 lg:gap-x-6 items-stretch">
         <div className="lg:col-span-1">
           <PortfolioPerformanceChart
             hideSummary={true}
@@ -261,30 +288,23 @@ const SelfDirectedDashboard = ({
         </div>
       </section>
 
-      <section className="pt-6">
-        <div className="flex justify-between items-center mb-6">
-          <div className="text-base font-semibold text-gray-900 dark:text-white">Financial Plan</div>
-          {financialGoals.length > 0 && (
-            <Link href="/financial-plan" className="flex items-center gap-0.5 text-sm text-[#57B75C] hover:opacity-80 transition-opacity">
-              View all goals
-              <ChevronRight className="w-3 h-3 text-[#57B75C]" />
-            </Link>
-          )}
+      <section className="pt-6 grid grid-cols-1 lg:grid-cols-[minmax(0,60%)_minmax(0,40%)] gap-y-6 lg:gap-x-6 items-stretch">
+        <div className="lg:col-span-1">
+          <QuickTrade />
         </div>
-        <FinancialPlan goals={financialGoals.slice(0, 4)} loading={goalsLoading} />
+
+        <div className="lg:col-span-1">
+          <Watchlist />
+        </div>
       </section>
 
-      <section className="pt-6">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex-1 flex flex-col justify-start items-start">
-            <div className="text-base font-semibold text-gray-900 dark:text-white">Investment Policy Statement</div>
-            <div className="text-xs font-normal pt-2 text-gray-500 dark:text-muted-foreground">Your personalized investment guidelines</div>
-          </div>
-          <div className="px-2 py-1 bg-[rgba(129,140,248,0.12)] rounded-2xl flex items-center justify-center">
-            <span className="text-xs font-medium leading-[18px] text-[#818CF8]">On Track</span>
-          </div>
-        </div>
-        <InvestmentPolicyWidget policy={investmentPolicy} />
+      <section className="pt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MarketMoversOverview />
+        <RecentTrades />
+      </section>
+
+      <section className="pt-8">
+        <NewsInsights />
       </section>
     </div>
   );
@@ -321,6 +341,10 @@ const AiWealthDashboard = ({
 }) => {
   return (
     <div className="space-y-6 my-4 lg:px-8 max-w-5xl mx-auto">
+      <section className="pb-6">
+        <PersonalizedStrategyCTA />
+      </section>
+
       <WelcomeInsightsCard insights={insightsList} insightsLoading={insightsLoading} />
 
       <section className="pt-6 grid grid-cols-1 lg:grid-cols-[minmax(0,60%)_minmax(0,40%)] gap-y-6 lg:gap-x-6 items-stretch">
@@ -366,6 +390,15 @@ const AiWealthDashboard = ({
           </div>
         </div>
         <InvestmentPolicyWidget policy={investmentPolicy} />
+      </section>
+
+      <section className="pt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MarketMoversOverview />
+        <RecentTrades />
+      </section>
+
+      <section className="pt-6">
+        <NewsInsights />
       </section>
     </div>
   );

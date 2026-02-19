@@ -16,7 +16,7 @@ export const HoldingsOverview: FC<{ data: HoldingData[] }> = ({ data }) => {
     <div className="h-full w-full relative rounded-xl bg-card border border-border flex flex-col items-start p-6 text-left font-sans text-white">
       <div className="w-full flex flex-col items-start pb-4">
         <div className="self-stretch flex flex-col items-start">
-          <div className="self-stretch relative leading-6 font-semibold">Allocation</div>
+          <div className="self-stretch relative leading-6 font-normal">Allocation</div>
         </div>
       </div>
 

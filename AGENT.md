@@ -122,9 +122,10 @@ types/                      # TypeScript definitions
 
 ### Figma Integration
 
+- Think like an expert Frontend dev, remove unnecessary flex wrappers, use the right html tag, use lucide or svg for icons
+- Remove unnecessary divs and styling properties
 - When converting Figma designs, preserve exact colors, spacing, and typography
 - Use exact hex colors from Figma when Tailwind doesn't have a match
-- Remove unnecessary wrappers and styling properties, and redundant divs
 - Maintain visual fidelity to designs
 
 ## Dos
