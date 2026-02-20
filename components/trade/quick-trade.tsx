@@ -6,8 +6,8 @@ import { toast } from 'sonner';
 import { InvestmentService } from '@/services/investment.service';
 import { useUser } from '@/store/user.store';
 import { cn } from '@/lib/utils';
-import { OrderReviewModal } from '@/components/invest/order-review-modal';
-import { OrderSuccessModal } from '@/components/invest/order-success-modal';
+import { OrderReviewModal } from '@/components/trade/order-review-modal';
+import { OrderSuccessModal } from '@/components/trade/order-success-modal';
 
 type Side = 'buy' | 'sell';
 type OrderType = 'limit' | 'market' | 'stop';

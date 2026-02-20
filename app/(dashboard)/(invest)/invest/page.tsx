@@ -21,10 +21,11 @@ import { useUser, useUserStore } from '@/store/user.store';
 import { OnboardingLandingPage } from '@/components/invest/onboarding-landing-page';
 import HoldingsOverview from '@/components/widget/HoldingsOverview';
 import { Watchlist } from '@/components/widget/watchlist';
-import QuickTrade from '@/components/invest/quick-trade';
+import QuickTrade from '@/components/trade/quick-trade';
 import { RecentTrades } from '@/components/widget/recent-trades';
 import { NewsInsights } from '@/components/widget/news-insights';
-import { PersonalizedStrategyCTA } from '@/components/invest/personalized-strategy-cta';
+import { PersonalizedStrategyCTA } from '@/components/ai-wealth/personalized-strategy-cta';
+import { PersonalizedStrategyCTA2 } from '@/components/ai-wealth/personalized-strategy-cta-2';
 
 export default function Invest() {
   const router = useRouter();
@@ -347,7 +348,11 @@ const AiWealthDashboard = ({
 
       <WelcomeInsightsCard insights={insightsList} insightsLoading={insightsLoading} />
 
-      <section className="pt-6 grid grid-cols-1 lg:grid-cols-[minmax(0,60%)_minmax(0,40%)] gap-y-6 lg:gap-x-6 items-stretch">
+      <section className="py-5">
+        <PersonalizedStrategyCTA2 />
+      </section>
+
+      <section className="grid grid-cols-1 lg:grid-cols-[minmax(0,60%)_minmax(0,40%)] gap-y-6 lg:gap-x-6 items-stretch">
         <div className="lg:col-span-1">
           <PortfolioPerformanceChart
             portfolioValue={totalPortfolioValue}
