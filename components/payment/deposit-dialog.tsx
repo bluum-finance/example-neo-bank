@@ -211,21 +211,14 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
   };
 
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center z-50 p-4"
-      style={{ backgroundColor: 'rgba(8, 52, 35, 0.5)' }}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <CardContent className="px-8">
           {/* Header */}
           <div className="w-full pb-6 flex justify-between items-center">
             <div className="flex flex-col gap-1">
-              <h2 className="text-white text-2xl font-bold leading-8">
-                Deposit Funds
-              </h2>
-              <p className="text-[#A1BEAD] text-sm leading-5">
-                Add funds securely to your Bluum wallet.
-              </p>
+              <h2 className="text-white text-2xl font-bold leading-8">Deposit Funds</h2>
+              <p className="text-[#A1BEAD] text-sm leading-5">Add funds securely to your Bluum wallet.</p>
             </div>
             {onCancel && (
               <button
@@ -243,16 +236,11 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
             {step === 1 && (
               <>
                 <div className="flex flex-col gap-3">
-                  <Label
-                    htmlFor="amount"
-                    className="text-[#E2E8F0] text-sm font-medium leading-5"
-                  >
+                  <Label htmlFor="amount" className="text-[#E2E8F0] text-sm font-medium leading-5">
                     Amount to Deposit
                   </Label>
                   <div className="relative flex items-center">
-                    <div className="absolute left-4 text-[#9DB9AB] font-medium">
-                      $
-                    </div>
+                    <div className="absolute left-4 text-[#9DB9AB] font-medium">$</div>
                     <Input
                       id="amount"
                       type="number"
@@ -264,18 +252,14 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
                       className="h-11 pl-8 pr-20 bg-[#07120F] border-[#1F4536] text-white text-lg focus-visible:ring-0 focus-visible:border-[#57B75C] rounded-lg"
                     />
                     <div className="absolute right-4 flex items-center gap-2">
-                      <span className="text-[#9DB9AB] text-sm font-medium">
-                        USD
-                      </span>
+                      <span className="text-[#9DB9AB] text-sm font-medium">USD</span>
                       <ChevronDown className="h-4 w-4 text-[#B0B8BD]" />
                     </div>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <Label className="text-[#E2E8F0] text-sm font-medium leading-5">
-                    Payment Method
-                  </Label>
+                  <Label className="text-[#E2E8F0] text-sm font-medium leading-5">Payment Method</Label>
 
                   <div className="grid grid-cols-3 gap-3">
                     {PAYMENT_METHODS.map((method) => {
@@ -286,18 +270,12 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
                           key={method.id}
                           onClick={() => setPaymentMethod(method.id)}
                           className={`relative flex flex-col items-center justify-center p-4 rounded-lg border transition-all ${
-                            isActive
-                              ? 'bg-[#57B75C]/10 border-[#57B75C]'
-                              : 'bg-[#07120F] border-[#1F4536] hover:border-[#57B75C]/50'
+                            isActive ? 'bg-[#57B75C]/10 border-[#57B75C]' : 'bg-[#07120F] border-[#1F4536] hover:border-[#57B75C]/50'
                           }`}
                         >
-                          <Icon
-                            className={`h-6 w-6 mb-1 ${isActive ? 'text-[#57B75C]' : 'text-[#9DB9AB]'}`}
-                          />
+                          <Icon className={`h-6 w-6 mb-1 ${isActive ? 'text-[#57B75C]' : 'text-[#9DB9AB]'}`} />
 
-                          <span className="text-[#8DA69B] text-xs font-medium text-center">
-                            {method.label}
-                          </span>
+                          <span className="text-[#8DA69B] text-xs font-medium text-center">{method.label}</span>
                           {isActive && (
                             <div className="absolute top-2 right-2 h-3 w-3 bg-[#57B75C] rounded-full flex items-center justify-center">
                               <div className="h-1.5 w-1.5 bg-white rounded-full" />
@@ -311,27 +289,20 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
 
                 <div className="bg-[#07120F] border border-[#1F4536]/50 rounded-lg p-4 flex flex-col gap-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-[#9DB9AB] text-sm">
-                      Processing Fee
-                    </span>
+                    <span className="text-[#9DB9AB] text-sm">Processing Fee</span>
                     <span className="text-white text-sm font-medium">Free</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-[#9DB9AB] text-sm">
-                      Estimated Arrival
-                    </span>
-                    <span className="text-white text-sm font-medium">
-                      Instant
-                    </span>
+                    <span className="text-[#9DB9AB] text-sm">Estimated Arrival</span>
+                    <span className="text-white text-sm font-medium">Instant</span>
                   </div>
                 </div>
 
                 <div className="bg-[#124031] border border-blue-900/30 rounded-lg p-3 flex gap-3 items-start">
                   <Info className="h-5 w-5 text-[#30D158] shrink-0 mt-0.5" />
                   <p className="text-[#8DA69B] text-xs leading-5">
-                    Deposits are subject to verification and settlement
-                    timelines. Funds typically arrive within 1-3 business days
-                    depending on your bank.
+                    Deposits are subject to verification and settlement timelines. Funds typically arrive within 1-3 business days depending
+                    on your bank.
                   </p>
                 </div>
               </>
@@ -340,9 +311,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
             {/* Step 2: Bank Selection (Plaid) */}
             {step === 2 && paymentMethod === 'plaid' && (
               <div className="flex flex-col gap-4">
-                <Label className="text-[#E2E8F0] text-sm font-medium">
-                  Select Bank Account
-                </Label>
+                <Label className="text-[#E2E8F0] text-sm font-medium">Select Bank Account</Label>
                 {loadingAccounts ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin text-[#57B75C]" />
@@ -353,9 +322,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
                       item.accounts.map((account) => (
                         <div
                           key={account.accountId}
-                          onClick={() =>
-                            setSelectedPlaidAccount(account.accountId)
-                          }
+                          onClick={() => setSelectedPlaidAccount(account.accountId)}
                           className={`p-4 border rounded-xl cursor-pointer transition-all flex items-center gap-4 ${
                             selectedPlaidAccount === account.accountId
                               ? 'border-[#57B75C] bg-[#57B75C]/10'
@@ -366,9 +333,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
                             <Building2 className="h-5 w-5 text-[#9DB9AB]" />
                           </div>
                           <div className="flex-1">
-                            <div className="text-white font-medium">
-                              {item.institutionName}
-                            </div>
+                            <div className="text-white font-medium">{item.institutionName}</div>
                             <div className="text-[#9DB9AB] text-sm">
                               {account.accountName} •••• {account.mask}
                             </div>
@@ -380,7 +345,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
-                      )),
+                      ))
                     )}
                     <PlaidLink
                       accountId={accountId}
@@ -394,20 +359,11 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
                   <div className="flex flex-col items-center justify-center py-8 gap-4 border-2 border-dashed border-[#1F4536] rounded-xl">
                     <Building2 className="h-12 w-12 text-[#1F4536]" />
                     <div className="text-center">
-                      <p className="text-white font-medium">
-                        No bank account connected
-                      </p>
-                      <p className="text-[#9DB9AB] text-sm">
-                        Connect your bank to start depositing funds
-                      </p>
+                      <p className="text-white font-medium">No bank account connected</p>
+                      <p className="text-[#9DB9AB] text-sm">Connect your bank to start depositing funds</p>
                     </div>
-                    <PlaidLink
-                      accountId={accountId}
-                      onSuccess={handlePlaidSuccess}
-                    >
-                      <Button className="bg-[#57B75C] hover:bg-[#57B75C]/90 text-white px-8 rounded-full">
-                        Connect Bank Account
-                      </Button>
+                    <PlaidLink accountId={accountId} onSuccess={handlePlaidSuccess}>
+                      <Button className="bg-[#57B75C] hover:bg-[#57B75C]/90 text-white px-8 rounded-full">Connect Bank Account</Button>
                     </PlaidLink>
                   </div>
                 )}
@@ -426,11 +382,8 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
                 </div>
                 <div className="text-center space-y-2">
                   <h3 className="text-white font-bold text-lg">Coming Soon</h3>
-                  <p className="text-[#9DB9AB] text-sm max-w-[250px]">
-                    {paymentMethod === 'card'
-                      ? 'Credit Card'
-                      : 'Digital Wallet'}{' '}
-                    deposits are not available yet. We're working on bringing
+                  <p className="text-[#9DB9AB] text-sm max-w-62.5">
+                    {paymentMethod === 'card' ? 'Credit Card' : 'Digital Wallet'} deposits are not available yet. We're working on bringing
                     this feature to you soon!
                   </p>
                 </div>
@@ -442,7 +395,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
             <Button
               variant="ghost"
               onClick={step === 1 ? onCancel : handleBack}
-              className="px-6 py-2.5 bg-[#1F4536] hover:bg-[#1F4536]/80! text-white rounded-full font-medium h-11 min-w-[100px]"
+              className="px-6 py-2.5 bg-[#1F4536] hover:bg-[#1F4536]/80! text-white rounded-full font-medium h-11 min-w-25"
               disabled={processing}
             >
               {step === 1 ? 'Cancel' : 'Back'}
@@ -450,7 +403,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
             <Button
               onClick={handleNext}
               disabled={processing || (step === 2 && paymentMethod !== 'plaid')}
-              className="px-6 py-2.5 bg-[#57B75C] hover:bg-[#57B75C]/90 text-white rounded-full font-bold h-11 flex items-center gap-2 min-w-[160px]"
+              className="px-6 py-2.5 bg-[#57B75C] hover:bg-[#57B75C]/90 text-white rounded-full font-bold h-11 flex items-center gap-2 min-w-40"
             >
               {processing ? (
                 <>

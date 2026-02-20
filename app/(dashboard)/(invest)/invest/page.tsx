@@ -25,6 +25,8 @@ import QuickTrade from '@/components/trade/quick-trade';
 import { RecentTrades } from '@/components/widget/recent-trades';
 import { NewsInsights } from '@/components/widget/news-insights';
 import { PersonalizedStrategyCTA, PersonalizedStrategyCTA2 } from '@/components/ai-wealth/personalized-strategy-cta';
+import { DepositDialog } from '@/components/payment/deposit-dialog';
+import { WithdrawalDialog } from '@/components/payment/withdrawal-dialog';
 
 export default function Invest() {
   const router = useRouter();
@@ -239,6 +241,9 @@ const SelfDirectedDashboard = ({
   goalsLoading: boolean;
   investmentPolicy: any;
 }) => {
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+
   const data: any[] = [
     { name: 'Stocks', value: 60, color: '#2BEE6C' },
     { name: 'ETFs', value: 25, color: '#047857' },
@@ -251,6 +256,7 @@ const SelfDirectedDashboard = ({
         <div className="flex gap-2">
           <button
             type="button"
+            onClick={() => setShowWithdrawModal(true)}
             className="px-3 py-2 bg-[#1A3A2C] rounded-full flex items-center gap-2 font-inter text-sm font-light text-white hover:bg-[#244d3a] transition-colors"
             aria-label="Withdraw funds"
           >
@@ -259,6 +265,7 @@ const SelfDirectedDashboard = ({
           </button>
           <button
             type="button"
+            onClick={() => setShowDepositModal(true)}
             className="px-3 py-2 bg-[#57B75C] rounded-[32px] flex items-center gap-2 font-inter text-sm font-light text-white hover:bg-[#4ca651] transition-colors"
             aria-label="Deposit funds"
           >
@@ -306,6 +313,19 @@ const SelfDirectedDashboard = ({
       <section className="pt-8">
         <NewsInsights />
       </section>
+
+      {showDepositModal && accountId && (
+        <DepositDialog accountId={accountId} onSuccess={() => setShowDepositModal(false)} onCancel={() => setShowDepositModal(false)} />
+      )}
+
+      {showWithdrawModal && accountId && (
+        <WithdrawalDialog
+          accountId={accountId}
+          availableBalance={0}
+          onSuccess={() => setShowWithdrawModal(false)}
+          onCancel={() => setShowWithdrawModal(false)}
+        />
+      )}
     </div>
   );
 };
@@ -390,7 +410,7 @@ const AiWealthDashboard = ({
             <div className="text-xs font-normal pt-2 text-gray-500 dark:text-muted-foreground">Your personalized investment guidelines</div>
           </div>
           <div className="px-2 py-1 bg-[rgba(129,140,248,0.12)] rounded-2xl flex items-center justify-center">
-            <span className="text-xs font-medium leading-[18px] text-[#818CF8]">On Track</span>
+            <span className="text-xs font-medium leading-4.5 text-[#818CF8]">On Track</span>
           </div>
         </div>
         <InvestmentPolicyWidget policy={investmentPolicy} />

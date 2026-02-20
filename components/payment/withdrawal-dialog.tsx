@@ -247,19 +247,14 @@ export function WithdrawalDialog({
   };
 
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center z-50 p-4"
-      style={{ backgroundColor: 'rgba(8, 52, 35, 0.5)' }}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <CardContent className="px-8">
           {/* Header */}
           <div className="w-full pb-6 flex justify-between items-center">
             <div className="flex flex-col gap-1">
               <h2 className="text-white text-2xl font-bold leading-8">Withdraw Funds</h2>
-              <p className="text-[#A1BEAD] text-sm leading-5">
-                Transfer money to your linked accounts securely.
-              </p>
+              <p className="text-[#A1BEAD] text-sm leading-5">Transfer money to your linked accounts securely.</p>
             </div>
             {onCancel && (
               <button
@@ -276,9 +271,7 @@ export function WithdrawalDialog({
           <div className="w-full py-4 flex flex-col gap-6">
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-start">
-                <Label className="text-white text-sm font-medium leading-5">
-                  Amount to withdraw
-                </Label>
+                <Label className="text-white text-sm font-medium leading-5">Amount to withdraw</Label>
                 <span className="text-[#30D158] text-xs leading-4">
                   Available: $
                   {availableBalance.toLocaleString('en-US', {
@@ -311,9 +304,7 @@ export function WithdrawalDialog({
             {step === 1 && (
               <>
                 <div className="flex flex-col gap-2">
-                  <Label className="text-white text-sm font-medium leading-5">
-                    Destination account
-                  </Label>
+                  <Label className="text-white text-sm font-medium leading-5">Destination account</Label>
                   {loadingAccounts ? (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-6 w-6 animate-spin text-[#57B75C]" />
@@ -330,22 +321,15 @@ export function WithdrawalDialog({
                         {connectedAccounts.map((item) =>
                           item.accounts.map((account) => (
                             <option key={account.accountId} value={account.accountId}>
-                              {item.institutionName} •••• {account.mask} -{' '}
-                              {account.accountName}
+                              {item.institutionName} •••• {account.mask} - {account.accountName}
                             </option>
-                          )),
+                          ))
                         )}
                       </Select>
                       <div className="text-xs text-[#9DB9AB]">
                         Add a new linked account
-                        <PlaidLink
-                          accountId={accountId}
-                          onSuccess={handlePlaidSuccess}
-                          className="inline bg-transparent! p-1"
-                        >
-                          <span className="text-[#57B75C] text-sm hover:underline cursor-pointer font-medium">
-                            Connect Account
-                          </span>
+                        <PlaidLink accountId={accountId} onSuccess={handlePlaidSuccess} className="inline bg-transparent! p-1">
+                          <span className="text-[#57B75C] text-sm hover:underline cursor-pointer font-medium">Connect Account</span>
                         </PlaidLink>
                       </div>
                     </div>
@@ -354,14 +338,10 @@ export function WithdrawalDialog({
                       <Building2 className="h-12 w-12 text-[#1E3D2F]" />
                       <div className="text-center">
                         <p className="text-white font-medium">No bank account connected</p>
-                        <p className="text-[#9DB9AB] text-sm">
-                          Connect your bank to start withdrawing funds
-                        </p>
+                        <p className="text-[#9DB9AB] text-sm">Connect your bank to start withdrawing funds</p>
                       </div>
                       <PlaidLink accountId={accountId} onSuccess={handlePlaidSuccess}>
-                        <Button className="bg-[#57B75C] hover:bg-[#57B75C]/90 text-white px-8 rounded-full">
-                          Connect Bank Account
-                        </Button>
+                        <Button className="bg-[#57B75C] hover:bg-[#57B75C]/90 text-white px-8 rounded-full">Connect Bank Account</Button>
                       </PlaidLink>
                     </div>
                   )}
@@ -370,8 +350,8 @@ export function WithdrawalDialog({
                 <div className="bg-[#124031] border border-[#1E3D2F]/50 rounded-lg p-3 flex gap-3 items-start">
                   <CheckCircle2 className="h-4 w-4 text-[#0FBD66] shrink-0 mt-0.5" />
                   <p className="text-[#A1BEAD] text-xs leading-[19.5px]">
-                    Please ensure your bank details are up to date. Transfers to external
-                    accounts may be subject to additional verification.
+                    Please ensure your bank details are up to date. Transfers to external accounts may be subject to additional
+                    verification.
                   </p>
                 </div>
               </>
@@ -402,12 +382,9 @@ export function WithdrawalDialog({
                       <div className="text-right">
                         {getSelectedAccountDetails() ? (
                           <>
-                            <div className="text-white text-sm font-medium">
-                              {getSelectedAccountDetails()!.institutionName}
-                            </div>
+                            <div className="text-white text-sm font-medium">{getSelectedAccountDetails()!.institutionName}</div>
                             <div className="text-[#9DB9AB] text-xs mt-1">
-                              {getSelectedAccountDetails()!.accountName} ••••{' '}
-                              {getSelectedAccountDetails()!.mask}
+                              {getSelectedAccountDetails()!.accountName} •••• {getSelectedAccountDetails()!.mask}
                             </div>
                           </>
                         ) : (
@@ -428,8 +405,7 @@ export function WithdrawalDialog({
                 <div className="bg-[#124031] border border-[#1E3D2F]/50 rounded-lg p-3 flex gap-3 items-start">
                   <CheckCircle2 className="h-4 w-4 text-[#0FBD66] shrink-0 mt-0.5" />
                   <p className="text-[#A1BEAD] text-xs leading-[19.5px]">
-                    Please review all details carefully. Once confirmed, this withdrawal cannot
-                    be cancelled.
+                    Please review all details carefully. Once confirmed, this withdrawal cannot be cancelled.
                   </p>
                 </div>
               </div>
@@ -438,9 +414,7 @@ export function WithdrawalDialog({
 
           {/* Footer */}
           <div className="w-full py-4 flex flex-col gap-4">
-            <p className="text-center text-[#A1BEAD] text-xs leading-[18px]">
-              Withdrawals may take 1–3 business days depending on method.
-            </p>
+            <p className="text-center text-[#A1BEAD] text-xs leading-4.5">Withdrawals may take 1–3 business days depending on method.</p>
             <div className="flex gap-3">
               <Button
                 variant="ghost"
