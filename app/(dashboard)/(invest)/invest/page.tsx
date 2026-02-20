@@ -24,8 +24,7 @@ import { Watchlist } from '@/components/widget/watchlist';
 import QuickTrade from '@/components/trade/quick-trade';
 import { RecentTrades } from '@/components/widget/recent-trades';
 import { NewsInsights } from '@/components/widget/news-insights';
-import { PersonalizedStrategyCTA } from '@/components/ai-wealth/personalized-strategy-cta';
-import { PersonalizedStrategyCTA2 } from '@/components/ai-wealth/personalized-strategy-cta-2';
+import { PersonalizedStrategyCTA, PersonalizedStrategyCTA2 } from '@/components/ai-wealth/personalized-strategy-cta';
 
 export default function Invest() {
   const router = useRouter();

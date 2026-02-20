@@ -20,7 +20,6 @@ export function PageHeader() {
 
   const investLinks = [
     { label: 'Portfolio', path: '/invest' },
-    { label: 'Financial Plan', path: '/financial-plan' },
     { label: 'Auto-Invest', path: '/auto-invest' },
   ];
 
@@ -112,21 +111,13 @@ export function PageHeader() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="w-9 h-9 bg-primary rounded-full flex items-center justify-center shrink-0 cursor-pointer hover:opacity-90 transition-opacity">
-              <span className="text-xs font-semibold text-primary-foreground">
-                {getUserInitials()}
-              </span>
+              <span className="text-xs font-semibold text-primary-foreground">{getUserInitials()}</span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <div className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground/70">
-              Invest
-            </div>
+            <div className="px-3 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground/70">Invest</div>
             {investLinks.map((link) => (
-              <DropdownMenuItem
-                key={link.label}
-                onClick={() => router.push(link.path)}
-                className="cursor-pointer py-2"
-              >
+              <DropdownMenuItem key={link.label} onClick={() => router.push(link.path)} className="cursor-pointer py-2">
                 <span>{link.label}</span>
               </DropdownMenuItem>
             ))}
@@ -135,10 +126,7 @@ export function PageHeader() {
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleLogout}
-              className="cursor-pointer py-2 text-destructive focus:text-destructive"
-            >
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer py-2 text-destructive focus:text-destructive">
               <span>Logout</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
