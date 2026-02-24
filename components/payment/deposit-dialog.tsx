@@ -1,22 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-  Building2,
-  ArrowRight,
-  Loader2,
-  X,
-  Trash2,
-  CreditCard,
-  Wallet,
-  Info,
-  ChevronDown,
-} from 'lucide-react';
+import { Building2, ArrowRight, Loader2, X, Trash2, CreditCard, Wallet, Info, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { PlaidLink } from '@/components/plaid/plaid-link';
+import { PlaidLink } from '@/components/payment/plaid/plaid-link';
 import { PlaidService, type ConnectedAccount } from '@/services/plaid.service';
 import { toast } from 'sonner';
 import { AccountsIcon } from '../icons/nav-icons';
@@ -33,7 +23,7 @@ type Step = 1 | 2;
 export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogProps) {
   const [step, setStep] = useState<Step>(1);
   const [amount, setAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('plaid');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('wallet');
   const [processing, setProcessing] = useState(false);
 
   // Plaid fields
@@ -43,9 +33,9 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
   const [loadingAccounts, setLoadingAccounts] = useState(false);
 
   const PAYMENT_METHODS = [
+    { id: 'wallet', label: 'Digital Wallet', icon: Wallet },
     { id: 'plaid', label: 'Bank Transfer', icon: AccountsIcon },
     { id: 'card', label: 'Credit Card', icon: CreditCard },
-    { id: 'wallet', label: 'Digital Wallet', icon: Wallet },
   ] as const;
 
   // Load connected Plaid accounts
@@ -82,9 +72,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
 
       if (metadata.accounts && metadata.accounts.length > 0 && accounts.length > 0) {
         const newAccountId = metadata.accounts[0].id;
-        const accountExists = accounts.some((item) =>
-          item.accounts.some((acc) => acc.accountId === newAccountId),
-        );
+        const accountExists = accounts.some((item) => item.accounts.some((acc) => acc.accountId === newAccountId));
         if (accountExists) {
           setSelectedPlaidAccount(newAccountId);
         }
@@ -112,11 +100,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
       setConnectedAccounts(accounts);
 
       if (
-        connectedAccounts.some(
-          (item) =>
-            item.id === fundingSourceId &&
-            item.accounts.some((acc) => acc.accountId === selectedPlaidAccount),
-        )
+        connectedAccounts.some((item) => item.id === fundingSourceId && item.accounts.some((acc) => acc.accountId === selectedPlaidAccount))
       ) {
         setSelectedPlaidAccount(null);
       }
@@ -181,9 +165,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
 
       if (connectedAccounts.length > 0 && !publicToken) {
         const selectedItem =
-          connectedAccounts.find((item) =>
-            item.accounts.some((acc) => acc.accountId === selectedPlaidAccount),
-          ) || connectedAccounts[0];
+          connectedAccounts.find((item) => item.accounts.some((acc) => acc.accountId === selectedPlaidAccount)) || connectedAccounts[0];
 
         request.itemId = selectedItem.itemId || selectedItem.providerId;
         if (selectedPlaidAccount) {
@@ -199,9 +181,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
       }
 
       await PlaidService.createDeposit(accountId, request);
-      toast.success(
-        'Deposit initiated successfully! Funds will be available once the transfer completes.',
-      );
+      toast.success('Deposit initiated successfully! Funds will be available once the transfer completes.');
       onSuccess?.();
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to process deposit';

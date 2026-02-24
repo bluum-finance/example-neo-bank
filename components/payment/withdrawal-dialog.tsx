@@ -1,21 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import {
-  Building2,
-  ArrowRight,
-  Loader2,
-  X,
-  Trash2,
-  ChevronDown,
-  CheckCircle2,
-} from 'lucide-react';
+import { Building2, ArrowRight, Loader2, X, Trash2, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { PlaidLink } from '@/components/plaid/plaid-link';
+import { PlaidLink } from '@/components/payment/plaid/plaid-link';
 import { PlaidService, type ConnectedAccount } from '@/services/plaid.service';
 import { toast } from 'sonner';
 
@@ -29,12 +21,7 @@ interface WithdrawalDialogProps {
 type WithdrawalMethod = 'plaid' | 'manual';
 type Step = 1 | 2;
 
-export function WithdrawalDialog({
-  accountId,
-  availableBalance,
-  onSuccess,
-  onCancel,
-}: WithdrawalDialogProps) {
+export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCancel }: WithdrawalDialogProps) {
   const [step, setStep] = useState<Step>(1);
   const [amount, setAmount] = useState('');
   const [processing, setProcessing] = useState(false);
@@ -94,9 +81,7 @@ export function WithdrawalDialog({
 
       if (metadata.accounts && metadata.accounts.length > 0 && accounts.length > 0) {
         const newAccountId = metadata.accounts[0].id;
-        const accountExists = accounts.some((item) =>
-          item.accounts.some((acc) => acc.accountId === newAccountId),
-        );
+        const accountExists = accounts.some((item) => item.accounts.some((acc) => acc.accountId === newAccountId));
         if (accountExists) {
           setSelectedPlaidAccount(newAccountId);
         }
@@ -124,11 +109,7 @@ export function WithdrawalDialog({
       setConnectedAccounts(accounts);
 
       if (
-        connectedAccounts.some(
-          (item) =>
-            item.id === fundingSourceId &&
-            item.accounts.some((acc) => acc.accountId === selectedPlaidAccount),
-        )
+        connectedAccounts.some((item) => item.id === fundingSourceId && item.accounts.some((acc) => acc.accountId === selectedPlaidAccount))
       ) {
         setSelectedPlaidAccount(null);
       }
@@ -152,11 +133,7 @@ export function WithdrawalDialog({
       toast.error('Insufficient balance');
       return false;
     }
-    if (
-      withdrawalMethod === 'plaid' &&
-      connectedAccounts.length > 0 &&
-      !selectedPlaidAccount
-    ) {
+    if (withdrawalMethod === 'plaid' && connectedAccounts.length > 0 && !selectedPlaidAccount) {
       toast.error('Please select a destination account');
       return false;
     }
@@ -197,9 +174,7 @@ export function WithdrawalDialog({
 
         if (connectedAccounts.length > 0 && !publicToken) {
           const selectedItem =
-            connectedAccounts.find((item) =>
-              item.accounts.some((acc) => acc.accountId === selectedPlaidAccount),
-            ) || connectedAccounts[0];
+            connectedAccounts.find((item) => item.accounts.some((acc) => acc.accountId === selectedPlaidAccount)) || connectedAccounts[0];
 
           request.item_id = selectedItem.itemId || selectedItem.providerId;
           if (selectedPlaidAccount) {
@@ -215,9 +190,7 @@ export function WithdrawalDialog({
         }
 
         await PlaidService.initiateWithdrawal(accountId, request);
-        toast.success(
-          'Withdrawal initiated successfully! Funds will be transferred once the ACH completes.',
-        );
+        toast.success('Withdrawal initiated successfully! Funds will be transferred once the ACH completes.');
         onSuccess?.();
         return;
       }

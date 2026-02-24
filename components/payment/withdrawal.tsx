@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { InvestmentService } from '@/services/investment.service';
-import { PlaidLink } from '@/components/plaid/plaid-link';
+import { PlaidLink } from '@/components/payment/plaid/plaid-link';
 import { PlaidService, type ConnectedAccount } from '@/services/plaid.service';
 import { toast } from 'sonner';
 
@@ -21,12 +21,7 @@ interface WithdrawalProps {
 type Step = 1 | 2;
 type WithdrawalMethod = 'plaid' | 'manual';
 
-export function Withdrawal({
-  accountId,
-  availableBalance,
-  onSuccess,
-  onCancel,
-}: WithdrawalProps) {
+export function Withdrawal({ accountId, availableBalance, onSuccess, onCancel }: WithdrawalProps) {
   const [step, setStep] = useState<Step>(1);
   const [amount, setAmount] = useState('');
   const [processing, setProcessing] = useState(false);
@@ -91,9 +86,7 @@ export function Withdrawal({
       if (metadata.accounts && metadata.accounts.length > 0 && accounts.length > 0) {
         const newAccountId = metadata.accounts[0].id;
         // Find the account in the loaded accounts
-        const accountExists = accounts.some((item) =>
-          item.accounts.some((acc) => acc.accountId === newAccountId)
-        );
+        const accountExists = accounts.some((item) => item.accounts.some((acc) => acc.accountId === newAccountId));
         if (accountExists) {
           setSelectedPlaidAccount(newAccountId);
         }
@@ -122,9 +115,9 @@ export function Withdrawal({
       setConnectedAccounts(accounts);
 
       // Clear selection if deleted account was selected
-      if (connectedAccounts.some((item) =>
-        item.id === fundingSourceId && item.accounts.some((acc) => acc.accountId === selectedPlaidAccount)
-      )) {
+      if (
+        connectedAccounts.some((item) => item.id === fundingSourceId && item.accounts.some((acc) => acc.accountId === selectedPlaidAccount))
+      ) {
         setSelectedPlaidAccount(null);
       }
 
@@ -215,9 +208,7 @@ export function Withdrawal({
         if (connectedAccounts.length > 0 && !publicToken) {
           // Find selected account or use first available
           const selectedItem =
-            connectedAccounts.find((item) =>
-              item.accounts.some((acc) => acc.accountId === selectedPlaidAccount)
-            ) || connectedAccounts[0];
+            connectedAccounts.find((item) => item.accounts.some((acc) => acc.accountId === selectedPlaidAccount)) || connectedAccounts[0];
 
           // Use itemId (from API) or providerId (legacy) as fallback
           request.item_id = selectedItem.itemId || selectedItem.providerId;
@@ -234,9 +225,7 @@ export function Withdrawal({
         }
 
         const response = await PlaidService.initiateWithdrawal(accountId, request);
-        toast.success(
-          'Withdrawal initiated successfully! Funds will be transferred once the ACH completes.'
-        );
+        toast.success('Withdrawal initiated successfully! Funds will be transferred once the ACH completes.');
         onSuccess?.();
         return;
       }
@@ -262,11 +251,7 @@ export function Withdrawal({
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Withdraw Funds</h2>
         {onCancel && (
-          <button
-            onClick={onCancel}
-            className="rounded-full p-1 hover:bg-muted transition-colors"
-            disabled={processing}
-          >
+          <button onClick={onCancel} className="rounded-full p-1 hover:bg-muted transition-colors" disabled={processing}>
             <X className="h-4 w-4" />
           </button>
         )}
@@ -308,15 +293,9 @@ export function Withdrawal({
               <option value="manual">Manual Bank Transfer</option>
             </Select>
             {withdrawalMethod === 'plaid' && (
-              <p className="text-xs text-muted-foreground">
-                Securely connect your bank account for ACH transfers
-              </p>
+              <p className="text-xs text-muted-foreground">Securely connect your bank account for ACH transfers</p>
             )}
-            {withdrawalMethod === 'manual' && (
-              <p className="text-xs text-muted-foreground">
-                Enter your bank account details manually
-              </p>
-            )}
+            {withdrawalMethod === 'manual' && <p className="text-xs text-muted-foreground">Enter your bank account details manually</p>}
           </div>
         </div>
       )}
@@ -337,10 +316,9 @@ export function Withdrawal({
                     item.accounts.map((account) => (
                       <div
                         key={account.accountId}
-                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${selectedPlaidAccount === account.accountId
-                          ? 'border-primary bg-primary/5'
-                          : 'hover:bg-muted'
-                          }`}
+                        className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                          selectedPlaidAccount === account.accountId ? 'border-primary bg-primary/5' : 'hover:bg-muted'
+                        }`}
                         onClick={() => setSelectedPlaidAccount(account.accountId)}
                       >
                         <div className="flex items-center gap-2">
@@ -391,11 +369,7 @@ export function Withdrawal({
                     }}
                     className="w-full"
                   />
-                  {publicToken && (
-                    <p className="text-sm text-green-600">
-                      ✓ Bank account connected successfully
-                    </p>
-                  )}
+                  {publicToken && <p className="text-sm text-green-600">✓ Bank account connected successfully</p>}
                 </div>
               )}
             </>
@@ -471,23 +445,13 @@ export function Withdrawal({
       {/* Navigation Buttons */}
       <div className="flex gap-2 pt-4">
         {step > 1 && (
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={handleBack}
-            disabled={processing}
-          >
+          <Button variant="outline" className="flex-1" onClick={handleBack} disabled={processing}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
         )}
         {onCancel && step === 1 && (
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={onCancel}
-            disabled={processing}
-          >
+          <Button variant="outline" className="flex-1" onClick={onCancel} disabled={processing}>
             Cancel
           </Button>
         )}
