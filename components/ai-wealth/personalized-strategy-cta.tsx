@@ -13,7 +13,7 @@ export function PersonalizedStrategyCTA() {
 
   return (
     <>
-      <section className="relative flex w-full flex-col overflow-hidden rounded-2xl border border-[#1E3D2F] bg-linear-to-r from-black to-[#0F2A20] lg:flex-row">
+      <section className="lg:py-4 xl:py-0 relative flex w-full flex-col overflow-hidden rounded-2xl border border-[#1E3D2F] bg-linear-to-r from-black to-[#0F2A20] lg:flex-row">
         {/* Background Gradient */}
         <div
           className="pointer-events-none absolute inset-0 z-0"

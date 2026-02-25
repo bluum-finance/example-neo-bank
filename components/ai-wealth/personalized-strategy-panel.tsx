@@ -7,8 +7,10 @@ import { cn } from '@/lib/utils';
 import { SidePanel } from '@/components/custom/side-panel';
 import { WidgetService, type FinancialGoal } from '@/services/widget.service';
 import { AssistantService } from '@/services/assistant.service';
+import { LifeEventService, type LifeEvent, type LifeEventType } from '@/services/life-event.service';
 import { useExternalAccountId } from '@/store/user.store';
 import { GoalCard, DraftGoalForm, type DraftGoalState } from './strategy-goal-components';
+import { EventCard, DraftEventForm, type DraftEventState } from './strategy-event-components';
 import { StepProgressBar, UserBubble, SystemPill, AssistantBubble } from './strategy-ui-components';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -40,7 +42,7 @@ const DEFAULT_MESSAGES: ChatMessage[] = [
   { id: '3', role: 'assistant', content: "Anything else you're saving for?" },
 ];
 
-// ─── Goal type helpers ────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const GOAL_TYPE_MAP: Record<string, FinancialGoal['goal_type']> = {
   Retirement: 'retirement',
@@ -74,36 +76,55 @@ export function PersonalizedStrategyPanel({
   const [goals, setGoals] = useState<FinancialGoal[]>([]);
   const [goalsLoading, setGoalsLoading] = useState(false);
 
+  // ── Life Events state ──
+  const [events, setEvents] = useState<LifeEvent[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+
   // ── UI state ──
   const [inputValue, setInputValue] = useState('');
   const [goalsExpanded, setGoalsExpanded] = useState(false);
+  const [eventsExpanded, setEventsExpanded] = useState(false);
   const conversationEndRef = useRef<HTMLDivElement>(null);
 
   const [draftGoal, setDraftGoal] = useState<(Partial<DraftGoalState> & { _goalId?: string }) | null>(null);
+  const [draftEvent, setDraftEvent] = useState<(Partial<DraftEventState> & { _eventId?: string }) | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isChatLoading, setIsChatLoading] = useState(false);
 
-  const loadGoals = useCallback(async () => {
+  const loadData = useCallback(async () => {
     if (!accountId) return;
     setGoalsLoading(true);
+    setEventsLoading(true);
     try {
-      const data = await WidgetService.getFinancialGoals(accountId);
-      setGoals(data);
+      const [goalsData, eventsData] = await Promise.all([
+        WidgetService.getFinancialGoals(accountId).catch(() => []),
+        LifeEventService.listLifeEvents(accountId).catch(() => {
+          return { life_events: [] };
+        }),
+      ]);
+      setGoals(goalsData);
+      setEvents(eventsData.life_events);
     } catch {
-      toast.error('Failed to load goals');
+      toast.error('Failed to load data');
     } finally {
       setGoalsLoading(false);
+      setEventsLoading(false);
     }
   }, [accountId]);
 
   useEffect(() => {
-    if (open) loadGoals();
-  }, [open, loadGoals]);
+    if (open) {
+      loadData();
+      setGoalsExpanded(false);
+      setEventsExpanded(false);
+      scrollConversationToBottom();
+    }
+  }, [open, loadData]);
 
   // ── Auto-scroll chat to bottom when messages change ──
   useEffect(() => {
     conversationEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages, isChatLoading]);
+  }, [chatMessages, isChatLoading, draftGoal, draftEvent]);
 
   async function handleSend() {
     const trimmed = inputValue.trim();
@@ -155,14 +176,14 @@ export function PersonalizedStrategyPanel({
     });
   }
 
+  // ── Goal Actions ──
   function openAddGoal() {
     setDraftGoal({});
-    setGoalsExpanded(false);
+    setDraftEvent(null);
     scrollConversationToBottom();
   }
 
   function openEditGoal(goal: FinancialGoal) {
-    // Reverse-map API goal_type → display label for the select
     const displayType = Object.entries(GOAL_TYPE_MAP).find(([, v]) => v === goal.goal_type)?.[0] ?? 'Custom';
     setDraftGoal({
       _goalId: goal.goal_id,
@@ -172,17 +193,14 @@ export function PersonalizedStrategyPanel({
       targetAmount: goal.target_amount?.replace(/[^0-9.]/g, '') ?? '',
       monthlyContribution: goal.monthly_contribution?.replace(/[^0-9.]/g, '') ?? '',
     });
-    setGoalsExpanded(false);
+    setDraftEvent(null);
     scrollConversationToBottom();
   }
 
-  async function handleDraftSave(draft: DraftGoalState) {
-    if (!accountId) {
-      toast.error('Account not found');
-      return;
-    }
+  async function handleGoalSave(draft: DraftGoalState) {
+    if (!accountId) return;
     setIsSaving(true);
-    const goalId = (draftGoal as any)?._goalId as string | undefined;
+    const goalId = (draftGoal as any)?._goalId;
     const payload = {
       name: draft.name,
       goal_type: (GOAL_TYPE_MAP[draft.goalType] ?? 'custom') as FinancialGoal['goal_type'],
@@ -202,7 +220,6 @@ export function PersonalizedStrategyPanel({
         toast.success('Goal added');
       }
       setDraftGoal(null);
-      setGoalsExpanded(true);
     } catch (err: any) {
       toast.error(err?.message ?? 'Failed to save goal');
     } finally {
@@ -221,27 +238,85 @@ export function PersonalizedStrategyPanel({
     }
   }
 
-  function handleDraftCancel() {
+  // ── Event Actions ──
+  function openAddEvent() {
+    setDraftEvent({});
     setDraftGoal(null);
+    scrollConversationToBottom();
   }
+
+  function openEditEvent(event: LifeEvent) {
+    setDraftEvent({
+      _eventId: event.event_id,
+      name: event.name,
+      eventType: event.event_type,
+      estimatedDate: event.expected_date ? String(new Date(event.expected_date).getFullYear()) : '',
+      estimatedCost: event.estimated_cost?.replace(/[^0-9.]/g, '') ?? '',
+      shortNote: event.notes ?? '',
+    });
+    setDraftGoal(null);
+    scrollConversationToBottom();
+  }
+
+  async function handleEventSave(draft: DraftEventState) {
+    if (!accountId) return;
+    setIsSaving(true);
+    const eventId = (draftEvent as any)?._eventId;
+    const payload = {
+      name: draft.name,
+      event_type: draft.eventType,
+      expected_date: draft.estimatedDate ? `${draft.estimatedDate}-01-01` : '',
+      estimated_cost: draft.estimatedCost,
+      notes: draft.shortNote,
+    };
+
+    try {
+      if (eventId) {
+        const updated = await LifeEventService.updateLifeEvent(accountId, eventId, payload);
+        setEvents((prev) => prev.map((e) => (e.event_id === eventId ? updated : e)));
+        toast.success('Event updated');
+      } else {
+        const created = await LifeEventService.createLifeEvent(accountId, payload);
+        setEvents((prev) => [...prev, created]);
+        toast.success('Event added');
+      }
+      setDraftEvent(null);
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to save event');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDeleteEvent(eventId: string) {
+    if (!accountId) return;
+    try {
+      await LifeEventService.deleteLifeEvent(accountId, eventId);
+      setEvents((prev) => prev.filter((e) => e.event_id !== eventId));
+      toast.success('Event deleted');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to delete event');
+    }
+  }
+
+  const handleToggleSection = (section: 'goals' | 'events') => {
+    if (section === 'goals') {
+      setGoalsExpanded(!goalsExpanded);
+      setEventsExpanded(false);
+    } else {
+      setEventsExpanded(!eventsExpanded);
+      setGoalsExpanded(false);
+    }
+  };
 
   return (
     <SidePanel className="max-w-160" open={open} onOpenChange={onOpenChange} showCloseButton={false}>
-      {/*
-       * The panel is a full-height flex column with three sections:
-       * 1. Header  — title, breadcrumb, progress
-       * 2. Goals   — collapsible goal list
-       * 3. Chat    — scrollable conversation + sticky footer input
-       */}
       <div className="flex h-full flex-col bg-[#0E231F] border-l border-[#1E3D2F]">
-        {/* ── Section 1: Header ── */}
+        {/* ── Header ── */}
         <header className="flex items-start gap-4 border-b border-[#1E3D2F] bg-[#0E231F] py-6 px-6 backdrop-blur-sm">
           <div className="flex flex-1 flex-col gap-2">
-            {/* Title row */}
             <div className="flex items-start justify-between">
               <h1 className="text-xl font-medium text-white">Build your personalized profile</h1>
-
-              {/* Close / X icon area */}
               <button
                 onClick={() => onOpenChange(false)}
                 aria-label="Close panel"
@@ -252,8 +327,6 @@ export function PersonalizedStrategyPanel({
                 </svg>
               </button>
             </div>
-
-            {/* Breadcrumb + step progress */}
             <div className="flex items-center gap-4">
               <span className="text-[14px] font-normal leading-5 text-[#8DA69B]/80">
                 Step {currentStep} of {totalSteps}
@@ -263,145 +336,127 @@ export function PersonalizedStrategyPanel({
           </div>
         </header>
 
-        {/* ── Section 2: Goals list (collapsible) ── */}
-        <section className="border-b border-[#1E3D2F] bg-[#07120F] px-8 py-4">
-          {/* Section header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-[14px] font-normal uppercase tracking-[0.7px] text-white/90">Your Goals</span>
-              {/* Count badge */}
-              <span className="rounded-full px-3 py-1 text-[11px] font-medium leading-[16.5px] text-[#30D158] outline-1 outline-[#1A3A2C]">
-                {goals.length}
-              </span>
-            </div>
-
-            {/* Collapse toggle */}
-            <button
-              onClick={() => setGoalsExpanded((prev) => !prev)}
-              aria-label={goalsExpanded ? 'Collapse goals' : 'Expand goals'}
-              className="flex h-5 w-5 items-center justify-center rounded-full bg-[#124031] text-white transition-transform duration-200"
-              style={{ transform: goalsExpanded ? 'rotate(0deg)' : 'rotate(180deg)' }}
-            >
-              <ChevronUp size={12} />
-            </button>
-          </div>
-
-          {/* Goal cards */}
-          {goalsLoading ? (
-            <div className="mt-4 flex items-center gap-2 text-[#8DA69B] text-sm">
-              <Loader2 size={14} className="animate-spin" />
-              Loading goals…
-            </div>
-          ) : (
-            goalsExpanded && (
-              <div className="flex flex-col gap-3 mt-4">
-                {goals.map((goal) => (
-                  <GoalCard key={goal.goal_id} goal={goal} onEdit={openEditGoal} onDelete={handleDeleteGoal} />
-                ))}
-                {goals.length === 0 && <p className="text-sm text-[#8DA69B]/60">No goals yet. Add one below.</p>}
+        <div className="flex-1 overflow-hidden overflow-y-auto flex flex-col h-full">
+          {/* ── Section 2: Goals & Events (collapsible) ── */}
+          <section className="border-b border-[#1E3D2F] bg-[#07120F] px-8 py-4">
+            {/* Goals */}
+            <div className="flex items-center justify-between mb-4 cursor-pointer" onClick={() => handleToggleSection('goals')}>
+              <div className="flex items-center gap-2">
+                <span className="text-[14px] font-normal uppercase tracking-[0.7px] text-white/90">Your Goals</span>
+                <span className="rounded-full px-3 py-1 text-[10px] font-medium leading-[16.5px] text-[#30D158] outline-1 outline-[#1A3A2C]">
+                  {goals.length}
+                </span>
               </div>
-            )
-          )}
-        </section>
+              <button className={cn('text-white transition-transform', !goalsExpanded && 'rotate-180')}>
+                <ChevronUp size={16} />
+              </button>
+            </div>
+            {goalsExpanded && (
+              <div className="flex flex-col gap-3 mb-6">
+                {goalsLoading ? (
+                  <Loader2 className="animate-spin text-[#8DA69B]" size={20} />
+                ) : (
+                  goals.map((goal) => <GoalCard key={goal.goal_id} goal={goal} onEdit={openEditGoal} onDelete={handleDeleteGoal} />)
+                )}
+                {goals.length === 0 && !goalsLoading && <p className="text-sm text-[#8DA69B]/60">No goals yet.</p>}
+              </div>
+            )}
 
-        {/* ── Section 3: Conversation ── */}
-        <div className="flex flex-1 flex-col overflow-hidden">
-          {/* Scrollable chat area */}
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            {/* Section label */}
-            <p className="mb-6 text-[14px] font-normal uppercase tracking-[0.7px] text-white/80">Conversation</p>
+            {/* Separator */}
+            <div className="h-px w-full bg-[#1E3D2F] my-4" />
 
-            <div className="flex flex-col gap-5">
-              {chatMessages.map((msg) => {
-                if (msg.role === 'user') return <UserBubble key={msg.id} text={msg.content} />;
-                if (msg.role === 'system') return <SystemPill key={msg.id} text={msg.content} />;
-                return <AssistantBubble key={msg.id} text={msg.content} />;
-              })}
+            {/* Events */}
+            <div className="flex items-center justify-between cursor-pointer" onClick={() => handleToggleSection('events')}>
+              <div className="flex items-center gap-2">
+                <span className="text-[14px] font-normal uppercase tracking-[0.7px] text-white/90">Life Events</span>
+                <span className="rounded-full px-3 py-1 text-[10px] font-medium leading-[16.5px] text-[#30D158] outline-1 outline-[#1A3A2C]">
+                  {events.length}
+                </span>
+              </div>
+              <button className={cn('text-white transition-transform', !eventsExpanded && 'rotate-180')}>
+                <ChevronUp size={16} />
+              </button>
+            </div>
+            {eventsExpanded && (
+              <div className="flex flex-col gap-3 mt-4">
+                {eventsLoading ? (
+                  <Loader2 className="animate-spin text-[#8DA69B]" size={20} />
+                ) : (
+                  events.map((event) => (
+                    <EventCard key={event.event_id} event={event} onEdit={openEditEvent} onDelete={handleDeleteEvent} />
+                  ))
+                )}
+                {events.length === 0 && !eventsLoading && <p className="text-sm text-[#8DA69B]/60">No life events yet.</p>}
+              </div>
+            )}
+          </section>
 
-              {isChatLoading && (
-                <div className="flex items-start gap-3 animate-pulse">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#07120F] outline-1 outline-[#1E3D2F]">
-                    <span className="text-[14px] font-bold leading-5 text-[#8DA69B]">b</span>
-                  </div>
-                  <div className="max-w-[80%] rounded-tr-2xl rounded-br-2xl rounded-bl-2xl bg-[#07120F] px-4 py-4 outline-1 outline-[#1E3D2F]">
-                    <div className="flex gap-1">
-                      <div className="h-1.5 w-1.5 rounded-full bg-[#8DA69B] animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="h-1.5 w-1.5 rounded-full bg-[#8DA69B] animate-bounce" style={{ animationDelay: '200ms' }} />
-                      <div className="h-1.5 w-1.5 rounded-full bg-[#8DA69B] animate-bounce" style={{ animationDelay: '400ms' }} />
-                    </div>
-                  </div>
+          {/* ── Section 3: Conversation ── */}
+          <div className="flex flex-1 flex-col">
+            <div className="flex-1 px-6 py-6">
+              <p className="mb-6 text-[14px] font-normal uppercase tracking-[0.7px] text-white/80">Conversation</p>
+              <div className="flex flex-col gap-5">
+                {chatMessages.map((msg) => {
+                  if (msg.role === 'user') return <UserBubble key={msg.id} text={msg.content} />;
+                  if (msg.role === 'system') return <SystemPill key={msg.id} text={msg.content} />;
+                  return <AssistantBubble key={msg.id} text={msg.content} />;
+                })}
+                {isChatLoading && <Loader2 className="animate-spin text-[#8DA69B]" size={20} />}
+              </div>
+
+              {draftGoal && (
+                <div className="pt-6">
+                  <DraftGoalForm initial={draftGoal} isSaving={isSaving} onSave={handleGoalSave} onCancel={() => setDraftGoal(null)} />
+                </div>
+              )}
+              {draftEvent && (
+                <div className="pt-6">
+                  <DraftEventForm initial={draftEvent} isSaving={isSaving} onSave={handleEventSave} onCancel={() => setDraftEvent(null)} />
                 </div>
               )}
             </div>
-
-            {/* Scroll anchor */}
-            <div ref={conversationEndRef} />
-
-            {draftGoal !== null && (
-              <div className="pt-6">
-                <DraftGoalForm
-                  key={draftGoal._goalId ?? 'new-goal'}
-                  initial={draftGoal}
-                  isSaving={isSaving}
-                  onSave={handleDraftSave}
-                  onCancel={handleDraftCancel}
-                />
-              </div>
-            )}
           </div>
 
-          {/* ── Footer: actions + text input ── */}
-          <footer className="border-t border-[#28432F] bg-[#0E231F] px-6 py-4">
-            {/* CTA row */}
-            <div className="mb-4 flex items-center justify-between">
-              {/* Add another goal */}
-              <button
-                onClick={openAddGoal}
-                className="flex items-center gap-1.5 text-[14px] font-normal text-[#8DA69B] transition-opacity hover:opacity-100 opacity-80"
-              >
-                <Plus size={14} />
-                Add another goal
-              </button>
-
-              {/* Continue button */}
-              <button
-                onClick={onContinue}
-                className="group relative flex h-11 px-12 items-center justify-center gap-2 overflow-hidden rounded-full bg-[#57B75C] text-[16px] font-semibold text-white transition-colors hover:bg-[#4ca651] active:scale-95"
-              >
-                Continue
-                <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
-              </button>
-            </div>
-
-            {/* Text input */}
-            <div className="relative flex items-center mb-2">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Type a goal (e.g., 'New Car')..."
-                disabled={isChatLoading}
-                className={cn(
-                  'h-12 w-full rounded-full bg-[#0E231F] pl-8 pr-16',
-                  'text-sm font-light text-[#A1BEAD]/50 placeholder:text-[#A1BEAD]/50',
-                  'outline-1 outline-[#1E3D2F]',
-                  'focus:outline-[#30D158] focus:text-white focus:text-base transition-all',
-                  'focus:ring-0 focus:ring-offset-0',
-                  isChatLoading && 'opacity-50 cursor-not-allowed'
-                )}
-              />
-              <button
-                onClick={handleSend}
-                aria-label="Send message"
-                disabled={!inputValue.trim() || isChatLoading}
-                className="absolute right-6 flex items-center justify-center text-[#A1BEAD] transition-colors hover:text-[#30D158] disabled:opacity-30"
-              >
-                <SendHorizonal size={22} className="-rotate-12" />
-              </button>
-            </div>
-          </footer>
+          <div ref={conversationEndRef} />
         </div>
+
+        <footer className="border-t border-[#28432F] bg-[#0E231F] px-6 py-4">
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex gap-4">
+              <button onClick={openAddGoal} className="text-[#8DA69B] flex items-center gap-1.5 text-sm">
+                <Plus size={14} /> Add Goal
+              </button>
+              <button onClick={openAddEvent} className="text-[#8DA69B] flex items-center gap-1.5 text-sm">
+                <Plus size={14} /> Add Event
+              </button>
+            </div>
+            <button
+              onClick={onContinue}
+              className="group flex h-11 px-12 items-center justify-center gap-2 rounded-full bg-[#57B75C] text-white font-semibold transition-all hover:bg-[#4ca651] active:scale-95"
+            >
+              Continue <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+            </button>
+          </div>
+
+          <div className="relative flex items-center mb-2">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a goal or life event..."
+              disabled={isChatLoading}
+              className="h-12 w-full rounded-full bg-[#0E231F] pl-8 pr-16 text-sm text-white outline-1 outline-[#1E3D2F] focus:outline-[#30D158] transition-all"
+            />
+            <button
+              onClick={handleSend}
+              disabled={!inputValue.trim() || isChatLoading}
+              className="absolute right-6 text-[#A1BEAD] hover:text-[#30D158] disabled:opacity-30"
+            >
+              <SendHorizonal size={22} className="-rotate-12" />
+            </button>
+          </div>
+        </footer>
       </div>
     </SidePanel>
   );

@@ -299,6 +299,64 @@ class BluumApiClient {
     return response.data;
   }
 
+  // Wealth Management - Life Events
+  async createLifeEvent(
+    accountId: string,
+    data: {
+      name: string;
+      event_type: 'college' | 'wedding' | 'home_purchase' | 'retirement' | 'major_purchase' | 'career_change' | 'custom';
+      expected_date: string;
+      estimated_cost: string;
+      currency?: string;
+      recurring?: boolean;
+      linked_goal_id?: string;
+      notes?: string;
+    }
+  ) {
+    const response = await this.client.post(`/wealth/accounts/${accountId}/life-events`, data);
+    return response.data;
+  }
+
+  async listLifeEvents(
+    accountId: string,
+    params?: {
+      status?: 'active' | 'completed' | 'archived';
+      event_type?: string;
+    }
+  ) {
+    const response = await this.client.get(`/wealth/accounts/${accountId}/life-events`, { params });
+    return response.data;
+  }
+
+  async getLifeEvent(accountId: string, eventId: string) {
+    const response = await this.client.get(`/wealth/accounts/${accountId}/life-events/${eventId}`);
+    return response.data;
+  }
+
+  async updateLifeEvent(
+    accountId: string,
+    eventId: string,
+    data: Partial<{
+      name: string;
+      event_type: 'college' | 'wedding' | 'home_purchase' | 'retirement' | 'major_purchase' | 'career_change' | 'custom';
+      expected_date: string;
+      estimated_cost: string;
+      currency: string;
+      recurring: boolean;
+      status: 'active' | 'completed' | 'archived';
+      linked_goal_id: string | null;
+      notes: string;
+    }>
+  ) {
+    const response = await this.client.put(`/wealth/accounts/${accountId}/life-events/${eventId}`, data);
+    return response.data;
+  }
+
+  async deleteLifeEvent(accountId: string, eventId: string) {
+    const response = await this.client.delete(`/wealth/accounts/${accountId}/life-events/${eventId}`);
+    return response.data;
+  }
+
   // Wealth Management - Investment Policy
   async getInvestmentPolicy(
     accountId: string,
