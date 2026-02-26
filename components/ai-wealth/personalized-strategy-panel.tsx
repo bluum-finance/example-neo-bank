@@ -8,9 +8,11 @@ import { SidePanel } from '@/components/custom/side-panel';
 import { WidgetService, type FinancialGoal } from '@/services/widget.service';
 import { AssistantService } from '@/services/assistant.service';
 import { LifeEventService, type LifeEvent, type LifeEventType } from '@/services/life-event.service';
+import { ExternalAccountService, type ExternalAccount } from '@/services/external-account.service';
 import { useExternalAccountId } from '@/store/user.store';
 import { GoalCard, DraftGoalForm, type DraftGoalState } from './strategy-goal-components';
 import { EventCard, DraftEventForm, type DraftEventState } from './strategy-event-components';
+import { AccountCard, DraftAccountForm, type DraftAccountState } from './strategy-account-components';
 import { StepProgressBar, UserBubble, SystemPill, AssistantBubble } from './strategy-ui-components';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -24,10 +26,6 @@ export interface ChatMessage {
 export interface PersonalizedStrategyPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Current wizard step (1-based) */
-  currentStep?: number;
-  /** Total wizard steps */
-  totalSteps?: number;
   /** Chat history to display */
   messages?: ChatMessage[];
   onContinue?: () => void;
@@ -37,7 +35,7 @@ export interface PersonalizedStrategyPanelProps {
 // ─── Default data ─────────────────────────────────────────────────────────────
 
 const DEFAULT_MESSAGES: ChatMessage[] = [
-  { id: '1', role: 'user', content: 'I want to retire at 60 with 2m' },
+  { id: '1', role: 'user', content: 'I want to retire at 60 with 2.5m' },
   { id: '2', role: 'system', content: 'Goal added' },
   { id: '3', role: 'assistant', content: "Anything else you're saving for?" },
 ];
@@ -58,14 +56,13 @@ const GOAL_TYPE_MAP: Record<string, FinancialGoal['goal_type']> = {
 export function PersonalizedStrategyPanel({
   open,
   onOpenChange,
-  currentStep = 2,
-  totalSteps = 4,
   messages: initialMessages = DEFAULT_MESSAGES,
-  onContinue,
   onSendMessage,
 }: PersonalizedStrategyPanelProps) {
   const accountId = useExternalAccountId();
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(initialMessages);
+  const [currentStep, setCurrentStep] = useState(1);
+  const totalSteps = 4;
 
   // Sync if prop changes
   useEffect(() => {
@@ -80,14 +77,20 @@ export function PersonalizedStrategyPanel({
   const [events, setEvents] = useState<LifeEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
 
+  // ── External Accounts state ──
+  const [accounts, setAccounts] = useState<ExternalAccount[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(false);
+
   // ── UI state ──
   const [inputValue, setInputValue] = useState('');
   const [goalsExpanded, setGoalsExpanded] = useState(false);
   const [eventsExpanded, setEventsExpanded] = useState(false);
+  const [accountsExpanded, setAccountsExpanded] = useState(false);
   const conversationEndRef = useRef<HTMLDivElement>(null);
 
   const [draftGoal, setDraftGoal] = useState<(Partial<DraftGoalState> & { _goalId?: string }) | null>(null);
   const [draftEvent, setDraftEvent] = useState<(Partial<DraftEventState> & { _eventId?: string }) | null>(null);
+  const [draftAccount, setDraftAccount] = useState<(Partial<DraftAccountState> & { _accountId?: string }) | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isChatLoading, setIsChatLoading] = useState(false);
 
@@ -95,36 +98,66 @@ export function PersonalizedStrategyPanel({
     if (!accountId) return;
     setGoalsLoading(true);
     setEventsLoading(true);
+    setAccountsLoading(true);
     try {
-      const [goalsData, eventsData] = await Promise.all([
-        WidgetService.getFinancialGoals(accountId).catch(() => []),
-        LifeEventService.listLifeEvents(accountId).catch(() => {
-          return { life_events: [] };
-        }),
+      const [goalsResult, eventsResult, accountsResult] = await Promise.allSettled([
+        WidgetService.getFinancialGoals(accountId),
+        LifeEventService.listLifeEvents(accountId),
+        ExternalAccountService.listExternalAccounts(accountId),
       ]);
-      setGoals(goalsData);
-      setEvents(eventsData.life_events);
-    } catch {
-      toast.error('Failed to load data');
+
+      if (goalsResult.status === 'fulfilled') {
+        setGoals(goalsResult.value);
+      } else {
+        console.error('Failed to load goals', goalsResult.reason);
+        toast.error('Failed to load goals');
+      }
+
+      if (eventsResult.status === 'fulfilled') {
+        setEvents(eventsResult.value.life_events);
+      } else {
+        console.error('Failed to load life events', eventsResult.reason);
+        toast.error('Failed to load life events');
+      }
+
+      if (accountsResult.status === 'fulfilled') {
+        setAccounts(accountsResult.value.external_accounts);
+      } else {
+        console.error('Failed to load external accounts', accountsResult.reason);
+        toast.error('Failed to load external accounts');
+      }
     } finally {
       setGoalsLoading(false);
       setEventsLoading(false);
+      setAccountsLoading(false);
     }
   }, [accountId]);
 
   useEffect(() => {
+    setCurrentStep(1);
     if (open) {
       loadData();
       setGoalsExpanded(false);
       setEventsExpanded(false);
+      setAccountsExpanded(false);
       scrollConversationToBottom();
     }
-  }, [open, loadData]);
+  }, [open]);
+
+  useEffect(() => {
+    if (currentStep === 1) {
+      setGoalsExpanded(true);
+    } else if (currentStep === 2) {
+      setEventsExpanded(true);
+    } else if (currentStep === 3) {
+      setAccountsExpanded(true);
+    }
+  }, [currentStep]);
 
   // ── Auto-scroll chat to bottom when messages change ──
   useEffect(() => {
     conversationEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages, isChatLoading, draftGoal, draftEvent]);
+  }, [chatMessages, isChatLoading, draftGoal, draftEvent, draftAccount]);
 
   async function handleSend() {
     const trimmed = inputValue.trim();
@@ -180,6 +213,7 @@ export function PersonalizedStrategyPanel({
   function openAddGoal() {
     setDraftGoal({});
     setDraftEvent(null);
+    setDraftAccount(null);
     scrollConversationToBottom();
   }
 
@@ -194,6 +228,7 @@ export function PersonalizedStrategyPanel({
       monthlyContribution: goal.monthly_contribution?.replace(/[^0-9.]/g, '') ?? '',
     });
     setDraftEvent(null);
+    setDraftAccount(null);
     scrollConversationToBottom();
   }
 
@@ -242,6 +277,7 @@ export function PersonalizedStrategyPanel({
   function openAddEvent() {
     setDraftEvent({});
     setDraftGoal(null);
+    setDraftAccount(null);
     scrollConversationToBottom();
   }
 
@@ -255,6 +291,7 @@ export function PersonalizedStrategyPanel({
       shortNote: event.notes ?? '',
     });
     setDraftGoal(null);
+    setDraftAccount(null);
     scrollConversationToBottom();
   }
 
@@ -299,13 +336,78 @@ export function PersonalizedStrategyPanel({
     }
   }
 
-  const handleToggleSection = (section: 'goals' | 'events') => {
+  // ── Account Actions ──
+  function openAddAccount() {
+    setDraftAccount({});
+    setDraftGoal(null);
+    setDraftEvent(null);
+    scrollConversationToBottom();
+  }
+
+  function openEditAccount(account: ExternalAccount) {
+    setDraftAccount({
+      _accountId: account.external_account_id,
+      name: account.name,
+      accountType: account.account_type,
+      isAsset: account.is_asset,
+      balance: account.balance?.replace(/[^0-9.]/g, '') ?? '',
+      institution: account.institution ?? '',
+      notes: account.notes ?? '',
+    });
+    setDraftGoal(null);
+    setDraftEvent(null);
+    scrollConversationToBottom();
+  }
+
+  async function handleAccountSave(draft: DraftAccountState) {
+    if (!accountId) return;
+    setIsSaving(true);
+    const accountIdToUpdate = (draftAccount as any)?._accountId;
+    const payload = {
+      name: draft.name,
+      account_type: draft.accountType,
+      is_asset: draft.isAsset,
+      balance: draft.balance,
+      institution: draft.institution || undefined,
+      notes: draft.notes || undefined,
+    };
+
+    try {
+      if (accountIdToUpdate) {
+        const updated = await ExternalAccountService.updateExternalAccount(accountId, accountIdToUpdate, payload);
+        setAccounts((prev) => prev.map((a) => (a.external_account_id === accountIdToUpdate ? updated : a)));
+        toast.success('Account updated');
+      } else {
+        const created = await ExternalAccountService.createExternalAccount(accountId, payload);
+        setAccounts((prev) => [...prev, created]);
+        toast.success('Account added');
+      }
+      setDraftAccount(null);
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to save account');
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleDeleteAccount(externalAccountId: string) {
+    if (!accountId) return;
+    try {
+      await ExternalAccountService.deleteExternalAccount(accountId, externalAccountId);
+      setAccounts((prev) => prev.filter((a) => a.external_account_id !== externalAccountId));
+      toast.success('Account deleted');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to delete account');
+    }
+  }
+
+  const handleToggleSection = (section: 'goals' | 'events' | 'accounts') => {
     if (section === 'goals') {
       setGoalsExpanded(!goalsExpanded);
-      setEventsExpanded(false);
-    } else {
+    } else if (section === 'events') {
       setEventsExpanded(!eventsExpanded);
-      setGoalsExpanded(false);
+    } else {
+      setAccountsExpanded(!accountsExpanded);
     }
   };
 
@@ -337,57 +439,98 @@ export function PersonalizedStrategyPanel({
         </header>
 
         <div className="flex-1 overflow-hidden overflow-y-auto flex flex-col h-full">
-          {/* ── Section 2: Goals & Events (collapsible) ── */}
+          {/* ── Section 2: Goals & Events & Accounts (collapsible) ── */}
           <section className="border-b border-[#1E3D2F] bg-[#07120F] px-8 py-4">
-            {/* Goals */}
-            <div className="flex items-center justify-between mb-4 cursor-pointer" onClick={() => handleToggleSection('goals')}>
-              <div className="flex items-center gap-2">
-                <span className="text-[14px] font-normal uppercase tracking-[0.7px] text-white/90">Your Goals</span>
-                <span className="rounded-full px-3 py-1 text-[10px] font-medium leading-[16.5px] text-[#30D158] outline-1 outline-[#1A3A2C]">
-                  {goals.length}
-                </span>
-              </div>
-              <button className={cn('text-white transition-transform', !goalsExpanded && 'rotate-180')}>
-                <ChevronUp size={16} />
-              </button>
-            </div>
-            {goalsExpanded && (
-              <div className="flex flex-col gap-3 mb-6">
-                {goalsLoading ? (
-                  <Loader2 className="animate-spin text-[#8DA69B]" size={20} />
-                ) : (
-                  goals.map((goal) => <GoalCard key={goal.goal_id} goal={goal} onEdit={openEditGoal} onDelete={handleDeleteGoal} />)
+            {/* Goals - Show in step 1 or step 4 */}
+            {(currentStep === 1 || currentStep === 4) && (
+              <>
+                <div className="flex items-center justify-between cursor-pointer" onClick={() => handleToggleSection('goals')}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[14px] font-normal uppercase tracking-[0.7px] text-white/90">Your Goals</span>
+                    <span className="rounded-full px-3 py-1 text-[10px] font-medium leading-[16.5px] text-[#30D158] outline-1 outline-[#1A3A2C]">
+                      {goals.length}
+                    </span>
+                  </div>
+                  <button className={cn('text-white transition-transform', !goalsExpanded && 'rotate-180')}>
+                    <ChevronUp size={16} />
+                  </button>
+                </div>
+                {goalsExpanded && (
+                  <div className="flex flex-col gap-3 mt-4 mb-6">
+                    {goalsLoading ? (
+                      <Loader2 className="animate-spin text-[#8DA69B]" size={20} />
+                    ) : (
+                      goals.map((goal) => <GoalCard key={goal.goal_id} goal={goal} onEdit={openEditGoal} onDelete={handleDeleteGoal} />)
+                    )}
+                    {goals.length === 0 && !goalsLoading && <p className="text-sm text-[#8DA69B]/60">No goals yet.</p>}
+                  </div>
                 )}
-                {goals.length === 0 && !goalsLoading && <p className="text-sm text-[#8DA69B]/60">No goals yet.</p>}
-              </div>
+                {currentStep === 4 && <div className="h-px w-full bg-[#1E3D2F] my-4" />}
+              </>
             )}
 
-            {/* Separator */}
-            <div className="h-px w-full bg-[#1E3D2F] my-4" />
-
-            {/* Events */}
-            <div className="flex items-center justify-between cursor-pointer" onClick={() => handleToggleSection('events')}>
-              <div className="flex items-center gap-2">
-                <span className="text-[14px] font-normal uppercase tracking-[0.7px] text-white/90">Life Events</span>
-                <span className="rounded-full px-3 py-1 text-[10px] font-medium leading-[16.5px] text-[#30D158] outline-1 outline-[#1A3A2C]">
-                  {events.length}
-                </span>
-              </div>
-              <button className={cn('text-white transition-transform', !eventsExpanded && 'rotate-180')}>
-                <ChevronUp size={16} />
-              </button>
-            </div>
-            {eventsExpanded && (
-              <div className="flex flex-col gap-3 mt-4">
-                {eventsLoading ? (
-                  <Loader2 className="animate-spin text-[#8DA69B]" size={20} />
-                ) : (
-                  events.map((event) => (
-                    <EventCard key={event.event_id} event={event} onEdit={openEditEvent} onDelete={handleDeleteEvent} />
-                  ))
+            {/* Events - Show in step 2 or step 4 */}
+            {(currentStep === 2 || currentStep === 4) && (
+              <>
+                <div className="flex items-center justify-between cursor-pointer" onClick={() => handleToggleSection('events')}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[14px] font-normal uppercase tracking-[0.7px] text-white/90">Life Events</span>
+                    <span className="rounded-full px-3 py-1 text-[10px] font-medium leading-[16.5px] text-[#30D158] outline-1 outline-[#1A3A2C]">
+                      {events.length}
+                    </span>
+                  </div>
+                  <button className={cn('text-white transition-transform', !eventsExpanded && 'rotate-180')}>
+                    <ChevronUp size={16} />
+                  </button>
+                </div>
+                {eventsExpanded && (
+                  <div className="flex flex-col gap-3 mt-4 mb-6">
+                    {eventsLoading ? (
+                      <Loader2 className="animate-spin text-[#8DA69B]" size={20} />
+                    ) : (
+                      events.map((event) => (
+                        <EventCard key={event.event_id} event={event} onEdit={openEditEvent} onDelete={handleDeleteEvent} />
+                      ))
+                    )}
+                    {events.length === 0 && !eventsLoading && <p className="text-sm text-[#8DA69B]/60">No life events yet.</p>}
+                  </div>
                 )}
-                {events.length === 0 && !eventsLoading && <p className="text-sm text-[#8DA69B]/60">No life events yet.</p>}
-              </div>
+                {currentStep === 4 && <div className="h-px w-full bg-[#1E3D2F] my-4" />}
+              </>
+            )}
+
+            {/* External Accounts - Show in step 3 or step 4 */}
+            {(currentStep === 3 || currentStep === 4) && (
+              <>
+                <div className="flex items-center justify-between cursor-pointer" onClick={() => handleToggleSection('accounts')}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[14px] font-normal uppercase tracking-[0.7px] text-white/90">External Accounts</span>
+                    <span className="rounded-full px-3 py-1 text-[10px] font-medium leading-[16.5px] text-[#30D158] outline-1 outline-[#1A3A2C]">
+                      {accounts.length}
+                    </span>
+                  </div>
+                  <button className={cn('text-white transition-transform', !accountsExpanded && 'rotate-180')}>
+                    <ChevronUp size={16} />
+                  </button>
+                </div>
+                {accountsExpanded && (
+                  <div className="flex flex-col gap-3 mt-4 mb-6">
+                    {accountsLoading ? (
+                      <Loader2 className="animate-spin text-[#8DA69B]" size={20} />
+                    ) : (
+                      accounts.map((account) => (
+                        <AccountCard
+                          key={account.external_account_id}
+                          account={account}
+                          onEdit={openEditAccount}
+                          onDelete={handleDeleteAccount}
+                        />
+                      ))
+                    )}
+                    {accounts.length === 0 && !accountsLoading && <p className="text-sm text-[#8DA69B]/60">No external accounts yet.</p>}
+                  </div>
+                )}
+              </>
             )}
           </section>
 
@@ -414,6 +557,16 @@ export function PersonalizedStrategyPanel({
                   <DraftEventForm initial={draftEvent} isSaving={isSaving} onSave={handleEventSave} onCancel={() => setDraftEvent(null)} />
                 </div>
               )}
+              {draftAccount && (
+                <div className="pt-6">
+                  <DraftAccountForm
+                    initial={draftAccount}
+                    isSaving={isSaving}
+                    onSave={handleAccountSave}
+                    onCancel={() => setDraftAccount(null)}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -423,39 +576,57 @@ export function PersonalizedStrategyPanel({
         <footer className="border-t border-[#28432F] bg-[#0E231F] px-6 py-4">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex gap-4">
-              <button onClick={openAddGoal} className="text-[#8DA69B] flex items-center gap-1.5 text-sm">
-                <Plus size={14} /> Add Goal
-              </button>
-              <button onClick={openAddEvent} className="text-[#8DA69B] flex items-center gap-1.5 text-sm">
-                <Plus size={14} /> Add Event
-              </button>
+              {currentStep === 1 && (
+                <button onClick={openAddGoal} className="text-[#8DA69B] flex items-center gap-1.5 text-sm">
+                  <Plus size={14} /> Add Goal
+                </button>
+              )}
+              {currentStep === 2 && (
+                <button onClick={openAddEvent} className="text-[#8DA69B] flex items-center gap-1.5 text-sm">
+                  <Plus size={14} /> Add Event
+                </button>
+              )}
+              {currentStep === 3 && (
+                <button onClick={openAddAccount} className="text-[#8DA69B] flex items-center gap-1.5 text-sm">
+                  <Plus size={14} /> Add Account
+                </button>
+              )}
             </div>
             <button
-              onClick={onContinue}
+              onClick={() => {
+                if (currentStep < totalSteps) {
+                  setCurrentStep((prev) => prev + 1);
+                } else {
+                  onOpenChange(false);
+                }
+              }}
               className="group flex h-11 px-12 items-center justify-center gap-2 rounded-full bg-[#57B75C] text-white font-semibold transition-all hover:bg-[#4ca651] active:scale-95"
             >
-              Continue <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+              {currentStep === 4 ? 'Complete Session' : 'Continue'}
+              <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
             </button>
           </div>
 
-          <div className="relative flex items-center mb-2">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Type a goal or life event..."
-              disabled={isChatLoading}
-              className="h-12 w-full rounded-full bg-[#0E231F] pl-8 pr-16 text-sm text-white outline-1 outline-[#1E3D2F] focus:outline-[#30D158] transition-all"
-            />
-            <button
-              onClick={handleSend}
-              disabled={!inputValue.trim() || isChatLoading}
-              className="absolute right-6 text-[#A1BEAD] hover:text-[#30D158] disabled:opacity-30"
-            >
-              <SendHorizonal size={22} className="-rotate-12" />
-            </button>
-          </div>
+          {currentStep < 4 && (
+            <div className="relative flex items-center mb-2">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type a goal, life event, or account..."
+                disabled={isChatLoading}
+                className="h-12 w-full rounded-full bg-[#0E231F] pl-8 pr-16 text-sm text-white outline-1 outline-[#1E3D2F] focus:outline-[#30D158] transition-all"
+              />
+              <button
+                onClick={handleSend}
+                disabled={!inputValue.trim() || isChatLoading}
+                className="absolute right-6 text-[#A1BEAD] hover:text-[#30D158] disabled:opacity-30"
+              >
+                <SendHorizonal size={22} className="-rotate-12" />
+              </button>
+            </div>
+          )}
         </footer>
       </div>
     </SidePanel>

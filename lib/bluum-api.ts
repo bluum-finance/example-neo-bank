@@ -357,6 +357,79 @@ class BluumApiClient {
     return response.data;
   }
 
+  // Wealth Management - External Accounts
+  async createExternalAccount(
+    accountId: string,
+    data: {
+      name: string;
+      account_type: string;
+      is_asset: boolean;
+      balance: string;
+      currency?: string;
+      institution?: string;
+      notes?: string;
+    },
+    idempotencyKey?: string
+  ) {
+    const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {};
+    const response = await this.client.post(
+      `/wealth/accounts/${accountId}/external-accounts`,
+      data,
+      { headers }
+    );
+    return response.data;
+  }
+
+  async listExternalAccounts(
+    accountId: string,
+    params?: {
+      status?: 'active' | 'archived';
+      is_asset?: boolean;
+      account_type?: string;
+    }
+  ) {
+    const response = await this.client.get(
+      `/wealth/accounts/${accountId}/external-accounts`,
+      { params }
+    );
+    return response.data;
+  }
+
+  async getExternalAccount(accountId: string, externalAccountId: string) {
+    const response = await this.client.get(
+      `/wealth/accounts/${accountId}/external-accounts/${externalAccountId}`
+    );
+    return response.data;
+  }
+
+  async updateExternalAccount(
+    accountId: string,
+    externalAccountId: string,
+    data: Partial<{
+      name: string;
+      account_type: string;
+      is_asset: boolean;
+      balance: string;
+      currency: string;
+      institution: string;
+      notes: string;
+      status: 'active' | 'archived';
+    }>
+  ) {
+    const response = await this.client.put(
+      `/wealth/accounts/${accountId}/external-accounts/${externalAccountId}`,
+      data
+    );
+    return response.data;
+  }
+
+  async deleteExternalAccount(accountId: string, externalAccountId: string) {
+    const response = await this.client.delete(
+      `/wealth/accounts/${accountId}/external-accounts/${externalAccountId}`
+    );
+    return response.data;
+  }
+
   // Wealth Management - Investment Policy
   async getInvestmentPolicy(
     accountId: string,
