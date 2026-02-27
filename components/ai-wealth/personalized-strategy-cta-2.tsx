@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Sparkles, Flag, Calendar, Landmark, Plus, ChevronDown, ChevronRight, Pencil } from 'lucide-react';
+import { ArrowRight, Sparkles, Flag, Calendar, Landmark, Plus, ChevronDown, ChevronRight, Pencil, Goal } from 'lucide-react';
 import { PersonalizedStrategyPanel } from '@/components/ai-wealth/personalized-strategy-panel';
 import { GoalModal, LifeEventModal, ExternalAccountModal } from '@/components/ai-wealth/personalized-strategy-modals';
 import { useUser } from '@/store/user.store';
@@ -208,6 +208,14 @@ export function PersonalizedStrategyCTA2() {
   return (
     <>
       <div className="flex w-full flex-col">
+        <div className="flex w-full items-center gap-4 my-4">
+          <h2 className="text-xl font-normal leading-[32px] text-white">Financial Profile</h2>
+
+          <div className="rounded-full bg-[#124031] py-1.5 px-3 flex items-center justify-center">
+            <span className="text-[10px] font-normal uppercase text-[#30D158]">For Profile Personalization</span>
+          </div>
+        </div>
+
         {/* Header Section */}
         <section className="flex items-center justify-between gap-4 rounded-t-3xl border border-[#1E3D2F] bg-[#07120F] p-6">
           <div className="flex flex-1 flex-col gap-2 lg:flex-row lg:items-center lg:gap-8">
@@ -243,7 +251,7 @@ export function PersonalizedStrategyCTA2() {
             >
               <div className="flex items-center gap-4">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1A3A2C]">
-                  <Flag className="h-4 w-4 text-[#30D158]" />
+                  <Goal className="h-4 w-4 text-[#30D158]" />
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-[15px] font-medium text-white">Goals</span>
@@ -333,7 +341,7 @@ export function PersonalizedStrategyCTA2() {
           <div className="flex flex-col border-b border-[#1E3D2F]">
             <button
               onClick={() => setLifeEventsExpanded(!lifeEventsExpanded)}
-              className="flex items-center justify-between px-5 py-5 border-b border-[#1E3D2F]"
+              className={`flex items-center justify-between px-5 py-5 ${lifeEventsExpanded ? 'border-b border-[#1E3D2F]' : ''}`}
             >
               <div className="flex flex-1 items-center gap-4">
                 <div className="flex items-center gap-4">

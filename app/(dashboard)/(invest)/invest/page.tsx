@@ -362,9 +362,9 @@ const AiWealthDashboard = ({
 }) => {
   return (
     <div className="space-y-6 my-4 lg:px-8 max-w-5xl mx-auto">
-      <section className="pb-6">
+      {/* <section className="pb-6">
         <PersonalizedStrategyCTA />
-      </section>
+      </section> */}
 
       <WelcomeInsightsCard insights={insightsList} insightsLoading={insightsLoading} />
 
