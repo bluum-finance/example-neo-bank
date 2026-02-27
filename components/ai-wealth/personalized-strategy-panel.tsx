@@ -442,96 +442,91 @@ export function PersonalizedStrategyPanel({
           {/* ── Section 2: Goals & Events & Accounts (collapsible) ── */}
           <section className="border-b border-[#1E3D2F] bg-[#07120F] px-8 py-4">
             {/* Goals - Show in step 1 or step 4 */}
-            {(currentStep === 1 || currentStep === 4) && (
-              <>
-                <div className="flex items-center justify-between cursor-pointer" onClick={() => handleToggleSection('goals')}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[14px] font-normal uppercase tracking-[0.7px] text-white/90">Your Goals</span>
-                    <span className="rounded-full px-3 py-1 text-[10px] font-medium leading-[16.5px] text-[#30D158] outline-1 outline-[#1A3A2C]">
-                      {goals.length}
-                    </span>
-                  </div>
-                  <button className={cn('text-white transition-transform', !goalsExpanded && 'rotate-180')}>
-                    <ChevronUp size={16} />
-                  </button>
+            <>
+              <div className="flex items-center justify-between cursor-pointer" onClick={() => handleToggleSection('goals')}>
+                <div className="flex items-center gap-2">
+                  <span className="text-[14px] font-normal uppercase tracking-[0.7px] text-white/90">Your Goals</span>
+                  <span className="rounded-full px-3 py-1 text-[10px] font-medium leading-[16.5px] text-[#30D158] outline-1 outline-[#1A3A2C]">
+                    {goals.length}
+                  </span>
                 </div>
-                {goalsExpanded && (
-                  <div className="flex flex-col gap-3 mt-4 mb-6">
-                    {goalsLoading ? (
-                      <Loader2 className="animate-spin text-[#8DA69B]" size={20} />
-                    ) : (
-                      goals.map((goal) => <GoalCard key={goal.goal_id} goal={goal} onEdit={openEditGoal} onDelete={handleDeleteGoal} />)
-                    )}
-                    {goals.length === 0 && !goalsLoading && <p className="text-sm text-[#8DA69B]/60">No goals yet.</p>}
-                  </div>
-                )}
-                {currentStep === 4 && <div className="h-px w-full bg-[#1E3D2F] my-4" />}
-              </>
-            )}
+                <button className={cn('text-white transition-transform', !goalsExpanded && 'rotate-180')}>
+                  <ChevronUp size={16} />
+                </button>
+              </div>
+              {goalsExpanded && (
+                <div className="flex flex-col gap-3 mt-4 mb-6">
+                  {goalsLoading ? (
+                    <Loader2 className="animate-spin text-[#8DA69B]" size={20} />
+                  ) : (
+                    goals.map((goal) => <GoalCard key={goal.goal_id} goal={goal} onEdit={openEditGoal} onDelete={handleDeleteGoal} />)
+                  )}
+                  {goals.length === 0 && !goalsLoading && <p className="text-sm text-[#8DA69B]/60">No goals yet.</p>}
+                </div>
+              )}
+
+              <div className="h-px w-full bg-[#1E3D2F] my-3" />
+            </>
 
             {/* Events - Show in step 2 or step 4 */}
-            {(currentStep === 2 || currentStep === 4) && (
-              <>
-                <div className="flex items-center justify-between cursor-pointer" onClick={() => handleToggleSection('events')}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[14px] font-normal uppercase tracking-[0.7px] text-white/90">Life Events</span>
-                    <span className="rounded-full px-3 py-1 text-[10px] font-medium leading-[16.5px] text-[#30D158] outline-1 outline-[#1A3A2C]">
-                      {events.length}
-                    </span>
-                  </div>
-                  <button className={cn('text-white transition-transform', !eventsExpanded && 'rotate-180')}>
-                    <ChevronUp size={16} />
-                  </button>
+            <>
+              <div className="flex items-center justify-between cursor-pointer" onClick={() => handleToggleSection('events')}>
+                <div className="flex items-center gap-2">
+                  <span className="text-[14px] font-normal uppercase tracking-[0.7px] text-white/90">Life Events</span>
+                  <span className="rounded-full px-3 py-1 text-[10px] font-medium leading-[16.5px] text-[#30D158] outline-1 outline-[#1A3A2C]">
+                    {events.length}
+                  </span>
                 </div>
-                {eventsExpanded && (
-                  <div className="flex flex-col gap-3 mt-4 mb-6">
-                    {eventsLoading ? (
-                      <Loader2 className="animate-spin text-[#8DA69B]" size={20} />
-                    ) : (
-                      events.map((event) => (
-                        <EventCard key={event.event_id} event={event} onEdit={openEditEvent} onDelete={handleDeleteEvent} />
-                      ))
-                    )}
-                    {events.length === 0 && !eventsLoading && <p className="text-sm text-[#8DA69B]/60">No life events yet.</p>}
-                  </div>
-                )}
-                {currentStep === 4 && <div className="h-px w-full bg-[#1E3D2F] my-4" />}
-              </>
-            )}
+                <button className={cn('text-white transition-transform', !eventsExpanded && 'rotate-180')}>
+                  <ChevronUp size={16} />
+                </button>
+              </div>
+              {eventsExpanded && (
+                <div className="flex flex-col gap-3 mt-4 mb-6">
+                  {eventsLoading ? (
+                    <Loader2 className="animate-spin text-[#8DA69B]" size={20} />
+                  ) : (
+                    events.map((event) => (
+                      <EventCard key={event.event_id} event={event} onEdit={openEditEvent} onDelete={handleDeleteEvent} />
+                    ))
+                  )}
+                  {events.length === 0 && !eventsLoading && <p className="text-sm text-[#8DA69B]/60">No life events yet.</p>}
+                </div>
+              )}
+              <div className="h-px w-full bg-[#1E3D2F] my-3" />
+            </>
 
             {/* External Accounts - Show in step 3 or step 4 */}
-            {(currentStep === 3 || currentStep === 4) && (
-              <>
-                <div className="flex items-center justify-between cursor-pointer" onClick={() => handleToggleSection('accounts')}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[14px] font-normal uppercase tracking-[0.7px] text-white/90">External Accounts</span>
-                    <span className="rounded-full px-3 py-1 text-[10px] font-medium leading-[16.5px] text-[#30D158] outline-1 outline-[#1A3A2C]">
-                      {accounts.length}
-                    </span>
-                  </div>
-                  <button className={cn('text-white transition-transform', !accountsExpanded && 'rotate-180')}>
-                    <ChevronUp size={16} />
-                  </button>
+            <>
+              <div className="flex items-center justify-between cursor-pointer" onClick={() => handleToggleSection('accounts')}>
+                <div className="flex items-center gap-2">
+                  <span className="text-[14px] font-normal uppercase tracking-[0.7px] text-white/90">External Accounts</span>
+                  <span className="rounded-full px-3 py-1 text-[10px] font-medium leading-[16.5px] text-[#30D158] outline-1 outline-[#1A3A2C]">
+                    {accounts.length}
+                  </span>
                 </div>
-                {accountsExpanded && (
-                  <div className="flex flex-col gap-3 mt-4 mb-6">
-                    {accountsLoading ? (
-                      <Loader2 className="animate-spin text-[#8DA69B]" size={20} />
-                    ) : (
-                      accounts.map((account) => (
-                        <AccountCard
-                          key={account.external_account_id}
-                          account={account}
-                          onEdit={openEditAccount}
-                          onDelete={handleDeleteAccount}
-                        />
-                      ))
-                    )}
-                    {accounts.length === 0 && !accountsLoading && <p className="text-sm text-[#8DA69B]/60">No external accounts yet.</p>}
-                  </div>
-                )}
-              </>
-            )}
+                <button className={cn('text-white transition-transform', !accountsExpanded && 'rotate-180')}>
+                  <ChevronUp size={16} />
+                </button>
+              </div>
+              {accountsExpanded && (
+                <div className="flex flex-col gap-3 mt-4 mb-6">
+                  {accountsLoading ? (
+                    <Loader2 className="animate-spin text-[#8DA69B]" size={20} />
+                  ) : (
+                    accounts.map((account) => (
+                      <AccountCard
+                        key={account.external_account_id}
+                        account={account}
+                        onEdit={openEditAccount}
+                        onDelete={handleDeleteAccount}
+                      />
+                    ))
+                  )}
+                  {accounts.length === 0 && !accountsLoading && <p className="text-sm text-[#8DA69B]/60">No external accounts yet.</p>}
+                </div>
+              )}
+            </>
           </section>
 
           {/* ── Section 3: Conversation ── */}
@@ -574,39 +569,6 @@ export function PersonalizedStrategyPanel({
         </div>
 
         <footer className="border-t border-[#28432F] bg-[#0E231F] px-6 py-4">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex gap-4">
-              {currentStep === 1 && (
-                <button onClick={openAddGoal} className="text-[#8DA69B] flex items-center gap-1.5 text-sm">
-                  <Plus size={14} /> Add Goal
-                </button>
-              )}
-              {currentStep === 2 && (
-                <button onClick={openAddEvent} className="text-[#8DA69B] flex items-center gap-1.5 text-sm">
-                  <Plus size={14} /> Add Event
-                </button>
-              )}
-              {currentStep === 3 && (
-                <button onClick={openAddAccount} className="text-[#8DA69B] flex items-center gap-1.5 text-sm">
-                  <Plus size={14} /> Add Account
-                </button>
-              )}
-            </div>
-            <button
-              onClick={() => {
-                if (currentStep < totalSteps) {
-                  setCurrentStep((prev) => prev + 1);
-                } else {
-                  onOpenChange(false);
-                }
-              }}
-              className="group flex h-11 px-12 items-center justify-center gap-2 rounded-full bg-[#57B75C] text-white font-semibold transition-all hover:bg-[#4ca651] active:scale-95"
-            >
-              {currentStep === 4 ? 'Complete Session' : 'Continue'}
-              <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
-            </button>
-          </div>
-
           {currentStep < 4 && (
             <div className="relative flex items-center mb-2">
               <input

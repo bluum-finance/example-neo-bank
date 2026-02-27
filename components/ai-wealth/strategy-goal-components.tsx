@@ -34,30 +34,38 @@ export function GoalCard({
   const monthly = goal.monthly_contribution ? `$${Number(goal.monthly_contribution).toLocaleString()}` : '';
 
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-[#0F2A20] px-5 py-3">
+    <div className="flex items-center gap-3 rounded-xl bg-[#0F2A20] px-5 py-3 border border-white/5 hover:bg-white/5 transition-colors group">
       {/* Info */}
       <div className="flex flex-1 flex-col gap-1">
         {/* Name + priority badge */}
         <div className="flex items-center gap-3">
-          <span className="text-base font-light leading-7 text-white">{goal.name}</span>
+          <span className="text-base font-medium leading-7 text-white">{goal.name}</span>
           {goal.priority != null && (
-            <span className="rounded h-6 w-7 flex items-center justify-center bg-[#124031] text-[10px] font-light text-white">
+            <span
+              className={cn(
+                'rounded h-5 px-2 flex items-center justify-center text-[10px] font-semibold text-white uppercase',
+                goal.priority === 1
+                  ? 'bg-red-500/20 text-red-400'
+                  : goal.priority === 2
+                    ? 'bg-orange-500/20 text-orange-400'
+                    : 'bg-[#124031] text-[#57B75C]'
+              )}
+            >
               P{goal.priority}
             </span>
           )}
         </div>
 
         {/* Meta row */}
-        <div className="flex items-center gap-3 opacity-70">
-          <span className="text-sm text-[#B0B8BD]">{amount}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-[#8DA69B] font-medium">{amount}</span>
           <Dot />
           {goal.status == 'completed' ? (
-            <span className="text-sm text-[#B0B8BD]">Completed</span>
+            <span className="text-sm text-[#30D158]">Completed</span>
           ) : (
             <>
               <span className="text-sm text-[#B0B8BD]">Target: {targetYear}</span>
               <Dot />
-
               {goal.monthly_contribution && <span className="text-sm text-[#B0B8BD]">{monthly}/mo</span>}
             </>
           )}
@@ -65,18 +73,18 @@ export function GoalCard({
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 opacity-50">
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
           aria-label={`Edit ${goal.name}`}
           onClick={() => onEdit?.(goal)}
-          className="rounded-lg p-2 text-[#B0B8BD] hover:opacity-100 transition-opacity"
+          className="rounded-lg p-2 text-[#B0B8BD] hover:text-white hover:bg-white/5 transition-all"
         >
           <Pencil size={14} />
         </button>
         <button
           aria-label={`Delete ${goal.name}`}
           onClick={() => onDelete?.(goal.goal_id)}
-          className="rounded-lg p-2 text-[#B0B8BD] hover:opacity-100 transition-opacity"
+          className="rounded-lg p-2 text-[#B0B8BD] hover:text-red-400 hover:bg-red-400/10 transition-all"
         >
           <Trash2 size={14} />
         </button>
