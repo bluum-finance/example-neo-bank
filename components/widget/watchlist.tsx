@@ -38,11 +38,11 @@ function WatchlistItem({ name, symbol, price, change, isPositive }: WatchlistIte
  */
 export function Watchlist() {
   const stocks = [
-    { name: 'Dangote Cement Plc', symbol: 'DANGCEM', price: '₦799.90', change: '0.16%', isPositive: true },
-    { name: 'Safaricom Plc', symbol: 'SCOM', price: 'KES 19.80', change: '0.16%', isPositive: true },
-    { name: 'Apple Inc.', symbol: 'AAPL', price: '$178.35', change: '1.2%', isPositive: true },
-    { name: 'Tesla, Inc.', symbol: 'TSLA', price: '$245.60', change: '-0.8%', isPositive: false },
-    { name: 'Nvidia Corp.', symbol: 'NVDA', price: '$460.12', change: '3.5%', isPositive: true },
+    { name: 'Dangote Cement Plc', symbol: 'DANGCEM', price: '₦351.90', change: '0.16%', isPositive: true },
+    { name: 'Safaricom Plc', symbol: 'SCOM', price: '$24.88', change: '0.16%', isPositive: true },
+    { name: 'Apple Inc.', symbol: 'AAPL', price: '$176.35', change: '1.2%', isPositive: true },
+    { name: 'Tesla, Inc.', symbol: 'TSLA', price: '$250.65', change: '-0.8%', isPositive: false },
+    { name: 'Nvidia Corp.', symbol: 'NVDA', price: '$501.12', change: '3.5%', isPositive: true },
   ];
 
   return (
