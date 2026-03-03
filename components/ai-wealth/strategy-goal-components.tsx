@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { CheckCheck, Pencil, Trash2, Flag, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type FinancialGoal } from '@/services/widget.service';
+import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 
 // ─── Types & Constants ────────────────────────────────────────────────────────
 
@@ -29,9 +30,10 @@ export function GoalCard({
   onEdit?: (g: FinancialGoal) => void;
   onDelete?: (id: string) => void;
 }) {
+  const { displayAmount } = useCurrency();
   const targetYear = goal.target_date ? new Date(goal.target_date).getFullYear() : '';
-  const amount = goal.target_amount ? `$${Number(goal.target_amount).toLocaleString()}` : '';
-  const monthly = goal.monthly_contribution ? `$${Number(goal.monthly_contribution).toLocaleString()}` : '';
+  const amount = goal.target_amount ? displayAmount(Number(goal.target_amount), goal.currency as CurrencyCode) : '';
+  const monthly = goal.monthly_contribution ? displayAmount(Number(goal.monthly_contribution), goal.currency as CurrencyCode) : '';
 
   return (
     <div className="flex items-center gap-3 rounded-xl bg-[#0F2A20] px-5 py-3 border border-white/5 hover:bg-white/5 transition-colors group">

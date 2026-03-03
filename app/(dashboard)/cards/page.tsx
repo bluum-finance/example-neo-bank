@@ -9,10 +9,12 @@ import { Separator } from '@/components/ui/separator';
 import { getCards, type Card as CardType } from '@/lib/mock-data';
 import { toast } from 'sonner';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useCurrency } from '@/lib/hooks/use-currency';
 
 export default function Cards() {
   const [cards, setCards] = useState<CardType[]>([]);
   const [loading, setLoading] = useState(true);
+  const { displayAmount } = useCurrency();
 
   useEffect(() => {
     const fetchCards = async () => {
@@ -61,21 +63,11 @@ export default function Cards() {
           <div className="w-full overflow-hidden rounded-xl border border-[#1E3D2F] bg-[#0F2A20]">
             {/* Table Header */}
             <div className="flex items-center bg-[#0E231F] px-6 py-3">
-              <div className="w-[240px] text-[10px] font-bold uppercase tracking-[0.1em] text-[#8DA69B]">
-                Cardholder
-              </div>
-              <div className="w-[178px] text-[10px] font-bold uppercase tracking-[0.1em] text-[#8DA69B]">
-                Card
-              </div>
-              <div className="flex-1 text-right text-[10px] font-bold uppercase tracking-[0.1em] text-[#8DA69B]">
-                Spent this month
-              </div>
-              <div className="w-[126px] text-center text-[10px] font-bold uppercase tracking-[0.1em] text-[#8DA69B]">
-                Type
-              </div>
-              <div className="w-[198px] text-[10px] font-bold uppercase tracking-[0.1em] text-[#8DA69B]">
-                Account
-              </div>
+              <div className="w-[240px] text-[10px] font-bold uppercase tracking-[0.1em] text-[#8DA69B]">Cardholder</div>
+              <div className="w-[178px] text-[10px] font-bold uppercase tracking-[0.1em] text-[#8DA69B]">Card</div>
+              <div className="flex-1 text-right text-[10px] font-bold uppercase tracking-[0.1em] text-[#8DA69B]">Spent this month</div>
+              <div className="w-[126px] text-center text-[10px] font-bold uppercase tracking-[0.1em] text-[#8DA69B]">Type</div>
+              <div className="w-[198px] text-[10px] font-bold uppercase tracking-[0.1em] text-[#8DA69B]">Account</div>
             </div>
 
             {/* Table Body */}
@@ -91,14 +83,9 @@ export default function Cards() {
                 </div>
               ) : (
                 cards.map((card) => (
-                  <div
-                    key={card.id}
-                    className="flex items-center border-t border-[#2A4D3C] px-6 py-4 hover:bg-white/5 transition-colors"
-                  >
+                  <div key={card.id} className="flex items-center border-t border-[#2A4D3C] px-6 py-4 hover:bg-white/5 transition-colors">
                     <div className="w-[240px] flex items-center gap-2">
-                      <span className="text-sm font-medium text-white">
-                        {card.cardholderName}
-                      </span>
+                      <span className="text-sm font-medium text-white">{card.cardholderName}</span>
                     </div>
                     <div className="w-[178px] flex items-center gap-3">
                       <div className="flex h-6 w-9 items-center justify-center rounded bg-[#124031] border border-[#1E3D2F]">
@@ -106,12 +93,8 @@ export default function Cards() {
                       </div>
                       <span className="text-sm text-white">••{card.last4}</span>
                     </div>
-                    <div className="flex-1 text-right text-sm text-white">
-                      ${card.spentThisMonth.toFixed(2)}
-                    </div>
-                    <div className="w-[126px] text-center text-sm text-white capitalize">
-                      {card.type}
-                    </div>
+                    <div className="flex-1 text-right text-sm text-white">{displayAmount(card.spentThisMonth)}</div>
+                    <div className="w-[126px] text-center text-sm text-white capitalize">{card.type}</div>
                     <div className="w-[198px] text-sm text-white">{card.accountName}</div>
                   </div>
                 ))

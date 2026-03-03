@@ -2,14 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import {
-  ArrowLeft,
-  TrendingUp,
-  TrendingDown,
-  Loader2,
-  DollarSign,
-  BarChart3,
-} from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Loader2, DollarSign, BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { InvestmentService } from '@/services/investment.service';
 import { toast } from 'sonner';
 import TradingViewChart from '@/components/invest/trading-view-chart';
+import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 
 interface Asset {
   id: string;
@@ -27,6 +21,7 @@ interface Asset {
   tradable: boolean;
   marginable?: boolean;
   shortable?: boolean;
+  currency?: string;
   current_price?: number;
   price?: number;
   change?: number;
@@ -80,6 +75,7 @@ export default function AssetDetailsPage() {
           tradable: assetData.tradable !== false,
           marginable: assetData.marginable,
           shortable: assetData.shortable,
+          currency: assetData.currency,
           current_price: assetData.current_price || assetData.price,
           price: assetData.price || assetData.current_price,
           change: assetData.change,
@@ -100,11 +96,11 @@ export default function AssetDetailsPage() {
     loadAsset();
   }, [symbol]);
 
-
   const currentPrice = asset?.current_price || asset?.price;
   const priceChange = asset?.change ?? 0;
   const priceChangePercent = asset?.changePercent ?? 0;
   const isPositive = priceChange >= 0;
+  const { displayAmount } = useCurrency();
 
   if (loading) {
     return (
@@ -123,9 +119,7 @@ export default function AssetDetailsPage() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold">Asset Details</h1>
-            <p className="text-muted-foreground mt-1">
-              View asset information and price history
-            </p>
+            <p className="text-muted-foreground mt-1">View asset information and price history</p>
           </div>
         </div>
         <Card>
@@ -165,7 +159,7 @@ export default function AssetDetailsPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Current Price</p>
                 <p className="text-2xl font-bold mt-1">
-                  {currentPrice != null ? `$${currentPrice.toFixed(2)}` : 'N/A'}
+                  {currentPrice != null ? displayAmount(currentPrice, asset.currency as CurrencyCode) : 'N/A'}
                 </p>
               </div>
               <DollarSign className="h-5 w-5 text-muted-foreground" />
@@ -179,18 +173,10 @@ export default function AssetDetailsPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Change</p>
                 <div className="flex items-center gap-2 mt-1">
-                  {isPositive ? (
-                    <TrendingUp className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <TrendingDown className="h-4 w-4 text-red-600" />
-                  )}
-                  <p
-                    className={`text-2xl font-bold ${
-                      isPositive ? 'text-green-600' : 'text-red-600'
-                    }`}
-                  >
-                    {priceChange >= 0 ? '+' : ''}
-                    {priceChange.toFixed(2)}
+                  {isPositive ? <TrendingUp className="h-4 w-4 text-green-600" /> : <TrendingDown className="h-4 w-4 text-red-600" />}
+                  <p className={`text-2xl font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                    {priceChange >= 0 ? '+' : '-'}
+                    {displayAmount(Math.abs(priceChange), asset.currency as CurrencyCode)}
                   </p>
                 </div>
               </div>
@@ -203,11 +189,7 @@ export default function AssetDetailsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Change %</p>
-                <p
-                  className={`text-2xl font-bold mt-1 ${
-                    isPositive ? 'text-green-600' : 'text-red-600'
-                  }`}
-                >
+                <p className={`text-2xl font-bold mt-1 ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
                   {priceChangePercent >= 0 ? '+' : ''}
                   {priceChangePercent.toFixed(2)}%
                 </p>
@@ -222,7 +204,7 @@ export default function AssetDetailsPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Previous Close</p>
                 <p className="text-2xl font-bold mt-1">
-                  {asset.previousClose != null ? `$${asset.previousClose.toFixed(2)}` : 'N/A'}
+                  {asset.previousClose != null ? displayAmount(asset.previousClose, asset.currency as CurrencyCode) : 'N/A'}
                 </p>
               </div>
             </div>
@@ -263,7 +245,7 @@ export default function AssetDetailsPage() {
               <>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Bid Price</span>
-                  <span className="font-medium">${asset.bidPrice.toFixed(2)}</span>
+                  <span className="font-medium">{displayAmount(asset.bidPrice, asset.currency as CurrencyCode)}</span>
                 </div>
                 <Separator />
               </>
@@ -272,7 +254,7 @@ export default function AssetDetailsPage() {
               <>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Ask Price</span>
-                  <span className="font-medium">${asset.askPrice.toFixed(2)}</span>
+                  <span className="font-medium">{displayAmount(asset.askPrice, asset.currency as CurrencyCode)}</span>
                 </div>
                 {asset.bidPrice != null && <Separator />}
               </>
@@ -280,15 +262,11 @@ export default function AssetDetailsPage() {
             {asset.bidPrice != null && asset.askPrice != null && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Spread</span>
-                <span className="font-medium">
-                  ${(asset.askPrice - asset.bidPrice).toFixed(2)}
-                </span>
+                <span className="font-medium">{displayAmount(asset.askPrice - asset.bidPrice, asset.currency as CurrencyCode)}</span>
               </div>
             )}
             {!asset.bidPrice && !asset.askPrice && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Market data not available
-              </p>
+              <p className="text-sm text-muted-foreground text-center py-4">Market data not available</p>
             )}
           </CardContent>
         </Card>

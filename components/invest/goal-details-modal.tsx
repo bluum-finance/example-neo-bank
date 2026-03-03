@@ -3,6 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { type FinancialGoal } from '@/services/widget.service';
+import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 
 interface GoalDetailsModalProps {
   open: boolean;
@@ -11,13 +12,15 @@ interface GoalDetailsModalProps {
 }
 
 export function GoalDetailsModal({ open, goal, onClose }: GoalDetailsModalProps) {
+  const { displayAmount } = useCurrency();
+
   if (!goal) return null;
 
   const formatCurrency = (value?: string) => {
     if (!value) return '—';
     const amount = parseFloat(value);
     if (Number.isNaN(amount)) return '—';
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return displayAmount(amount, goal.currency as CurrencyCode);
   };
 
   return (
@@ -36,9 +39,7 @@ export function GoalDetailsModal({ open, goal, onClose }: GoalDetailsModalProps)
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500 dark:text-gray-400">Current amount</span>
-            <span className="font-medium text-gray-900 dark:text-white">
-              {formatCurrency(goal.current_amount || goal.current_value)}
-            </span>
+            <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(goal.current_amount || goal.current_value)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500 dark:text-gray-400">Target date</span>
@@ -59,7 +60,6 @@ export function GoalDetailsModal({ open, goal, onClose }: GoalDetailsModalProps)
             <span className="font-medium text-gray-900 dark:text-white capitalize">{goal.status || 'active'}</span>
           </div>
         </div>
-
       </DialogContent>
     </Dialog>
   );

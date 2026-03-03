@@ -198,33 +198,21 @@ export function Withdrawal({ accountId, availableBalance, onSuccess, onCancel }:
 
       // Handle Plaid withdrawals
       if (withdrawalMethod === 'plaid') {
-        const request: any = {
+        const selectedItem =
+          connectedAccounts.find((item) => item.accounts.some((acc) => acc.accountId === selectedPlaidAccount)) || connectedAccounts[0];
+
+        if (!selectedItem) {
+          toast.error('Please connect a bank account');
+          setProcessing(false);
+          return;
+        }
+
+        await PlaidService.initiateWithdrawal(accountId, {
           amount: amountStr,
           currency: 'USD',
           description: `Plaid ACH withdrawal of $${amountStr}`,
-        };
-
-        // Use stored account if available, otherwise use new connection
-        if (connectedAccounts.length > 0 && !publicToken) {
-          // Find selected account or use first available
-          const selectedItem =
-            connectedAccounts.find((item) => item.accounts.some((acc) => acc.accountId === selectedPlaidAccount)) || connectedAccounts[0];
-
-          // Use itemId (from API) or providerId (legacy) as fallback
-          request.item_id = selectedItem.itemId || selectedItem.providerId;
-          if (selectedPlaidAccount) {
-            request.plaid_account_id = selectedPlaidAccount;
-          } else if (selectedItem.accounts.length > 0) {
-            request.plaid_account_id = selectedItem.accounts[0].accountId;
-          }
-        } else if (publicToken) {
-          request.public_token = publicToken;
-          if (selectedPlaidAccount) {
-            request.plaid_account_id = selectedPlaidAccount;
-          }
-        }
-
-        const response = await PlaidService.initiateWithdrawal(accountId, request);
+          funding_source_id: selectedItem.id,
+        });
         toast.success('Withdrawal initiated successfully! Funds will be transferred once the ACH completes.');
         onSuccess?.();
         return;

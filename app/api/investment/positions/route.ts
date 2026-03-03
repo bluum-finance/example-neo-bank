@@ -29,15 +29,14 @@ export async function GET(request: NextRequest) {
           return {
             symbol: pos.symbol,
             name: pos.symbol, // You might want to fetch asset name separately
+            currency: pos.currency ?? 'USD',
             shares,
             currentPrice: pos.current_price ? parseFloat(pos.current_price) : null,
             purchasePrice: pos.average_cost_basis ? parseFloat(pos.average_cost_basis) : null,
             // Value should be 0 when shares is 0, not null
             value: shares === 0 ? 0 : pos.market_value ? parseFloat(pos.market_value) : null,
             gain: pos.unrealized_pl ? parseFloat(pos.unrealized_pl) : null,
-            gainPercent: pos.unrealized_pl_percent
-              ? parseFloat(pos.unrealized_pl_percent)
-              : null,
+            gainPercent: pos.unrealized_pl_percent ? parseFloat(pos.unrealized_pl_percent) : null,
           };
         })
       : [];

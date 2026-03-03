@@ -2,16 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  Search,
-  TrendingUp,
-  TrendingDown,
-  ArrowLeft,
-  Loader2,
-  DollarSign,
-  Hash,
-  Eye,
-} from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, ArrowLeft, Loader2, DollarSign, Hash, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +15,7 @@ import { AccountService } from '@/services/account.service';
 import { useUser } from '@/store/user.store';
 import { toast } from 'sonner';
 import { HoldingsWidget } from '@/components/invest/holdings-widget';
+import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 
 interface Asset {
   id: string;
@@ -32,6 +24,7 @@ interface Asset {
   class: string;
   status: string;
   tradable: boolean;
+  currency?: string;
   current_price?: number;
 }
 
@@ -53,6 +46,7 @@ export default function TradeStock() {
   const [error, setError] = useState<string | null>(null);
   const [hasAutoLookedUp, setHasAutoLookedUp] = useState(false);
   const user = useUser();
+  const { displayAmount } = useCurrency();
 
   // Order form state
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
@@ -68,9 +62,7 @@ export default function TradeStock() {
         const accId = user?.externalAccountId;
 
         if (!accId) {
-          toast.error(
-            'No investment account found. Please create an account first.',
-          );
+          toast.error('No investment account found. Please create an account first.');
           router.push('/invest');
           return;
         }
@@ -144,6 +136,7 @@ export default function TradeStock() {
           class: assetData.class || assetData.asset_class || '',
           status: assetData.status || 'active',
           tradable: assetData.tradable !== false,
+          currency: assetData.currency,
           current_price: assetData.current_price || assetData.price,
         };
 
@@ -152,27 +145,15 @@ export default function TradeStock() {
 
         // Extract price from asset data
         if (assetData?.current_price) {
-          setAssetPrice(
-            typeof assetData.current_price === 'number'
-              ? assetData.current_price
-              : parseFloat(assetData.current_price)
-          );
+          setAssetPrice(typeof assetData.current_price === 'number' ? assetData.current_price : parseFloat(assetData.current_price));
         } else if (assetData?.price) {
-          setAssetPrice(
-            typeof assetData.price === 'number' ? assetData.price : parseFloat(assetData.price)
-          );
+          setAssetPrice(typeof assetData.price === 'number' ? assetData.price : parseFloat(assetData.price));
         } else if (assetData?.data?.current_price) {
           setAssetPrice(
-            typeof assetData.data.current_price === 'number'
-              ? assetData.data.current_price
-              : parseFloat(assetData.data.current_price)
+            typeof assetData.data.current_price === 'number' ? assetData.data.current_price : parseFloat(assetData.data.current_price)
           );
         } else if (assetData?.data?.price) {
-          setAssetPrice(
-            typeof assetData.data.price === 'number'
-              ? assetData.data.price
-              : parseFloat(assetData.data.price)
-          );
+          setAssetPrice(typeof assetData.data.price === 'number' ? assetData.data.price : parseFloat(assetData.data.price));
         }
 
         // If selling, check if we have a position
@@ -218,15 +199,7 @@ export default function TradeStock() {
       );
       return () => clearTimeout(timer);
     }
-  }, [
-    searchParams,
-    handleLookupAsset,
-    selectedAsset,
-    accountId,
-    orderSide,
-    positions.length,
-    hasAutoLookedUp,
-  ]);
+  }, [searchParams, handleLookupAsset, selectedAsset, accountId, orderSide, positions.length, hasAutoLookedUp]);
 
   // Handle Enter key press in symbol input
   const handleSymbolKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -422,18 +395,12 @@ export default function TradeStock() {
                   onClick={() => handleLookupAsset(symbolQuery)}
                   disabled={loading || !symbolQuery.trim()}
                 >
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="h-4 w-4" />
-                  )}
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                 </Button>
               </div>
 
               {/* Error Message */}
-              {error && (
-                <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</div>
-              )}
+              {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">{error}</div>}
 
               {/* Selected Stock */}
               {selectedAsset && (
@@ -452,14 +419,12 @@ export default function TradeStock() {
 
                   {assetPrice !== null ? (
                     <div className="mt-2">
-                      <p className="text-2xl font-bold">${assetPrice.toFixed(2)}</p>
+                      <p className="text-2xl font-bold">{displayAmount(assetPrice, selectedAsset?.currency as CurrencyCode)}</p>
                       <p className="text-xs text-muted-foreground">Current Price</p>
                     </div>
                   ) : (
                     <div className="mt-2">
-                      <p className="text-sm text-muted-foreground">
-                        Price will be determined at market execution
-                      </p>
+                      <p className="text-sm text-muted-foreground">Price will be determined at market execution</p>
                     </div>
                   )}
                   {loading && (
@@ -469,12 +434,7 @@ export default function TradeStock() {
                     </div>
                   )}
                   <div className="mt-4 flex justify-start">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => router.push(`/assets/${selectedAsset.symbol}`)}
-                    >
+                    <Button type="button" variant="outline" size="sm" onClick={() => router.push(`/assets/${selectedAsset.symbol}`)}>
                       <Eye className="h-4 w-4 mr-2" />
                       View Details
                     </Button>
@@ -491,9 +451,7 @@ export default function TradeStock() {
                     {loadingPositions ? (
                       <div className="flex items-center justify-center py-6">
                         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mr-2" />
-                        <span className="text-sm text-muted-foreground">
-                          Loading your holdings...
-                        </span>
+                        <span className="text-sm text-muted-foreground">Loading your holdings...</span>
                       </div>
                     ) : (
                       <div className="space-y-2 max-h-[300px] overflow-y-auto">
@@ -506,31 +464,24 @@ export default function TradeStock() {
                               handleLookupAsset(position.symbol);
                             }}
                             className={`w-full text-left p-3 rounded-md border transition-colors ${
-                              selectedAsset?.symbol === position.symbol
-                                ? 'border-primary bg-primary/5'
-                                : 'border-border hover:bg-muted/50'
+                              selectedAsset?.symbol === position.symbol ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
                             }`}
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-semibold text-sm">
-                                    {position.symbol}
-                                  </span>
+                                  <span className="font-semibold text-sm">{position.symbol}</span>
                                   <Badge variant="outline" className="text-xs">
-                                    {position.shares}{' '}
-                                    {position.shares === 1 ? 'share' : 'shares'}
+                                    {position.shares} {position.shares === 1 ? 'share' : 'shares'}
                                   </Badge>
                                 </div>
                                 {position.name && position.name !== position.symbol && (
-                                  <p className="text-xs text-muted-foreground">
-                                    {position.name}
-                                  </p>
+                                  <p className="text-xs text-muted-foreground">{position.name}</p>
                                 )}
 
                                 {position.value != null && (
                                   <div className="text-sm font-medium text-muted-foreground mt-2">
-                                    ${position.value.toFixed(2)}
+                                    {displayAmount(position.value, position.currency as CurrencyCode)}
                                   </div>
                                 )}
                               </div>
@@ -538,16 +489,12 @@ export default function TradeStock() {
                               <div className="text-right ml-4">
                                 {position.currentPrice != null && (
                                   <div className="font-medium text-sm">
-                                    ${position.currentPrice.toFixed(2)}
+                                    {displayAmount(position.currentPrice, position.currency as CurrencyCode)}
                                   </div>
                                 )}
 
                                 {position.gain != null && position.gainPercent != null && (
-                                  <div
-                                    className={`text-xs font-medium mt-1 ${
-                                      position.gain >= 0 ? 'text-green-600' : 'text-red-600'
-                                    }`}
-                                  >
+                                  <div className={`text-xs font-medium mt-1 ${position.gain >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                     {position.gain >= 0 ? '+' : ''}
                                     {position.gainPercent.toFixed(2)}%
                                   </div>
@@ -581,10 +528,7 @@ export default function TradeStock() {
                   {/* Order Type */}
                   <div className="space-y-2">
                     <Label>Order Type</Label>
-                    <Select
-                      value={orderType}
-                      onChange={(e) => setOrderType(e.target.value as 'market' | 'limit')}
-                    >
+                    <Select value={orderType} onChange={(e) => setOrderType(e.target.value as 'market' | 'limit')}>
                       <option value="market">Market</option>
                       <option value="limit">Limit</option>
                     </Select>
@@ -645,17 +589,14 @@ export default function TradeStock() {
                       />
                       {dollarAmount && (
                         <p className="text-xs text-muted-foreground">
-                          {calculatedQuantity > 0
-                            ? `≈ ${calculatedQuantity.toFixed(4)} shares`
-                            : 'Shares will be calculated at execution'}
+                          {calculatedQuantity > 0 ? `≈ ${calculatedQuantity.toFixed(4)} shares` : 'Shares will be calculated at execution'}
                         </p>
                       )}
                     </div>
                   )}
 
                   {/* Quantity Input - Show for sell orders or buy orders when orderBy is quantity */}
-                  {(orderSide === 'sell' ||
-                    (orderSide === 'buy' && orderBy === 'quantity')) && (
+                  {(orderSide === 'sell' || (orderSide === 'buy' && orderBy === 'quantity')) && (
                     <div className="space-y-2">
                       <Label>Quantity (Shares)</Label>
                       <Input
@@ -668,30 +609,25 @@ export default function TradeStock() {
                       />
                       {orderSide === 'sell' && selectedAsset && !selectedPosition && (
                         <p className="text-xs text-destructive">
-                          You don't have a position in {selectedAsset.symbol}. You can only
-                          sell assets you own.
+                          You don't have a position in {selectedAsset.symbol}. You can only sell assets you own.
                         </p>
                       )}
                       {orderSide === 'sell' && selectedPosition && (
-                        <p className="text-xs text-muted-foreground">
-                          You own {selectedPosition.shares} shares
-                        </p>
+                        <p className="text-xs text-muted-foreground">You own {selectedPosition.shares} shares</p>
                       )}
                       {orderSide === 'buy' && orderBy === 'quantity' && quantity && (
                         <p className="text-xs text-muted-foreground">
                           {calculatedTotal > 0
-                            ? `≈ $${
-                                !isNaN(calculatedTotal) ? calculatedTotal.toFixed(2) : '0.00'
-                              } total`
+                            ? `≈ ${displayAmount(calculatedTotal, selectedAsset?.currency as CurrencyCode)} total`
                             : 'Total will be calculated at execution'}
                         </p>
                       )}
                       {orderSide === 'sell' && quantity && assetPrice && (
                         <p className="text-xs text-muted-foreground">
-                          ≈ $
+                          ≈{' '}
                           {!isNaN(parseFloat(quantity) * assetPrice)
-                            ? (parseFloat(quantity) * assetPrice).toFixed(2)
-                            : '0.00'}{' '}
+                            ? displayAmount(parseFloat(quantity) * assetPrice, selectedAsset?.currency as CurrencyCode)
+                            : '$0.00'}{' '}
                           total
                         </p>
                       )}
@@ -718,14 +654,13 @@ export default function TradeStock() {
                           <span className="text-muted-foreground">Price per share:</span>
                           <span className="font-medium">
                             {orderType === 'limit' && limitPrice
-                              ? `$${
-                                  !isNaN(parseFloat(limitPrice))
-                                    ? parseFloat(limitPrice).toFixed(2)
-                                    : '0.00'
-                                }`
+                              ? displayAmount(
+                                  !isNaN(parseFloat(limitPrice)) ? parseFloat(limitPrice) : 0,
+                                  selectedAsset?.currency as CurrencyCode
+                                )
                               : assetPrice != null
-                              ? `$${assetPrice.toFixed(2)}`
-                              : 'Market Price'}
+                                ? displayAmount(assetPrice, selectedAsset?.currency as CurrencyCode)
+                                : 'Market Price'}
                           </span>
                         </div>
                       )}
@@ -733,24 +668,20 @@ export default function TradeStock() {
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Estimated total:</span>
                           <span className="font-semibold">
-                            ${!isNaN(calculatedTotal) ? calculatedTotal.toFixed(2) : '0.00'}
+                            {displayAmount(!isNaN(calculatedTotal) ? calculatedTotal : 0, selectedAsset?.currency as CurrencyCode)}
                           </span>
                         </div>
                       )}
-                      {orderSide === 'sell' &&
-                        quantity &&
-                        assetPrice &&
-                        calculatedTotal === 0 && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Estimated total:</span>
-                            <span className="font-semibold">
-                              $
-                              {!isNaN(parseFloat(quantity) * assetPrice)
-                                ? (parseFloat(quantity) * assetPrice).toFixed(2)
-                                : '0.00'}
-                            </span>
-                          </div>
-                        )}
+                      {orderSide === 'sell' && quantity && assetPrice && calculatedTotal === 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Estimated total:</span>
+                          <span className="font-semibold">
+                            {!isNaN(parseFloat(quantity) * assetPrice)
+                              ? displayAmount(parseFloat(quantity) * assetPrice, selectedAsset?.currency as CurrencyCode)
+                              : '$0.00'}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -758,11 +689,7 @@ export default function TradeStock() {
                   <Button
                     onClick={handlePlaceOrder}
                     disabled={placingOrder || !accountId}
-                    className={`w-full ${
-                      orderSide === 'buy'
-                        ? 'bg-green-600 hover:bg-green-700'
-                        : 'bg-red-600 hover:bg-red-700'
-                    }`}
+                    className={`w-full ${orderSide === 'buy' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
                     size="lg"
                   >
                     {placingOrder ? (
@@ -772,11 +699,7 @@ export default function TradeStock() {
                       </>
                     ) : (
                       <>
-                        {orderSide === 'buy' ? (
-                          <TrendingUp className="h-4 w-4 mr-2" />
-                        ) : (
-                          <TrendingDown className="h-4 w-4 mr-2" />
-                        )}
+                        {orderSide === 'buy' ? <TrendingUp className="h-4 w-4 mr-2" /> : <TrendingDown className="h-4 w-4 mr-2" />}
                         Place {orderSide === 'buy' ? 'Buy' : 'Sell'} Order
                       </>
                     )}

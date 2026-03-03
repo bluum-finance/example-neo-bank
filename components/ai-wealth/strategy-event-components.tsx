@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Flag, Loader2, ChevronDown, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type LifeEvent, type LifeEventType } from '@/services/life-event.service';
+import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -37,8 +38,9 @@ export function EventCard({
   onEdit?: (e: LifeEvent) => void;
   onDelete?: (id: string) => void;
 }) {
+  const { displayAmount } = useCurrency();
   const targetYear = event.expected_date ? new Date(event.expected_date).getFullYear() : '';
-  const cost = event.estimated_cost ? `$${Number(event.estimated_cost).toLocaleString()}` : '';
+  const cost = event.estimated_cost ? displayAmount(Number(event.estimated_cost), event.currency as CurrencyCode) : '';
 
   return (
     <div className="flex items-center gap-3 rounded-xl bg-[#0F2A20] px-5 py-3">
@@ -120,11 +122,7 @@ export function DraftEventForm({
       <div className="flex flex-col gap-6.5 p-5">
         {/* Event Name */}
         <Field label="Event Name">
-          <PillInput
-            value={form.name}
-            onChange={(v) => updateField('name', v)}
-            placeholder="New Baby"
-          />
+          <PillInput value={form.name} onChange={(v) => updateField('name', v)} placeholder="New Baby" />
         </Field>
 
         {/* Event Type & Estimated Date */}
@@ -147,11 +145,7 @@ export function DraftEventForm({
           </Field>
 
           <Field label="Estimated Date">
-            <PillInput
-              value={form.estimatedDate}
-              onChange={(v) => updateField('estimatedDate', v)}
-              placeholder="2030"
-            />
+            <PillInput value={form.estimatedDate} onChange={(v) => updateField('estimatedDate', v)} placeholder="2030" />
           </Field>
         </div>
 
@@ -168,11 +162,7 @@ export function DraftEventForm({
           </Field>
 
           <Field label="Short note (optional)">
-            <PillInput
-              value={form.shortNote ?? ''}
-              onChange={(v) => updateField('shortNote', v)}
-              placeholder="Add a note..."
-            />
+            <PillInput value={form.shortNote ?? ''} onChange={(v) => updateField('shortNote', v)} placeholder="Add a note..." />
           </Field>
         </div>
       </div>
@@ -231,11 +221,7 @@ function PillInput({
 }) {
   return (
     <div className="relative flex items-center">
-      {prefix && (
-        <span className="pointer-events-none absolute left-4 text-[14px] font-normal text-white/40">
-          {prefix}
-        </span>
-      )}
+      {prefix && <span className="pointer-events-none absolute left-4 text-[14px] font-normal text-white/40">{prefix}</span>}
       <input
         type="text"
         value={value}

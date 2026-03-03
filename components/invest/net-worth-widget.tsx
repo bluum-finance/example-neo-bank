@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
 import { InvestmentService, type Position } from '@/services/investment.service';
+import { useCurrency } from '@/lib/hooks/use-currency';
 
 interface NetWorthWidgetProps {
   accountBalance?: number;
@@ -11,11 +12,7 @@ interface NetWorthWidgetProps {
   onViewDetails?: () => void;
 }
 
-export function NetWorthWidget({
-  accountBalance = 0,
-  positions = [],
-  onViewDetails,
-}: NetWorthWidgetProps) {
+export function NetWorthWidget({ accountBalance = 0, positions = [], onViewDetails }: NetWorthWidgetProps) {
   const router = useRouter();
 
   const netWorth = useMemo(() => {
@@ -25,21 +22,16 @@ export function NetWorthWidget({
     return accountBalance + portfolioValue;
   }, [accountBalance, positions]);
 
+  const { displayAmount, currencies } = useCurrency();
+
   const formatNetWorth = (value: number): string => {
+    const symbol = currencies.USD.symbol;
     if (value >= 1_000_000) {
-      // Format as millions (e.g., $15.24M)
-      return `$${(value / 1_000_000).toFixed(2)}M`;
+      return `${symbol}${(value / 1_000_000).toFixed(2)}M`;
     } else if (value >= 1_000) {
-      // Format as thousands (e.g., $15.24K)
-      return `$${(value / 1_000).toFixed(2)}K`;
+      return `${symbol}${(value / 1_000).toFixed(2)}K`;
     } else {
-      // Format as regular currency
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(value);
+      return displayAmount(value);
     }
   };
 
@@ -61,10 +53,7 @@ export function NetWorthWidget({
     >
       <div className="flex flex-1 items-center gap-6">
         <div className="flex-1 flex flex-col justify-center items-start gap-1">
-          <div
-            className="text-xs font-normal text-gray-500 dark:text-muted-foreground"
-            style={{ fontSize: 12, fontFamily: 'Inter' }}
-          >
+          <div className="text-xs font-normal text-gray-500 dark:text-muted-foreground" style={{ fontSize: 12, fontFamily: 'Inter' }}>
             Total Net Worth
           </div>
           <div

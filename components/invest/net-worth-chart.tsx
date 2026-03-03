@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useCurrency } from '@/lib/hooks/use-currency';
 import { XAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -21,13 +22,10 @@ export function NetWorthChart({ accountBalance }: { accountBalance?: number }) {
     });
   }, []);
 
+  const { displayAmount } = useCurrency();
+
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
+    return displayAmount(value);
   };
 
   const getEventIcon = (type: string) => {
@@ -49,9 +47,7 @@ export function NetWorthChart({ accountBalance }: { accountBalance?: number }) {
       return (
         <div className="bg-card text-card-foreground border border-border rounded-lg p-3 shadow-lg">
           <p className="font-semibold text-foreground">{dataPoint.month}</p>
-          <p className="text-sm text-primary dark:text-primary-foreground">
-            Net Worth: {formatCurrency(dataPoint.netWorth)}
-          </p>
+          <p className="text-sm text-primary dark:text-primary-foreground">Net Worth: {formatCurrency(dataPoint.netWorth)}</p>
           {dataPoint.event && (
             <div className="mt-2 pt-2 border-t border-border flex items-center gap-2">
               {getEventIcon(dataPoint.event.type)}
@@ -71,20 +67,14 @@ export function NetWorthChart({ accountBalance }: { accountBalance?: number }) {
           <CardTitle>Net Worth Growth</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-64 flex items-center justify-center text-muted-foreground">
-            Loading chart...
-          </div>
+          <div className="h-64 flex items-center justify-center text-muted-foreground">Loading chart...</div>
         </CardContent>
       </Card>
     );
   }
 
   // Prefer the accountBalance passed from parent to keep Net Worth aligned with Investment Balance
-  const currentNetWorth = typeof accountBalance === 'number'
-    ? accountBalance
-    : data.length > 0
-      ? data[data.length - 1].netWorth
-      : 0;
+  const currentNetWorth = typeof accountBalance === 'number' ? accountBalance : data.length > 0 ? data[data.length - 1].netWorth : 0;
   const startMonth = data.length > 0 ? data[0].month : '';
   const endMonth = data.length > 0 ? data[data.length - 1].month : '';
 
@@ -135,13 +125,7 @@ export function NetWorthChart({ accountBalance }: { accountBalance?: number }) {
                 height={40}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Area
-                type="monotone"
-                dataKey="netWorth"
-                stroke="#083423"
-                strokeWidth={2}
-                fill="url(#colorNetWorth)"
-              />
+              <Area type="monotone" dataKey="netWorth" stroke="#083423" strokeWidth={2} fill="url(#colorNetWorth)" />
             </AreaChart>
           </ResponsiveContainer>
 
@@ -150,17 +134,10 @@ export function NetWorthChart({ accountBalance }: { accountBalance?: number }) {
             {data
               .filter((d) => d.event)
               .map((dataPoint, index) => (
-                <div
-                  key={index}
-                  className="flex items-start gap-2 p-2 rounded-lg bg-primary/10 dark:bg-primary/20"
-                >
-                  <div className="text-primary dark:text-primary-foreground">
-                    {getEventIcon(dataPoint.event!.type)}
-                  </div>
+                <div key={index} className="flex items-start gap-2 p-2 rounded-lg bg-primary/10 dark:bg-primary/20">
+                  <div className="text-primary dark:text-primary-foreground">{getEventIcon(dataPoint.event!.type)}</div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-foreground">
-                      {dataPoint.month}
-                    </p>
+                    <p className="text-xs font-medium text-foreground">{dataPoint.month}</p>
                     <p className="text-xs text-muted-foreground">{dataPoint.event!.label}</p>
                   </div>
                 </div>

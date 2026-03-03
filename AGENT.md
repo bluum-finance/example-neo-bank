@@ -11,7 +11,7 @@ Think like an expert Frontend Developer.
 - **Icons**: Lucide React
 - **Notifications**: Sonner
 - **Charts**: Recharts
-- **State**: React hooks (useState, useEffect)
+- **State**: React hooks (useState, useEffect) + Zustand (for minimal global state)
 
 ### Theme
 
@@ -58,12 +58,15 @@ app/
   └── layout.tsx            # Root layout
 
 components/
-  ├── ui/                   # Shadcn UI components
-  ├── invest/               # Investment-specific components
+  ├── ui/                   # Shadcn UI primitives
+  ├── invest/               # Investment-specific widgets
+  ├── ai-wealth/            # AI-driven strategy/chat components
+  ├── widget/               # Generic dashboard widgets
   └── navigation/           # Navigation components
 
-lib/                        # Utilities, auth, constants
+lib/                        # Utilities, constants
 services/                   # API service clients
+store/                      # Zustand global state (e.g., user.store.ts)
 types/                      # TypeScript definitions
 ```
 
@@ -80,11 +83,16 @@ types/                      # TypeScript definitions
 
 - Use `getAuth()` from `@/lib/auth` to get current user
 
-### API Integration
+### API Integration & Data Flow
 
-- Use service classes from `@/services/` directory
-- Handle errors with try/catch and toast notifications
-- Use `toast.success()` and `toast.error()` from Sonner
+- Use service classes from `@/services/` directory. All API communication MUST go through `services/`.
+- Handle errors with try/catch and use `toast.success()` and `toast.error()` from Sonner.
+- Feature-specific data is fetched via React hooks (useState/useEffect) calling centralized services.
+- Business logic for portfolio math (totals, gains) lives in `InvestmentService` as static methods.
+
+### State Management
+
+- **Global State**: Minimal global state using Zustand (`/store/user.store.ts`) for user profile/account tracking. 
 
 ### Form Handling
 

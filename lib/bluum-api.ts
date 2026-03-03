@@ -68,11 +68,7 @@ class BluumApiClient {
     return response.data;
   }
 
-  async listAssets(params?: {
-    status?: 'active' | 'inactive';
-    asset_class?: 'us_equity' | 'crypto' | 'us_option';
-    tradable?: boolean;
-  }) {
+  async listAssets(params?: { status?: 'active' | 'inactive'; asset_class?: 'us_equity' | 'crypto' | 'us_option'; tradable?: boolean }) {
     const response = await this.client.get('/assets/list', { params });
     return response.data;
   }
@@ -97,10 +93,7 @@ class BluumApiClient {
 
   // Trading
   async placeOrder(accountId: string, orderData: any) {
-    const response = await this.client.post(
-      `/trading/accounts/${accountId}/orders`,
-      orderData
-    );
+    const response = await this.client.post(`/trading/accounts/${accountId}/orders`, orderData);
     return response.data;
   }
 
@@ -158,7 +151,6 @@ class BluumApiClient {
     return response.data.transactions;
   }
 
-
   // Plaid Integration
   async getPlaidLinkToken(accountId: string, body: Record<string, any> = {}) {
     const response = await this.client.post(`/accounts/${accountId}/funding-sources/plaid/link-token`, body);
@@ -175,14 +167,10 @@ class BluumApiClient {
     accountId: string,
     depositData: {
       amount: string;
-      currency?: string;
+      currency: string;
       method: 'ach_plaid' | 'manual_bank_transfer' | 'wire';
+      funding_source_id?: string;
       description?: string;
-      plaid_options?: {
-        public_token?: string;
-        item_id?: string;
-        account_id?: string;
-      };
     },
     idempotencyKey?: string
   ) {
@@ -198,13 +186,10 @@ class BluumApiClient {
     accountId: string,
     withdrawalData: {
       amount: string;
-      currency?: string;
+      currency: string;
       method: 'ach_plaid' | 'wire';
+      funding_source_id: string;
       description?: string;
-      plaid_options: {
-        item_id: string;
-        account_id: string;
-      };
     },
     idempotencyKey?: string
   ) {
@@ -223,9 +208,7 @@ class BluumApiClient {
   }
 
   async disconnectPlaidItem(accountId: string, fundingSourceId: string) {
-    const response = await this.client.delete(
-      `/accounts/${accountId}/funding-sources/${fundingSourceId}`
-    );
+    const response = await this.client.delete(`/accounts/${accountId}/funding-sources/${fundingSourceId}`);
     return response.data;
   }
 
@@ -287,10 +270,7 @@ class BluumApiClient {
       status: 'active' | 'completed' | 'archived';
     }>
   ) {
-    const response = await this.client.put(
-      `/wealth/accounts/${accountId}/goals/${goalId}`,
-      goalData
-    );
+    const response = await this.client.put(`/wealth/accounts/${accountId}/goals/${goalId}`, goalData);
     return response.data;
   }
 
@@ -372,11 +352,7 @@ class BluumApiClient {
     idempotencyKey?: string
   ) {
     const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {};
-    const response = await this.client.post(
-      `/wealth/accounts/${accountId}/external-accounts`,
-      data,
-      { headers }
-    );
+    const response = await this.client.post(`/wealth/accounts/${accountId}/external-accounts`, data, { headers });
     return response.data;
   }
 
@@ -388,17 +364,12 @@ class BluumApiClient {
       account_type?: string;
     }
   ) {
-    const response = await this.client.get(
-      `/wealth/accounts/${accountId}/external-accounts`,
-      { params }
-    );
+    const response = await this.client.get(`/wealth/accounts/${accountId}/external-accounts`, { params });
     return response.data;
   }
 
   async getExternalAccount(accountId: string, externalAccountId: string) {
-    const response = await this.client.get(
-      `/wealth/accounts/${accountId}/external-accounts/${externalAccountId}`
-    );
+    const response = await this.client.get(`/wealth/accounts/${accountId}/external-accounts/${externalAccountId}`);
     return response.data;
   }
 
@@ -416,17 +387,12 @@ class BluumApiClient {
       status: 'active' | 'archived';
     }>
   ) {
-    const response = await this.client.put(
-      `/wealth/accounts/${accountId}/external-accounts/${externalAccountId}`,
-      data
-    );
+    const response = await this.client.put(`/wealth/accounts/${accountId}/external-accounts/${externalAccountId}`, data);
     return response.data;
   }
 
   async deleteExternalAccount(accountId: string, externalAccountId: string) {
-    const response = await this.client.delete(
-      `/wealth/accounts/${accountId}/external-accounts/${externalAccountId}`
-    );
+    const response = await this.client.delete(`/wealth/accounts/${accountId}/external-accounts/${externalAccountId}`);
     return response.data;
   }
 
@@ -446,7 +412,7 @@ class BluumApiClient {
 
   async createOrUpdateInvestmentPolicy(
     accountId: string,
-      policyData: {
+    policyData: {
       risk_profile: {
         risk_tolerance: 'conservative' | 'moderate_conservative' | 'moderate' | 'moderate_aggressive' | 'aggressive';
         risk_score?: number;
@@ -506,22 +472,12 @@ class BluumApiClient {
     idempotencyKey?: string
   ) {
     const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {};
-    const response = await this.client.put(
-      `/wealth/accounts/${accountId}/investment-policy`,
-      policyData,
-      { headers }
-    );
+    const response = await this.client.put(`/wealth/accounts/${accountId}/investment-policy`, policyData, { headers });
     return response.data;
   }
 
-  async validatePortfolioAgainstIPS(
-    accountId: string,
-    portfolioId: string
-  ) {
-    const response = await this.client.post(
-      `/wealth/accounts/${accountId}/investment-policy/validate`,
-      { portfolio_id: portfolioId }
-    );
+  async validatePortfolioAgainstIPS(accountId: string, portfolioId: string) {
+    const response = await this.client.post(`/wealth/accounts/${accountId}/investment-policy/validate`, { portfolio_id: portfolioId });
     return response.data;
   }
 
@@ -562,10 +518,7 @@ class BluumApiClient {
       benchmark?: string;
     }
   ) {
-    const response = await this.client.get(
-      `/wealth/accounts/${accountId}/portfolios/${portfolioId}/performance`,
-      { params }
-    );
+    const response = await this.client.get(`/wealth/accounts/${accountId}/portfolios/${portfolioId}/performance`, { params });
     return response.data;
   }
 
@@ -577,10 +530,7 @@ class BluumApiClient {
       refresh_prices?: boolean;
     }
   ) {
-    const response = await this.client.get(
-      `/wealth/accounts/${accountId}/portfolios/${portfolioId}/summary`,
-      { params }
-    );
+    const response = await this.client.get(`/wealth/accounts/${accountId}/portfolios/${portfolioId}/summary`, { params });
     return response.data;
   }
 
@@ -594,10 +544,7 @@ class BluumApiClient {
       group_by?: 'asset_class' | 'sector' | 'none';
     }
   ) {
-    const response = await this.client.get(
-      `/wealth/accounts/${accountId}/portfolios/${portfolioId}/holdings`,
-      { params }
-    );
+    const response = await this.client.get(`/wealth/accounts/${accountId}/portfolios/${portfolioId}/holdings`, { params });
     return response.data;
   }
 
@@ -631,9 +578,7 @@ class BluumApiClient {
   }
 
   async getAutoInvestSchedule(accountId: string, scheduleId: string) {
-    const response = await this.client.get(
-      `/wealth/accounts/${accountId}/auto-invest/${scheduleId}`
-    );
+    const response = await this.client.get(`/wealth/accounts/${accountId}/auto-invest/${scheduleId}`);
     return response.data;
   }
 
@@ -657,11 +602,7 @@ class BluumApiClient {
     idempotencyKey?: string
   ) {
     const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {};
-    const response = await this.client.post(
-      `/wealth/accounts/${accountId}/auto-invest`,
-      scheduleData,
-      { headers }
-    );
+    const response = await this.client.post(`/wealth/accounts/${accountId}/auto-invest`, scheduleData, { headers });
     return response.data;
   }
 
@@ -681,39 +622,28 @@ class BluumApiClient {
       status: 'active' | 'paused' | 'completed' | 'cancelled';
     }>
   ) {
-    const response = await this.client.patch(
-      `/wealth/accounts/${accountId}/auto-invest/${scheduleId}`,
-      scheduleData
-    );
+    const response = await this.client.patch(`/wealth/accounts/${accountId}/auto-invest/${scheduleId}`, scheduleData);
     return response.data;
   }
 
   async deleteAutoInvestSchedule(accountId: string, scheduleId: string) {
-    const response = await this.client.delete(
-      `/wealth/accounts/${accountId}/auto-invest/${scheduleId}`
-    );
+    const response = await this.client.delete(`/wealth/accounts/${accountId}/auto-invest/${scheduleId}`);
     return response.data;
   }
 
   async pauseAutoInvestSchedule(accountId: string, scheduleId: string) {
-    const response = await this.client.post(
-      `/wealth/accounts/${accountId}/auto-invest/${scheduleId}/pause`
-    );
+    const response = await this.client.post(`/wealth/accounts/${accountId}/auto-invest/${scheduleId}/pause`);
     return response.data;
   }
 
   async resumeAutoInvestSchedule(accountId: string, scheduleId: string) {
-    const response = await this.client.post(
-      `/wealth/accounts/${accountId}/auto-invest/${scheduleId}/resume`
-    );
+    const response = await this.client.post(`/wealth/accounts/${accountId}/auto-invest/${scheduleId}/resume`);
     return response.data;
   }
 
   // DRIP Configuration
   async getDripConfiguration(accountId: string, portfolioId: string) {
-    const response = await this.client.get(
-      `/wealth/accounts/${accountId}/portfolios/${portfolioId}/drip`
-    );
+    const response = await this.client.get(`/wealth/accounts/${accountId}/portfolios/${portfolioId}/drip`);
     return response.data;
   }
 
@@ -728,10 +658,7 @@ class BluumApiClient {
       cash_sweep_threshold?: string;
     }
   ) {
-    const response = await this.client.put(
-      `/wealth/accounts/${accountId}/portfolios/${portfolioId}/drip`,
-      dripData
-    );
+    const response = await this.client.put(`/wealth/accounts/${accountId}/portfolios/${portfolioId}/drip`, dripData);
     return response.data;
   }
 }

@@ -5,6 +5,7 @@ import { XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, ComposedCh
 import { TrendingUp, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShieldIcon } from '../icons/shield.icon';
+import { useCurrency } from '@/lib/hooks/use-currency';
 export type TimeRange = '1W' | '1M' | '3M' | '1Y' | 'All';
 
 interface PerformanceDataPoint {
@@ -83,6 +84,7 @@ export function PortfolioPerformanceChart({
   const [selectedRange, setSelectedRange] = useState<TimeRange>('1M');
   const [viewMode, setViewMode] = useState<'chart' | 'summary'>('chart');
   const [hideAmount, setHideAmount] = useState(true);
+  const { displayAmount } = useCurrency();
 
   const handleRangeChange = (newRange: TimeRange) => {
     setSelectedRange(newRange);
@@ -118,15 +120,7 @@ export function PortfolioPerformanceChart({
       return (
         <div className="rounded-lg border border-gray-200 dark:border-border bg-card p-3 shadow-lg">
           <p className="text-xs font-medium text-gray-900 dark:text-foreground mb-2">{dataPoint.date}</p>
-          <p className="text-xs text-green-600 dark:text-green-400">
-            Your Portfolio:{' '}
-            {new Intl.NumberFormat('en-US', {
-              style: 'currency',
-              currency: 'USD',
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            }).format(dataPoint.portfolio)}
-          </p>
+          <p className="text-xs text-green-600 dark:text-green-400">Your Portfolio: {displayAmount(dataPoint.portfolio)}</p>
         </div>
       );
     }
@@ -240,9 +234,7 @@ export function PortfolioPerformanceChart({
             >
               <span className="text-xs uppercase tracking-[0.2em] text-gray-400 dark:text-muted-foreground">{label}</span>
               <span className="text-base font-semibold text-gray-900 dark:text-white">
-                {label.includes('%')
-                  ? `${parseFloat(value).toFixed(2)}%`
-                  : new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(parseFloat(value))}
+                {label.includes('%') ? `${parseFloat(value).toFixed(2)}%` : displayAmount(parseFloat(value))}
               </span>
             </div>
           ))
@@ -270,18 +262,7 @@ export function PortfolioPerformanceChart({
                 className="text-[30px] leading-[36px] font-semibold text-white tracking-[3px] cursor-pointer"
                 onClick={() => setHideAmount(!hideAmount)}
               >
-                {hideAmount ? (
-                  <span>$ • • • • • • •</span>
-                ) : (
-                  <span>
-                    {new Intl.NumberFormat('en-US', {
-                      style: 'currency',
-                      currency: 'USD',
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    }).format(portfolioValue)}
-                  </span>
-                )}
+                {hideAmount ? <span>$ • • • • • • •</span> : <span>{displayAmount(portfolioValue)}</span>}
               </div>
             )}
           </div>

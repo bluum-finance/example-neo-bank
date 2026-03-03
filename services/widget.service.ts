@@ -47,6 +47,7 @@ export interface FinancialGoal {
   target_date?: string;
   current_amount?: string;
   current_value?: string;
+  currency?: string;
   progress_percent?: number;
   status: 'active' | 'completed' | 'archived';
   priority?: number;

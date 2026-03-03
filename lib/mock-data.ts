@@ -67,6 +67,7 @@ export interface TrendingStock {
   price: number;
   change: number;
   changePercent: number;
+  currency?: string;
 }
 
 export async function getNetWorthChartData(): Promise<NetWorthDataPoint[]> {
@@ -144,14 +145,14 @@ export async function getPersonalizedInsights(): Promise<PersonalizedInsight[]> 
 export async function getTrendingStocks(): Promise<TrendingStock[]> {
   return new Promise((resolve) => {
     const trending: TrendingStock[] = [
-      { symbol: 'NVDA', name: 'NVIDIA Corp', price: 485.2, change: 12.5, changePercent: 2.65 },
-      { symbol: 'AAPL', name: 'Apple Inc', price: 175.5, change: 3.2, changePercent: 1.86 },
-      { symbol: 'MSFT', name: 'Microsoft', price: 380.25, change: 5.75, changePercent: 1.53 },
-      { symbol: 'GOOGL', name: 'Alphabet', price: 142.3, change: -2.1, changePercent: -1.45 },
-      { symbol: 'AMZN', name: 'Amazon.com', price: 148.9, change: 4.3, changePercent: 2.97 },
-      { symbol: 'TSLA', name: 'Tesla Inc', price: 245.8, change: 8.5, changePercent: 3.58 },
-      { symbol: 'META', name: 'Meta Platforms', price: 312.4, change: 6.2, changePercent: 2.02 },
-      { symbol: 'NFLX', name: 'Netflix Inc', price: 425.6, change: -5.3, changePercent: -1.23 },
+      { symbol: 'NVDA', name: 'NVIDIA Corp', price: 485.2, change: 12.5, changePercent: 2.65, currency: 'USD' },
+      { symbol: 'AAPL', name: 'Apple Inc', price: 175.5, change: 3.2, changePercent: 1.86, currency: 'USD' },
+      { symbol: 'MSFT', name: 'Microsoft', price: 380.25, change: 5.75, changePercent: 1.53, currency: 'USD' },
+      { symbol: 'GOOGL', name: 'Alphabet', price: 142.3, change: -2.1, changePercent: -1.45, currency: 'USD' },
+      { symbol: 'AMZN', name: 'Amazon.com', price: 148.9, change: 4.3, changePercent: 2.97, currency: 'USD' },
+      { symbol: 'TSLA', name: 'Tesla Inc', price: 245.8, change: 8.5, changePercent: 3.58, currency: 'USD' },
+      { symbol: 'META', name: 'Meta Platforms', price: 312.4, change: 6.2, changePercent: 2.02, currency: 'USD' },
+      { symbol: 'NFLX', name: 'Netflix Inc', price: 425.6, change: -5.3, changePercent: -1.23, currency: 'USD' },
     ];
     setTimeout(() => resolve(trending), 300);
   });

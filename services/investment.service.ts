@@ -1,15 +1,10 @@
-
 // Helper function to handle API errors
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const error = await response.json().catch(() => ({
       error: `HTTP ${response.status}: ${response.statusText}`,
     }));
-    throw new Error(
-      typeof error.error === 'string'
-        ? error.error
-        : error.error?.message || 'An error occurred'
-    );
+    throw new Error(typeof error.error === 'string' ? error.error : error.error?.message || 'An error occurred');
   }
   return response.json();
 }
@@ -17,6 +12,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 export interface Position {
   symbol: string;
   name: string;
+  currency: string;
   shares: number;
   currentPrice: number;
   purchasePrice: number;
@@ -41,37 +37,25 @@ export interface OrderRequest {
 export class InvestmentService {
   // Positions API (Holdings)
   static async getPositions(accountId: string): Promise<Position[]> {
-    const response = await fetch(
-      `/api/investment/positions?account_id=${encodeURIComponent(accountId)}`
-    );
+    const response = await fetch(`/api/investment/positions?account_id=${encodeURIComponent(accountId)}`);
     return handleResponse<Position[]>(response);
   }
 
   // Assets API
   static async searchAssets(query: string): Promise<any[]> {
-    const response = await fetch(
-      `/api/investment/assets/search?q=${encodeURIComponent(query)}&limit=50`
-    );
+    const response = await fetch(`/api/investment/assets/search?q=${encodeURIComponent(query)}&limit=50`);
     const data = await handleResponse<{ data?: any[]; count?: number }>(response);
     return Array.isArray(data) ? data : data.data || [];
   }
 
   static async getAssetBySymbol(symbol: string): Promise<any> {
-    const response = await fetch(
-      `/api/investment/assets/${encodeURIComponent(symbol)}`
-    );
+    const response = await fetch(`/api/investment/assets/${encodeURIComponent(symbol)}`);
     const data = await handleResponse<{ data?: any }>(response);
     return data.data || data;
   }
 
-  static async getChartData(
-    symbol: string,
-    timeframe: string = '1Day',
-    limit: number = 100
-  ): Promise<any> {
-    const response = await fetch(
-      `/api/investment/assets/${encodeURIComponent(symbol)}/chart?timeframe=${timeframe}&limit=${limit}`
-    );
+  static async getChartData(symbol: string, timeframe: string = '1Day', limit: number = 100): Promise<any> {
+    const response = await fetch(`/api/investment/assets/${encodeURIComponent(symbol)}/chart?timeframe=${timeframe}&limit=${limit}`);
     return handleResponse(response);
   }
 
@@ -115,14 +99,10 @@ export class InvestmentService {
   static async createDeposit(depositData: {
     account_id: string;
     amount: string;
-    currency?: string;
+    currency: string;
     method: 'ach_plaid' | 'manual_bank_transfer' | 'wire';
+    funding_source_id?: string;
     description?: string;
-    plaidOptions?: {
-      publicToken?: string;
-      itemId?: string;
-      accountId?: string;
-    };
     idempotencyKey?: string;
   }): Promise<any> {
     const response = await fetch('/api/investment/deposits', {
@@ -139,13 +119,10 @@ export class InvestmentService {
   static async createWithdrawal(withdrawalData: {
     account_id: string;
     amount: string;
-    currency?: string;
+    currency: string;
     method: 'ach_plaid' | 'wire';
+    funding_source_id: string;
     description?: string;
-    plaidOptions: {
-      itemId: string;
-      accountId: string;
-    };
     idempotencyKey?: string;
   }): Promise<any> {
     const response = await fetch('/api/investment/withdrawals', {

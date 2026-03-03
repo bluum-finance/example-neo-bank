@@ -11,16 +11,16 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mockTransactions } from '@/lib/mock-data';
 import { toast } from 'sonner';
+import { useCurrency } from '@/lib/hooks/use-currency';
 
 export default function Transfers() {
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { displayAmount } = useCurrency();
 
-  const transferTransactions = mockTransactions.filter(
-    (t) => t.type === 'credit' || t.category === 'Transfer'
-  );
+  const transferTransactions = mockTransactions.filter((t) => t.type === 'credit' || t.category === 'Transfer');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,7 +29,7 @@ export default function Transfers() {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    toast.success(`$${parseFloat(amount).toLocaleString()} sent successfully!`);
+    toast.success(`${displayAmount(parseFloat(amount))} sent successfully!`);
     setRecipient('');
     setAmount('');
     setNote('');
@@ -41,9 +41,7 @@ export default function Transfers() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">Transfers</h1>
-        <p className="text-muted-foreground mt-1">
-          Send money to friends and family
-        </p>
+        <p className="text-muted-foreground mt-1">Send money to friends and family</p>
       </div>
 
       <Tabs defaultValue="send" className="w-full">
@@ -85,19 +83,9 @@ export default function Transfers() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="note">Note (Optional)</Label>
-                  <Input
-                    id="note"
-                    type="text"
-                    placeholder="Add a note"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                  />
+                  <Input id="note" type="text" placeholder="Add a note" value={note} onChange={(e) => setNote(e.target.value)} />
                 </div>
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isSubmitting}
-                >
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
                   {isSubmitting ? (
                     'Sending...'
                   ) : (
@@ -118,9 +106,7 @@ export default function Transfers() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  Transfer to saved contacts
-                </p>
+                <p className="text-sm text-muted-foreground">Transfer to saved contacts</p>
                 <div className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -128,9 +114,7 @@ export default function Transfers() {
                     </div>
                     <div>
                       <p className="font-medium">Jane Doe</p>
-                      <p className="text-sm text-muted-foreground">
-                        0987654321
-                      </p>
+                      <p className="text-sm text-muted-foreground">0987654321</p>
                     </div>
                   </div>
                   <ArrowRight className="h-5 w-5 text-muted-foreground" />
@@ -147,17 +131,13 @@ export default function Transfers() {
             </CardHeader>
             <CardContent>
               {transferTransactions.length === 0 ? (
-                <div className="py-8 text-center text-muted-foreground">
-                  No transfer history yet
-                </div>
+                <div className="py-8 text-center text-muted-foreground">No transfer history yet</div>
               ) : (
                 <div className="space-y-1">
                   {transferTransactions.map((transaction, index) => (
                     <div key={transaction.id}>
                       <TransactionItem transaction={transaction} />
-                      {index < transferTransactions.length - 1 && (
-                        <Separator />
-                      )}
+                      {index < transferTransactions.length - 1 && <Separator />}
                     </div>
                   ))}
                 </div>
@@ -169,4 +149,3 @@ export default function Transfers() {
     </div>
   );
 }
-

@@ -74,6 +74,7 @@ export interface Asset {
   market: string;
   symbol: string;
   name: string;
+  currency: string;
   status: 'active' | 'inactive';
   tradable: boolean;
   marginable: boolean;
@@ -88,6 +89,7 @@ export interface Position {
   account_id: string;
   symbol: string;
   asset_id: string;
+  currency: string;
   quantity: string;
   average_cost_basis: string;
   total_cost_basis: string;
@@ -125,6 +127,7 @@ export interface Order {
   id: string;
   account_id: string;
   symbol: string;
+  currency: string;
   qty?: string;
   notional?: string;
   side: 'buy' | 'sell';
@@ -195,4 +198,3 @@ export interface WithdrawalRequest {
   description?: string;
   external_reference_id?: string;
 }
-

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { type FinancialGoal } from '@/services/widget.service';
 import { Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 
 interface FinancialPlanProps {
   goals?: FinancialGoal[];
@@ -24,18 +25,11 @@ const getGoalIcon = (goalType: string) => {
   };
   const iconPath = iconMap[goalType] || '/icons/wealth-growth.png';
 
-  return (
-    <Image
-      src={iconPath}
-      alt={goalType}
-      width={20}
-      height={20}
-      className="w-5 h-5"
-    />
-  );
+  return <Image src={iconPath} alt={goalType} width={20} height={20} className="w-5 h-5" />;
 };
 
 export function FinancialPlan({ goals = [], onGoalClick, loading }: FinancialPlanProps) {
+  const { displayAmount, currencies } = useCurrency();
   if (loading) {
     return (
       <div className="w-full">
@@ -68,27 +62,17 @@ export function FinancialPlan({ goals = [], onGoalClick, loading }: FinancialPla
     );
   }
 
-  const formatCurrency = (value: number, compact: boolean = false) => {
+  const formatCurrency = (value: number, compact: boolean = false, code: CurrencyCode = 'USD') => {
+    const symbol = currencies[code]?.symbol ?? '$';
     if (compact) {
-      if (value >= 1000000) {
-        const millions = value / 1000000;
-        // Format like $2.75M or $675K
-        if (millions >= 1) {
-          return `$${millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(2)}M`;
-        } else {
-          const thousands = value / 1000;
-          return `$${thousands % 1 === 0 ? thousands.toFixed(0) : thousands.toFixed(0)}K`;
-        }
-      } else if (value >= 1000) {
-        return `$${(value / 1000).toFixed(0)}K`;
+      if (value >= 1_000_000) {
+        const millions = value / 1_000_000;
+        return `${symbol}${millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(2)}M`;
+      } else if (value >= 1_000) {
+        return `${symbol}${(value / 1_000).toFixed(0)}K`;
       }
     }
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
+    return displayAmount(value, code);
   };
 
   const formatRemaining = (current: number, target: number) => {
@@ -104,7 +88,8 @@ export function FinancialPlan({ goals = [], onGoalClick, loading }: FinancialPla
         {goals.map((goal) => {
           const currentAmount = parseFloat(goal.current_amount || goal.current_value || '0');
           const targetAmount = parseFloat(goal.target_amount || '0');
-          const progressPercentage = goal.progress_percent || (targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 100)) : 0);
+          const progressPercentage =
+            goal.progress_percent || (targetAmount > 0 ? Math.min(100, Math.round((currentAmount / targetAmount) * 100)) : 0);
           const progressBarWidth = targetAmount > 0 ? (currentAmount / targetAmount) * 100 : 0;
           const remaining = formatRemaining(currentAmount, targetAmount);
           const completed = currentAmount >= targetAmount;
@@ -122,9 +107,7 @@ export function FinancialPlan({ goals = [], onGoalClick, loading }: FinancialPla
             >
               {/* Icon and Percentage Badge */}
               <div className="flex justify-between items-start">
-                <div
-                  className="w-9 h-9 p-2 rounded-[10px] flex items-center justify-center bg-[#1E3D2F] dark:bg-emerald-900/30"
-                >
+                <div className="w-9 h-9 p-2 rounded-[10px] flex items-center justify-center bg-[#1E3D2F] dark:bg-emerald-900/30">
                   {getGoalIcon(goal.goal_type)}
                 </div>
                 <div
@@ -216,7 +199,8 @@ export function FinancialPlan({ goals = [], onGoalClick, loading }: FinancialPla
                       >
                         {remaining} to go
                       </div>
-                    ))}
+                    )
+                  )}
                 </div>
               </div>
 
@@ -234,9 +218,7 @@ export function FinancialPlan({ goals = [], onGoalClick, loading }: FinancialPla
         })}
       </div>
 
-      {goals.length === 0 && (
-        <NoDataAvailable />
-      )}
+      {goals.length === 0 && <NoDataAvailable />}
     </div>
   );
 }
@@ -244,9 +226,7 @@ export function FinancialPlan({ goals = [], onGoalClick, loading }: FinancialPla
 const NoDataAvailable = () => {
   return (
     <div className="flex flex-col items-center gap-0 py-2">
-      <div className="w-full text-base font-normal text-gray-500 dark:text-muted-foreground">
-        No financial goals found
-      </div>
+      <div className="w-full text-base font-normal text-gray-500 dark:text-muted-foreground">No financial goals found</div>
     </div>
   );
 };

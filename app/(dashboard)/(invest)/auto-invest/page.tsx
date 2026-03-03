@@ -11,6 +11,7 @@ import { useUser } from '@/store/user.store';
 import { AccountService } from '@/services/account.service';
 import { PlaidService } from '@/services/plaid.service';
 import { AutoInvestFormModal } from '@/components/invest/auto-invest-form-modal';
+import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 
 type CreateScheduleData = {
   name: string;
@@ -43,6 +44,7 @@ type UpdateScheduleData = Partial<{
 
 export default function AutoInvestPage() {
   const user = useUser();
+  const { displayAmount } = useCurrency();
   const [schedules, setSchedules] = useState<AutoInvestSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -73,9 +75,7 @@ export default function AutoInvestPage() {
           const account = await AccountService.getAccount(accId);
           const accountData = account as any;
           const detectedPortfolioId =
-            accountData?.portfolios?.find((p: any) => p.status === 'active')?.id ||
-            accountData?.portfolios?.[0]?.id ||
-            null;
+            accountData?.portfolios?.find((p: any) => p.status === 'active')?.id || accountData?.portfolios?.[0]?.id || null;
           setPortfolioId(detectedPortfolioId);
         } catch (err) {
           console.error('Failed to load account:', err);
@@ -121,10 +121,7 @@ export default function AutoInvestPage() {
     }
   };
 
-  const handleUpdateSchedule = async (
-    autoInvestId: string,
-    scheduleData: CreateScheduleData | UpdateScheduleData
-  ): Promise<void> => {
+  const handleUpdateSchedule = async (autoInvestId: string, scheduleData: CreateScheduleData | UpdateScheduleData): Promise<void> => {
     if (!accountId) {
       const errorMsg = 'Account ID not found. Please refresh the page.';
       toast.error(errorMsg);
@@ -148,14 +145,8 @@ export default function AutoInvestPage() {
         allocation_rule: scheduleData.allocation_rule,
       };
 
-      const updatedSchedule = await AutoInvestService.updateSchedule(
-        accountId,
-        autoInvestId,
-        updateData
-      );
-      setSchedules((prev) =>
-        prev.map((s) => (s.auto_invest_id === autoInvestId ? updatedSchedule : s))
-      );
+      const updatedSchedule = await AutoInvestService.updateSchedule(accountId, autoInvestId, updateData);
+      setSchedules((prev) => prev.map((s) => (s.auto_invest_id === autoInvestId ? updatedSchedule : s)));
       setIsModalOpen(false);
       setEditingSchedule(null);
       toast.success('Schedule updated successfully');
@@ -208,9 +199,7 @@ export default function AutoInvestPage() {
       setLoadingAction({ id: autoInvestId, type: 'pause' });
       setError(null);
       const updatedSchedule = await AutoInvestService.pauseSchedule(accountId, autoInvestId);
-      setSchedules((prev) =>
-        prev.map((s) => (s.auto_invest_id === autoInvestId ? updatedSchedule : s))
-      );
+      setSchedules((prev) => prev.map((s) => (s.auto_invest_id === autoInvestId ? updatedSchedule : s)));
       toast.success('Schedule paused successfully');
     } catch (error: any) {
       console.error('Failed to pause schedule:', error);
@@ -241,9 +230,7 @@ export default function AutoInvestPage() {
       setLoadingAction({ id: autoInvestId, type: 'resume' });
       setError(null);
       const updatedSchedule = await AutoInvestService.resumeSchedule(accountId, autoInvestId);
-      setSchedules((prev) =>
-        prev.map((s) => (s.auto_invest_id === autoInvestId ? updatedSchedule : s))
-      );
+      setSchedules((prev) => prev.map((s) => (s.auto_invest_id === autoInvestId ? updatedSchedule : s)));
       toast.success('Schedule resumed successfully');
     } catch (error: any) {
       console.error('Failed to resume schedule:', error);
@@ -316,9 +303,7 @@ export default function AutoInvestPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Auto-Invest</h1>
-          <p className="text-muted-foreground mt-1">
-            Set up automated investments to grow your wealth consistently
-          </p>
+          <p className="text-muted-foreground mt-1">Set up automated investments to grow your wealth consistently</p>
         </div>
         <Button
           onClick={() => {
@@ -366,9 +351,7 @@ export default function AutoInvestPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-lg text-foreground">{schedule.name}</CardTitle>
-                    <CardDescription className="mt-1">
-                      {formatFrequency(schedule.frequency)}
-                    </CardDescription>
+                    <CardDescription className="mt-1">{formatFrequency(schedule.frequency)}</CardDescription>
                   </div>
                   {getStatusBadge(schedule.status)}
                 </div>
@@ -379,7 +362,7 @@ export default function AutoInvestPage() {
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                     <span className="text-muted-foreground">Amount:</span>
                     <span className="font-semibold text-foreground">
-                      ${parseFloat(schedule.amount).toFixed(2)} {schedule.currency}
+                      {displayAmount(parseFloat(schedule.amount), schedule.currency as CurrencyCode)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
@@ -390,9 +373,7 @@ export default function AutoInvestPage() {
                   <div className="flex items-center gap-2 text-sm">
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     <span className="text-muted-foreground">Allocation:</span>
-                    <span className="text-foreground capitalize">
-                      {schedule.allocation_rule.replace('_', ' ')}
-                    </span>
+                    <span className="text-foreground capitalize">{schedule.allocation_rule.replace('_', ' ')}</span>
                   </div>
                   {schedule.next_execution_date && (
                     <div className="text-xs text-muted-foreground">
@@ -410,8 +391,7 @@ export default function AutoInvestPage() {
                       className="flex-1"
                       disabled={!accountId || loadingAction?.id === schedule.auto_invest_id}
                     >
-                      {loadingAction?.id === schedule.auto_invest_id &&
-                        loadingAction.type === 'pause' ? (
+                      {loadingAction?.id === schedule.auto_invest_id && loadingAction.type === 'pause' ? (
                         <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                       ) : (
                         <Pause className="h-3 w-3 mr-1" />
@@ -427,8 +407,7 @@ export default function AutoInvestPage() {
                       className="flex-1"
                       disabled={!accountId || loadingAction?.id === schedule.auto_invest_id}
                     >
-                      {loadingAction?.id === schedule.auto_invest_id &&
-                        loadingAction.type === 'resume' ? (
+                      {loadingAction?.id === schedule.auto_invest_id && loadingAction.type === 'resume' ? (
                         <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                       ) : (
                         <Play className="h-3 w-3 mr-1" />
@@ -436,13 +415,7 @@ export default function AutoInvestPage() {
                       Resume
                     </Button>
                   )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditSchedule(schedule)}
-                    className="flex-1"
-                    disabled={!accountId}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => handleEditSchedule(schedule)} className="flex-1" disabled={!accountId}>
                     <Edit className="h-3 w-3 mr-1" />
                     Edit
                   </Button>
@@ -475,16 +448,17 @@ export default function AutoInvestPage() {
         schedule={editingSchedule}
         portfolioId={portfolioId || undefined}
         fundingSources={fundingSources}
-        onSubmit={editingSchedule ?
-          async (data: CreateScheduleData) => {
-            const scheduleIdToUpdate = editingScheduleIdRef.current || editingSchedule?.auto_invest_id;
-            if (!scheduleIdToUpdate) {
-              toast.error('Schedule ID not found');
-              return;
-            }
-            await handleUpdateSchedule(scheduleIdToUpdate, data);
-          } :
-          handleCreateSchedule
+        onSubmit={
+          editingSchedule
+            ? async (data: CreateScheduleData) => {
+                const scheduleIdToUpdate = editingScheduleIdRef.current || editingSchedule?.auto_invest_id;
+                if (!scheduleIdToUpdate) {
+                  toast.error('Schedule ID not found');
+                  return;
+                }
+                await handleUpdateSchedule(scheduleIdToUpdate, data);
+              }
+            : handleCreateSchedule
         }
       />
     </div>

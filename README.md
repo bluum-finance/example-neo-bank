@@ -6,18 +6,20 @@ A modern banking application built with Next.js, TypeScript, and Tailwind CSS.
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 
 ### Installation
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
 
 2. Set up environment variables:
-Create a `.env.local` file in the root directory:
+   Create a `.env.local` file in the root directory:
+
 ```env
 BLUUM_API_BASE_URL=http://localhost:8080
 BLUUM_API_KEY=your_api_key_here
@@ -25,6 +27,7 @@ BLUUM_SECRET_KEY=your_secret_key_here
 ```
 
 3. Run the development server:
+
 ```bash
 npm run dev
 ```
@@ -59,17 +62,20 @@ example-neo-bank/
 
 - User authentication
 - Investment portfolio management
+- AI-driven wealth management & personalized strategy
 - Savings plans
 - Money transfers
 - Card management
 - Dashboard with transaction history
+- **Minimal global state**: Zustand for user tracking
+- **Theming**: Dark mode only (via Tailwind v4)
 
 ## Tech Stack
 
-- **Framework**: Next.js 15
+- **Framework**: Next.js 15 (App Router)
 - **Language**: TypeScript
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS v4
+- **State Management**: Zustand
 - **UI Components**: Radix UI
 - **Icons**: Lucide React
 - **Notifications**: Sonner
-
