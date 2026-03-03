@@ -5,6 +5,7 @@ import { ChevronDown, ArrowRight, Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { InvestmentService } from '@/services/investment.service';
 import { useUser } from '@/store/user.store';
+import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 import { cn } from '@/lib/utils';
 import { OrderReviewModal } from '@/components/trade/order-review-modal';
 import { OrderSuccessModal } from '@/components/trade/order-success-modal';
@@ -19,11 +20,13 @@ interface AssetInfo {
   symbol: string;
   name: string;
   price: number | null;
+  currency?: CurrencyCode;
 }
 
 export function QuickTrade() {
   const user = useUser();
   const accountId = user?.externalAccountId;
+  const { convertCurrency, displayAmount, currencies } = useCurrency();
 
   const [side, setSide] = useState<Side>('buy');
   const [assetType, setAssetType] = useState<AssetType>('Stocks');
@@ -50,10 +53,12 @@ export function QuickTrade() {
       try {
         const data = await InvestmentService.getAssetBySymbol(sym.trim().toUpperCase());
         const price = data?.current_price ?? data?.price ?? data?.data?.current_price ?? data?.data?.price ?? null;
+        const currency = (data?.currency ?? 'USD').toUpperCase() as CurrencyCode;
         setAsset({
           symbol: data?.symbol ?? sym.toUpperCase(),
           name: data?.name ?? data?.display_name ?? sym.toUpperCase(),
           price: price ? parseFloat(price) : null,
+          currency: currency || 'USD',
         });
         if (orderType === 'limit' && price) {
           setLimitPrice(parseFloat(price).toFixed(2));
@@ -225,11 +230,22 @@ export function QuickTrade() {
                 {lookingUp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
               </button>
             </div>
-            <div className="flex justify-between px-1 min-h-4">
-              <span className="text-xs font-manrope text-[#A1BEAD]">
-                {asset?.name ?? (lookingUp ? 'Looking up…' : 'Enter a symbol and press Enter')}
-              </span>
-              {asset?.price != null && <span className="text-xs font-manrope text-[#30D158]">Last: ${asset.price.toFixed(2)}</span>}
+            <div className="flex flex-col gap-1">
+              <div className="flex justify-between px-1 min-h-4">
+                <span className="text-xs font-manrope text-[#A1BEAD]">
+                  {asset?.name ?? (lookingUp ? 'Looking up…' : 'Enter a symbol and press Enter')}
+                </span>
+                {asset?.price != null && (
+                  <span className="text-xs font-manrope text-[#30D158]">Last: {displayAmount(asset.price, asset.currency)}</span>
+                )}
+              </div>
+              {asset?.price != null && asset?.currency !== 'USD' && (
+                <div className="flex justify-end px-1">
+                  <span className="text-xs font-manrope text-[#6B7280]">
+                    ≈ {displayAmount(convertCurrency(asset.price, asset.currency, 'USD'), 'USD')}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -283,7 +299,11 @@ export function QuickTrade() {
                 {orderType === 'stop' ? 'Stop Price' : 'Limit Price'}
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A1BEAD] font-manrope text-sm">$</span>
+                {asset?.currency && (
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A1BEAD] font-manrope text-sm">
+                    {currencies[asset.currency]?.symbol || '$'}
+                  </span>
+                )}
                 <input
                   type="number"
                   min="0"
@@ -293,8 +313,11 @@ export function QuickTrade() {
                   onChange={(e) => setLimitPrice(e.target.value)}
                   disabled={orderType === 'market'}
                   className={cn(
-                    'w-full h-10.5 pl-8 pr-4 bg-[#0E231F] border rounded-full text-sm font-manrope text-white placeholder:text-[#4B5563] focus:outline-none transition-colors',
-                    orderType === 'market' ? 'border-[#1E3D2F] opacity-40 cursor-not-allowed' : 'border-[#1E3D2F] focus:border-[#30D158]'
+                    'w-full h-10.5 rounded-full text-sm font-manrope text-white placeholder:text-[#4B5563] focus:outline-none transition-colors',
+                    asset?.currency ? 'pl-8 pr-4' : 'px-4',
+                    orderType === 'market'
+                      ? 'bg-[#0E231F] border border-[#1E3D2F] opacity-40 cursor-not-allowed'
+                      : 'bg-[#0E231F] border border-[#1E3D2F] focus:border-[#30D158]'
                   )}
                 />
               </div>
@@ -305,11 +328,20 @@ export function QuickTrade() {
 
       {/* Footer */}
       <footer className="flex items-center justify-between pt-6 border-t border-[#1E3D2F]">
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-1">
           <span className="text-xs font-manrope text-[#A1BEAD]">Estimated Total</span>
           <span className="text-xl font-bold font-manrope text-white">
-            {estimatedTotal != null ? `$${estimatedTotal.toFixed(2)}` : '—'}
+            {estimatedTotal != null && asset?.currency
+              ? displayAmount(estimatedTotal, asset.currency)
+              : estimatedTotal != null
+                ? `$${estimatedTotal.toFixed(2)}`
+                : '—'}
           </span>
+          {estimatedTotal != null && asset?.currency === 'USD' && (
+            <span className="text-xs font-manrope text-[#6B7280]">
+              ≈ {displayAmount(convertCurrency(estimatedTotal, 'USD', 'NGN'), 'NGN')}
+            </span>
+          )}
         </div>
         <button
           type="button"
