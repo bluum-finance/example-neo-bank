@@ -14,9 +14,9 @@ import { WelcomeInsightsCard } from '@/components/invest/welcome-insights-card';
 import { MarketMoversOverview } from '@/components/widget/market-movers-overview';
 
 import { InvestmentService, type Position } from '@/services/investment.service';
-import { AccountService } from '@/services/account.service';
 import { WidgetService, type Insight, type Recommendation, type PerformanceDataPoint, FinancialGoal } from '@/services/widget.service';
 import { useUser, useUserStore } from '@/store/user.store';
+import { useAccountStore } from '@/store/account.store';
 
 import { OnboardingLandingPage } from '@/components/invest/onboarding-landing-page';
 import HoldingsOverview from '@/components/widget/HoldingsOverview';
@@ -34,10 +34,11 @@ export default function Invest() {
   const user = useUser();
   const clearExternalAccountId = useUserStore((state) => state.clearExternalAccountId);
 
+  // Account Store
+  const { fetchAccount, accountBalance, portfolioId } = useAccountStore();
+
   // Account & Portfolio State
   const [accountId, setAccountId] = useState<string | null>(null);
-  const [portfolioId, setPortfolioId] = useState<string | null>(null);
-  const [accountBalance, setAccountBalance] = useState(0);
   const [positions, setPositions] = useState<Position[]>([]);
   const [portfolioGains, setPortfolioGains] = useState({
     totalGain: 0,
@@ -115,12 +116,8 @@ export default function Invest() {
   const loadPortfolioData = useCallback(
     async (userAccountId: string) => {
       try {
-        const account = await AccountService.getAccount(userAccountId);
-        const balanceValue = account?.balance ? parseFloat(account.balance) : 0;
-        setAccountBalance(balanceValue);
-
+        const account = await fetchAccount(userAccountId);
         const detectedPortfolioId = (account as any)?.portfolios?.find((p: any) => p.status === 'active')?.id || 'ptf_demo_main';
-        setPortfolioId(detectedPortfolioId);
 
         const positionsData = await InvestmentService.getPositions(userAccountId);
         setPositions(positionsData);
