@@ -2,7 +2,8 @@
 
 import React from 'react';
 import { ArrowUpRight, History } from 'lucide-react';
-import { cn } from "@/lib/utils";
+import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface Trade {
   asset: string;
@@ -29,10 +30,10 @@ export function RecentTrades() {
           <History className="w-4 h-4 text-[#30d158]" />
           <h2 className="text-base font-normal leading-6">Recent Trades</h2>
         </div>
-        <button className="flex items-center gap-1 text-xs font-normal text-[#30d158] hover:opacity-80 transition-opacity">
+        <Link href="/trade" className="flex items-center gap-1 text-xs font-normal text-[#30d158] hover:opacity-80 transition-opacity">
           View All
           <ArrowUpRight className="w-3 h-3" />
-        </button>
+        </Link>
       </header>
 
       {/* Trades Table */}

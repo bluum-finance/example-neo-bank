@@ -82,7 +82,6 @@ export function QuickTrade() {
 
   const handleOrderTypeChange = (next: OrderType) => {
     setOrderType(next);
-    if (next !== 'limit') setLimitPrice('');
   };
 
   const handlePlaceOrder = async () => {
@@ -337,9 +336,9 @@ export function QuickTrade() {
                 ? `$${estimatedTotal.toFixed(2)}`
                 : '—'}
           </span>
-          {estimatedTotal != null && asset?.currency === 'USD' && (
+          {estimatedTotal != null && asset?.currency !== 'USD' && (
             <span className="text-xs font-manrope text-[#6B7280]">
-              ≈ {displayAmount(convertCurrency(estimatedTotal, 'USD', 'NGN'), 'NGN')}
+              ≈ {displayAmount(convertCurrency(estimatedTotal, asset?.currency, 'USD'), 'USD')}
             </span>
           )}
         </div>
