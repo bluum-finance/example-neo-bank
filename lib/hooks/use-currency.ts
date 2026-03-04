@@ -72,7 +72,6 @@ export function useCurrency() {
    */
   function convertCurrency(amount: number, from: CurrencyCode = 'USD', to: CurrencyCode): number {
     if (from === to) return amount;
-
     // Get rates relative to USD
     const fromRate = exchangeRates[from];
     const toRate = exchangeRates[to];
@@ -111,8 +110,17 @@ export function useCurrency() {
   }
 
   function displayAmount(amount: number, code?: string) {
-    const resolvedCode = code && CURRENCIES[code as CurrencyCode] ? (code as CurrencyCode) : DEFAULT_CURRENCY.code;
-    return formatAmount(amount, resolvedCode);
+    const currencyCode = code && CURRENCIES[code as CurrencyCode] ? (code as CurrencyCode) : DEFAULT_CURRENCY.code;
+    return formatAmount(amount, currencyCode);
+  }
+
+  // Convert amount to USD and display it
+  function displayAmountInUSD(amount: number, from: CurrencyCode = 'USD'): string {
+    if (from === 'USD') {
+      return displayAmount(amount, 'USD');
+    }
+    const amountInUSD = convertCurrency(amount, from, 'USD');
+    return displayAmount(amountInUSD, 'USD');
   }
 
   return {
@@ -122,6 +130,7 @@ export function useCurrency() {
     getExchangeRate,
     formatAmount,
     displayAmount,
+    displayAmountInUSD,
     loading,
     error,
   };

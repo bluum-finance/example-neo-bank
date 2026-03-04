@@ -2,6 +2,7 @@
 
 import { Loader2, X, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 
 type Side = 'buy' | 'sell';
 type OrderType = 'limit' | 'market' | 'stop';
@@ -12,7 +13,7 @@ interface OrderReviewModalProps {
   onConfirm: () => void;
   placing: boolean;
   side: Side;
-  asset: { symbol: string; name: string; price: number | null };
+  asset: { symbol: string; name: string; price: number | null; currency?: CurrencyCode };
   orderType: OrderType;
   shares: string;
   limitPrice: string;
@@ -33,10 +34,12 @@ export function OrderReviewModal({
 }: OrderReviewModalProps) {
   if (!open) return null;
 
+  const { displayAmount, displayAmountInUSD } = useCurrency();
   const isBuy = side === 'buy';
   const orderTypeLabel = orderType === 'limit' ? 'Limit Order' : orderType === 'stop' ? 'Stop Order' : 'Market Order';
   const priceLabel = orderType === 'stop' ? 'Stop Price' : 'Limit Price';
   const showPrice = orderType !== 'market' && limitPrice;
+  const currency = asset.currency || 'USD';
 
   return (
     <div
@@ -68,9 +71,7 @@ export function OrderReviewModal({
             <div className="flex items-center gap-4">
               {/* Ticker badge */}
               <div className="w-12 h-12 rounded-xl bg-[rgba(20,83,45,0.30)] border border-[rgba(22,101,52,0.50)] flex items-center justify-center shrink-0">
-                <span className="text-[#4ADE80] text-sm font-bold font-inter">
-                  {asset.symbol[0]}
-                </span>
+                <span className="text-[#4ADE80] text-sm font-bold font-inter">{asset.symbol[0]}</span>
               </div>
               <div className="flex flex-col gap-0.5">
                 <span className="text-white text-xl font-bold font-inter leading-7">{asset.symbol}</span>
@@ -81,9 +82,7 @@ export function OrderReviewModal({
             <div
               className={cn(
                 'px-2.5 py-0.5 rounded-lg text-xs font-medium font-inter',
-                isBuy
-                  ? 'bg-[rgba(20,83,45,0.30)] text-[#4ADE80]'
-                  : 'bg-[rgba(127,29,29,0.30)] text-red-400'
+                isBuy ? 'bg-[rgba(20,83,45,0.30)] text-[#4ADE80]' : 'bg-[rgba(127,29,29,0.30)] text-red-400'
               )}
             >
               {isBuy ? 'Buy' : 'Sell'}
@@ -107,15 +106,21 @@ export function OrderReviewModal({
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-[#8DA69B] font-normal font-inter">{priceLabel}</span>
                 <span className="text-sm font-semibold font-inter text-white">
-                  {showPrice ? `$${parseFloat(limitPrice).toFixed(2)}` : '—'}
+                  {showPrice ? displayAmount(parseFloat(limitPrice), currency) : '—'}
                 </span>
+                {/* {showPrice && currency !== 'USD' && (
+                  <span className="text-xs text-[#6B7280]">≈ {displayAmountInUSD(parseFloat(limitPrice), currency)}</span>
+                )} */}
               </div>
               {/* Estimated Total */}
               <div className="flex flex-col gap-1 items-end">
                 <span className="text-xs text-[#8DA69B] font-normal font-inter">Estimated Total</span>
                 <span className="text-lg font-bold font-inter text-white leading-7">
-                  {estimatedTotal != null ? `$${estimatedTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                  {estimatedTotal != null ? displayAmount(estimatedTotal, currency) : '—'}
                 </span>
+                {estimatedTotal != null && currency !== 'USD' && (
+                  <span className="text-sm text-[#6B7280]">≈ {displayAmountInUSD(estimatedTotal, currency)}</span>
+                )}
               </div>
             </div>
           </div>
@@ -149,7 +154,9 @@ export function OrderReviewModal({
             )}
           >
             {placing ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Placing…</>
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Placing…
+              </>
             ) : (
               'Confirm Order'
             )}

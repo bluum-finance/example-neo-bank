@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -13,10 +13,19 @@ import { QuickActionsWidget } from '@/components/invest/quick-actions-widget';
 import { WelcomeInsightsCard } from '@/components/invest/welcome-insights-card';
 import { MarketMoversOverview } from '@/components/widget/market-movers-overview';
 
-import { InvestmentService, type Position } from '@/services/investment.service';
+import { InvestmentService } from '@/services/investment.service';
 import { WidgetService, type Insight, type Recommendation, type PerformanceDataPoint, FinancialGoal } from '@/services/widget.service';
 import { useUser, useUserStore } from '@/store/user.store';
-import { useAccountStore } from '@/store/account.store';
+import {
+  useAccountBalance,
+  useAccountStore,
+  useChartData,
+  useChartLoading,
+  usePortfolioId,
+  usePositions,
+  useSummaryData,
+  useSummaryLoading,
+} from '@/store/account.store';
 
 import { OnboardingLandingPage } from '@/components/invest/onboarding-landing-page';
 import HoldingsOverview from '@/components/widget/HoldingsOverview';
@@ -35,55 +44,26 @@ export default function Invest() {
   const clearExternalAccountId = useUserStore((state) => state.clearExternalAccountId);
 
   // Account Store
-  const { fetchAccount, accountBalance, portfolioId } = useAccountStore();
+  const accountBalance = useAccountBalance();
+  const portfolioId = usePortfolioId();
+  const positions = usePositions();
+  const summaryData = useSummaryData();
+  const chartData = useChartData();
+  const summaryLoading = useSummaryLoading();
+  const chartLoading = useChartLoading();
+  const { fetchAccount, fetchPositions, fetchSummary, fetchChartData } = useAccountStore();
 
   // Account & Portfolio State
   const [accountId, setAccountId] = useState<string | null>(null);
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [portfolioGains, setPortfolioGains] = useState({
-    totalGain: 0,
-    totalGainPercent: 0,
-  });
 
   // Loading & Error States
-  const [summaryLoading, setSummaryLoading] = useState(true);
-  const [chartLoading, setChartLoading] = useState(true);
   const [insightsLoading, setInsightsLoading] = useState(true);
   const [goalsLoading, setGoalsLoading] = useState(true);
 
   // Data States
-  const [summaryData, setSummaryData] = useState<any | null>(null);
-  const [chartData, setChartData] = useState<PerformanceDataPoint[]>([]);
   const [financialGoals, setFinancialGoals] = useState<FinancialGoal[]>([]);
   const [investmentPolicy, setInvestmentPolicy] = useState<any>(null);
   const [widgetInsights, setWidgetInsights] = useState<{ insights: Insight[]; recommendations: Recommendation[] } | undefined>(undefined);
-
-  const loadSummaryData = useCallback(async (userAccountId: string, detectedPortfolioId: string) => {
-    setSummaryLoading(true);
-    try {
-      const summary = await WidgetService.getPortfolioSummary(userAccountId, detectedPortfolioId);
-      setSummaryData(summary);
-    } catch (error: any) {
-      console.error('Failed to load portfolio summary', error);
-    } finally {
-      setSummaryLoading(false);
-    }
-  }, []);
-
-  const loadChartData = useCallback(
-    async (userAccountId: string, detectedPortfolioId: string, range: '1W' | '1M' | '3M' | '1Y' | 'All' = '1M') => {
-      setChartLoading(true);
-      try {
-        const data = await WidgetService.getPortfolioPerformanceData(range, userAccountId, detectedPortfolioId);
-        setChartData(data);
-      } catch (error: any) {
-        console.error('Failed to load performance data', error);
-      } finally {
-        setChartLoading(false);
-      }
-    },
-    []
-  );
 
   const loadWidgetData = useCallback(async (userAccountId: string) => {
     setInsightsLoading(true);
@@ -116,22 +96,14 @@ export default function Invest() {
   const loadPortfolioData = useCallback(
     async (userAccountId: string) => {
       try {
-        const account = await fetchAccount(userAccountId);
-        const detectedPortfolioId = (account as any)?.portfolios?.find((p: any) => p.status === 'active')?.id || 'ptf_demo_main';
+        await fetchAccount(userAccountId);
+        const currentPortfolioId = useAccountStore.getState().portfolioId;
 
-        const positionsData = await InvestmentService.getPositions(userAccountId);
-        setPositions(positionsData);
-
-        const totals = InvestmentService.calculatePortfolioTotals(positionsData);
-        setPortfolioGains({
-          totalGain: totals.totalGain,
-          totalGainPercent: totals.totalGainPercent,
-        });
-
+        await fetchPositions(userAccountId);
         await Promise.all([
-          loadSummaryData(userAccountId, detectedPortfolioId),
-          loadChartData(userAccountId, detectedPortfolioId),
-          loadWidgetData(userAccountId),
+          fetchSummary(userAccountId, currentPortfolioId).catch((err) => {}),
+          fetchChartData(userAccountId, currentPortfolioId).catch((err) => {}),
+          loadWidgetData(userAccountId).catch((err) => {}),
         ]);
       } catch (err: any) {
         if (err?.status === 404) {
@@ -142,7 +114,7 @@ export default function Invest() {
         toast.error(err?.message || 'Failed to load portfolio');
       }
     },
-    [loadSummaryData, loadChartData, loadWidgetData, router]
+    [clearExternalAccountId, fetchAccount, fetchChartData, fetchPositions, fetchSummary, loadWidgetData, router]
   );
 
   useEffect(() => {
@@ -156,12 +128,14 @@ export default function Invest() {
 
   const handleRangeChange = (range: '1W' | '1M' | '3M' | '1Y' | 'All') => {
     if (accountId && portfolioId) {
-      loadChartData(accountId, portfolioId, range);
+      fetchChartData(accountId, portfolioId, range).catch((error) => {
+        console.error('Failed to update performance range', error);
+      });
     }
   };
 
   const insightsList = widgetInsights?.insights || [];
-  const totalPortfolioValue = accountBalance + positions.reduce((sum, pos) => sum + (pos.value || 0), 0);
+  const portfolioGains = useMemo(() => InvestmentService.calculatePortfolioTotals(positions), [positions]);
 
   if (!accountId) {
     return (
@@ -176,7 +150,7 @@ export default function Invest() {
       <AiWealthDashboard
         insightsList={insightsList}
         insightsLoading={insightsLoading}
-        totalPortfolioValue={totalPortfolioValue}
+        totalPortfolioValue={accountBalance}
         chartData={chartData}
         portfolioGains={portfolioGains}
         summaryData={summaryData}
@@ -195,7 +169,7 @@ export default function Invest() {
     <SelfDirectedDashboard
       insightsList={insightsList}
       insightsLoading={insightsLoading}
-      totalPortfolioValue={totalPortfolioValue}
+      totalPortfolioValue={accountBalance}
       chartData={chartData}
       portfolioGains={portfolioGains}
       summaryData={summaryData}
@@ -277,14 +251,10 @@ const SelfDirectedDashboard = ({
         <div className="lg:col-span-1">
           <PortfolioPerformanceChart
             hideSummary={true}
-            portfolioValue={totalPortfolioValue}
             data={chartData}
-            portfolioPerformance={portfolioGains.totalGainPercent}
             summaryData={summaryData}
             summaryLoading={summaryLoading}
             onRangeChange={handleRangeChange}
-            accountId={accountId || undefined}
-            portfolioId={portfolioId || undefined}
           />
         </div>
 
@@ -372,14 +342,10 @@ const AiWealthDashboard = ({
       <section className="grid grid-cols-1 lg:grid-cols-[minmax(0,60%)_minmax(0,40%)] gap-y-6 lg:gap-x-6 items-stretch">
         <div className="lg:col-span-1">
           <PortfolioPerformanceChart
-            portfolioValue={totalPortfolioValue}
             data={chartData}
-            portfolioPerformance={portfolioGains.totalGainPercent}
             summaryData={summaryData}
             summaryLoading={summaryLoading}
             onRangeChange={handleRangeChange}
-            accountId={accountId || undefined}
-            portfolioId={portfolioId || undefined}
           />
         </div>
 

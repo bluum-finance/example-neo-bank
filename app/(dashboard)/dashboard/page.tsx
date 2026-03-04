@@ -144,15 +144,11 @@ export default function Invest() {
           {/* Left (2/3 width) */}
           <div className="lg:col-span-1">
             <PortfolioPerformanceChart
-              portfolioValue={accountBalance + positions.reduce((sum, pos) => sum + (pos.value || 0), 0)}
               data={chartData}
-              portfolioPerformance={portfolioGains.totalGainPercent}
               summaryData={summaryData}
               summaryLoading={summaryLoading}
               summaryError={summaryError}
               onRangeChange={handleRangeChange}
-              accountId={accountId || undefined}
-              portfolioId={portfolioId || undefined}
             />
           </div>
 

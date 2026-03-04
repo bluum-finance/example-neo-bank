@@ -6,6 +6,7 @@ import { TrendingUp, Shield } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ShieldIcon } from '../icons/shield.icon';
 import { useCurrency } from '@/lib/hooks/use-currency';
+import { usePortfolioValue } from '@/store/account.store';
 export type TimeRange = '1W' | '1M' | '3M' | '1Y' | 'All';
 
 interface PerformanceDataPoint {
@@ -15,14 +16,10 @@ interface PerformanceDataPoint {
 
 interface PortfolioPerformanceChartProps {
   data?: PerformanceDataPoint[];
-  portfolioPerformance?: number; // Percentage gain for selected period
-  portfolioValue?: number; // Current portfolio value in USD
   summaryData?: PortfolioSummary | null;
   summaryLoading?: boolean;
   summaryError?: string | null;
   onRangeChange?: (range: TimeRange) => void; // Callback when range changes
-  accountId?: string; // Account ID for reloading data
-  portfolioId?: string; // Portfolio ID for reloading data
   hideSummary?: boolean;
 }
 
@@ -71,20 +68,17 @@ const hasMetric = (entry: [string, string | undefined]): entry is [string, strin
 
 export function PortfolioPerformanceChart({
   data: externalData,
-  portfolioPerformance,
-  portfolioValue,
   summaryData,
   summaryLoading,
   summaryError,
   onRangeChange,
-  accountId,
-  portfolioId,
   hideSummary,
 }: PortfolioPerformanceChartProps) {
   const [selectedRange, setSelectedRange] = useState<TimeRange>('1M');
   const [viewMode, setViewMode] = useState<'chart' | 'summary'>('chart');
   const [hideAmount, setHideAmount] = useState(true);
   const { displayAmount } = useCurrency();
+  const portfolioValue = usePortfolioValue();
 
   const handleRangeChange = (newRange: TimeRange) => {
     setSelectedRange(newRange);

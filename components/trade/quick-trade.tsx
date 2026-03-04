@@ -5,6 +5,7 @@ import { ChevronDown, ArrowRight, Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { InvestmentService } from '@/services/investment.service';
 import { useUser } from '@/store/user.store';
+import { useAccountStore } from '@/store/account.store';
 import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 import { cn } from '@/lib/utils';
 import { OrderReviewModal } from '@/components/trade/order-review-modal';
@@ -26,7 +27,7 @@ interface AssetInfo {
 export function QuickTrade() {
   const user = useUser();
   const accountId = user?.externalAccountId;
-  const { convertCurrency, displayAmount, currencies } = useCurrency();
+  const { displayAmount, displayAmountInUSD, currencies } = useCurrency();
 
   const [side, setSide] = useState<Side>('buy');
   const [assetType, setAssetType] = useState<AssetType>('Stocks');
@@ -35,6 +36,7 @@ export function QuickTrade() {
   const [symbolInput, setSymbolInput] = useState('');
   const [asset, setAsset] = useState<AssetInfo | null>(null);
   const [lookingUp, setLookingUp] = useState(false);
+  const [lastLookedUpSymbol, setLastLookedUpSymbol] = useState('');
   const [shares, setShares] = useState('');
   const [limitPrice, setLimitPrice] = useState('');
   const [placing, setPlacing] = useState(false);
@@ -60,6 +62,7 @@ export function QuickTrade() {
           price: price ? parseFloat(price) : null,
           currency: currency || 'USD',
         });
+        setLastLookedUpSymbol(sym.toUpperCase());
         if (orderType === 'limit' && price) {
           setLimitPrice(parseFloat(price).toFixed(2));
         }
@@ -76,6 +79,7 @@ export function QuickTrade() {
     setSide(next);
     setAsset(null);
     setSymbolInput('');
+    setLastLookedUpSymbol('');
     setShares('');
     setLimitPrice('');
   };
@@ -120,6 +124,12 @@ export function QuickTrade() {
       }
       const result = await InvestmentService.placeOrder(accountId, orderData);
       setOrderId(result?.id ?? result?.order_id ?? result?.data?.id ?? '—');
+
+      // Refetch positions and account balance to reflect the trade
+      const { fetchAccount, fetchPositions } = useAccountStore.getState();
+      fetchAccount(accountId).catch(() => null);
+      fetchPositions(accountId).catch(() => null);
+
       setShowReview(false);
       setShowSuccess(true);
     } catch (err: any) {
@@ -135,6 +145,7 @@ export function QuickTrade() {
     setLimitPrice('');
     setAsset(null);
     setSymbolInput('');
+    setLastLookedUpSymbol('');
   };
 
   const isSell = side === 'sell';
@@ -210,6 +221,12 @@ export function QuickTrade() {
                 value={symbolInput}
                 onChange={(e) => setSymbolInput(e.target.value.toUpperCase())}
                 onKeyDown={(e) => e.key === 'Enter' && handleLookup(symbolInput)}
+                onBlur={() => {
+                  const sym = symbolInput.trim();
+                  if (sym && sym !== lastLookedUpSymbol) {
+                    handleLookup(sym);
+                  }
+                }}
                 placeholder="e.g. NVDA"
                 className="w-full h-10.5 pl-12 pr-10 bg-[#0E231F] border border-[#1E3D2F] rounded-full text-base font-normal text-white uppercase placeholder:text-[#4B5563] placeholder:normal-case placeholder:text-sm placeholder:font-normal focus:outline-none focus:border-[#30D158] transition-colors"
               />
@@ -240,9 +257,7 @@ export function QuickTrade() {
               </div>
               {asset?.price != null && asset?.currency !== 'USD' && (
                 <div className="flex justify-end px-1">
-                  <span className="text-xs font-manrope text-[#6B7280]">
-                    ≈ {displayAmount(convertCurrency(asset.price, asset.currency, 'USD'), 'USD')}
-                  </span>
+                  <span className="text-xs font-manrope text-[#6B7280]">≈ {displayAmountInUSD(asset.price, asset.currency)}</span>
                 </div>
               )}
             </div>
@@ -330,16 +345,10 @@ export function QuickTrade() {
         <div className="flex flex-col gap-1">
           <span className="text-xs font-manrope text-[#A1BEAD]">Estimated Total</span>
           <span className="text-xl font-bold font-manrope text-white">
-            {estimatedTotal != null && asset?.currency
-              ? displayAmount(estimatedTotal, asset.currency)
-              : estimatedTotal != null
-                ? `$${estimatedTotal.toFixed(2)}`
-                : '—'}
+            {estimatedTotal != null ? displayAmount(estimatedTotal, asset?.currency) : '—'}
           </span>
-          {estimatedTotal != null && asset?.currency !== 'USD' && (
-            <span className="text-xs font-manrope text-[#6B7280]">
-              ≈ {displayAmount(convertCurrency(estimatedTotal, asset?.currency, 'USD'), 'USD')}
-            </span>
+          {estimatedTotal != null && asset?.currency && asset.currency !== 'USD' && (
+            <span className="text-xs font-manrope text-[#6B7280]">≈ {displayAmountInUSD(estimatedTotal, asset.currency)}</span>
           )}
         </div>
         <button
