@@ -1,10 +1,20 @@
+export interface ComplianceCheckItem {
+  checkType: string;
+  status: string;
+  provider?: string;
+  verificationUrl?: string;
+  verificationToken?: string;
+}
+
+/** response from POST /accounts/{id}/compliance/restart */
+export interface ComplianceInitiationResponse {
+  workflowId: string;
+  status: string;
+  complianceChecks: ComplianceCheckItem[];
+}
+
 // Account Types
-export type AccountStatus =
-  | 'ACTIVE'
-  | 'INACTIVE'
-  | 'SUSPENDED'
-  | 'PENDING'
-  | 'REJECTED';
+export type AccountStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING' | 'REJECTED';
 
 export interface Account {
   id: string;

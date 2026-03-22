@@ -6,11 +6,9 @@ import { InvestOnboarding } from '@/components/invest/onboarding';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ChevronDown } from 'lucide-react';
-import { InvestmentChoice, useUserStore } from '@/store/user.store';
+import { InvestmentChoice } from '@/store/user.store';
 
 export default function OnboardingPage() {
-  const router = useRouter();
-  const { user, setExternalAccountId, updateUser } = useUserStore();
   const searchParams = useSearchParams();
   const choice = searchParams.get('choice');
   const investmentChoice: InvestmentChoice = choice === 'ai-wealth' ? 'AI-WEALTH' : 'SELF-DIRECTED';

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { ChevronRight, Plus, ArrowLeftRight, Clock3, ShieldX, RefreshCw, Loader2 } from 'lucide-react';
+import { ChevronRight, Plus, ArrowLeftRight, Clock3, ShieldX, RefreshCw, Loader2, Mail, ExternalLink } from 'lucide-react';
 
 import { PortfolioPerformanceChart } from '@/components/invest/portfolio-performance-chart';
 import { FinancialPlan } from '@/components/invest/financial-plan';
@@ -36,7 +36,8 @@ import { NewsInsights } from '@/components/widget/news-insights';
 import { PersonalizedStrategyCTA2 } from '@/components/ai-wealth/personalized-strategy-cta-2';
 import { DepositDialog } from '@/components/payment/deposit-dialog';
 import { WithdrawalDialog } from '@/components/payment/withdrawal-dialog';
-import { Mail } from 'lucide-react';
+import { AccountService } from '@/services/account.service';
+import type { ComplianceInitiationResponse } from '@/types/bluum';
 
 type OnboardingGateStatus = 'PENDING' | 'REJECTED' | 'ACTIVE';
 
@@ -95,7 +96,7 @@ export default function Invest() {
     }
   }, []);
 
-  const loadPortfolioData = useCallback(
+  const loadAccountData = useCallback(
     async (userAccountId: string) => {
       try {
         const account = await fetchAccount(userAccountId);
@@ -130,8 +131,8 @@ export default function Invest() {
     if (!userAccountId) return;
 
     setAccountId(userAccountId);
-    loadPortfolioData(userAccountId);
-  }, [loadPortfolioData, router, user?.externalAccountId]);
+    loadAccountData(userAccountId);
+  }, [loadAccountData, router, user?.externalAccountId]);
 
   const handleRangeChange = (range: '1W' | '1M' | '3M' | '1Y' | 'All') => {
     if (accountId && portfolioId) {
@@ -178,15 +179,56 @@ export default function Invest() {
 
   return (
     <>
-      {onboardingGateStatus && <OnboardingGate status={onboardingGateStatus} />}
+      {onboardingGateStatus && accountId ? (
+        <OnboardingStatusGate status={onboardingGateStatus} accountId={accountId} onAccountRefresh={() => loadAccountData(accountId)} />
+      ) : null}
       {/* Dashboard */}
       {user?.investmentChoice === 'AI-WEALTH' ? <AiWealthDashboard {...dashboardProps} /> : <SelfDirectedDashboard {...dashboardProps} />}
     </>
   );
 }
 
-function OnboardingGate({ status }: { status: OnboardingGateStatus }) {
+function pickVerificationUrl(data: ComplianceInitiationResponse): string | undefined {
+  for (const check of data.complianceChecks ?? []) {
+    const raw = (check.verificationUrl ?? (check as { verification_url?: string }).verification_url)?.trim();
+    if (raw) return raw;
+  }
+  return undefined;
+}
+
+function OnboardingStatusGate({
+  status,
+  accountId,
+  onAccountRefresh,
+}: {
+  status: OnboardingGateStatus;
+  accountId: string;
+  onAccountRefresh: () => Promise<void>;
+}) {
   const isRejected = status === 'REJECTED';
+  const [restarting, setRestarting] = useState(false);
+
+  const handleRestartCompliance = async () => {
+    setRestarting(true);
+    try {
+      const data = await AccountService.restartComplianceWorkflow(accountId);
+      const url = pickVerificationUrl(data);
+      if (url) {
+        window.open(url, '_blank', 'noopener,noreferrer');
+        toast.success('Retry verification to complete onboarding.');
+      } else {
+        toast.message('Verification workflow updated', {
+          description: 'Use Refresh to check your account status.',
+        });
+      }
+      await onAccountRefresh();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Could not start verification';
+      toast.error(message);
+    } finally {
+      setRestarting(false);
+    }
+  };
 
   return (
     <div
@@ -230,25 +272,31 @@ function OnboardingGate({ status }: { status: OnboardingGateStatus }) {
             <div className="my-5 h-px bg-[#1E3D2F]" />
 
             {/* Actions */}
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              {isRejected && (
+                <button
+                  type="button"
+                  disabled={restarting}
+                  onClick={() => void handleRestartCompliance()}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#57B75C] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4ca651] active:scale-95 disabled:pointer-events-none disabled:opacity-60"
+                >
+                  {restarting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="h-3.5 w-3.5" />}
+                  Retry verification
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="inline-flex items-center gap-2 rounded-full bg-[#57B75C] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4ca651] active:scale-95"
+                className={`inline-flex items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-colors active:scale-95 ${
+                  isRejected
+                    ? 'border border-[#2A4D3C] bg-transparent text-white hover:bg-[#1A3A2C]'
+                    : 'bg-[#57B75C] text-white hover:bg-[#4ca651]'
+                }`}
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 Refresh
               </button>
-
-              {isRejected && (
-                <a
-                  href="mailto:support@bluum.com"
-                  className="inline-flex items-center gap-2 rounded-full border border-[#2A4D3C] px-5 py-2 text-sm font-medium text-[#B0B8BD] transition-colors hover:border-[#57B75C]/40 hover:text-white"
-                >
-                  <Mail className="h-3.5 w-3.5" />
-                  Contact support
-                </a>
-              )}
             </div>
           </div>
         </div>

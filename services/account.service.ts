@@ -1,4 +1,4 @@
-import type { AccountStatus } from '@/types/bluum';
+import type { AccountStatus, ComplianceInitiationResponse } from '@/types/bluum';
 
 // Helper function to handle API errors
 async function handleResponse<T>(response: Response): Promise<T> {
@@ -42,6 +42,14 @@ export class AccountService {
   static async getAccount(accountId: string): Promise<Account> {
     const response = await fetch(`/api/investment/accounts/${accountId}`);
     return handleResponse<Account>(response);
+  }
+
+  // Restart compliance workflow after rejection / re-verify
+  static async restartComplianceWorkflow(accountId: string): Promise<ComplianceInitiationResponse> {
+    const response = await fetch(`/api/investment/accounts/${accountId}/compliance/restart`, {
+      method: 'POST',
+    });
+    return handleResponse<ComplianceInitiationResponse>(response);
   }
 
   /**

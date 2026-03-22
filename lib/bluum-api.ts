@@ -46,6 +46,12 @@ class BluumApiClient {
     );
   }
 
+  /** POST /accounts/{accountId}/compliance/restart — new KYC workflow after rejection / re-verify */
+  async restartComplianceWorkflow(accountId: string) {
+    const response = await this.client.post(`/accounts/${accountId}/compliance/restart`);
+    return response.data;
+  }
+
   // Account Management
   async createAccount(data: any) {
     const response = await this.client.post('/accounts', data);
