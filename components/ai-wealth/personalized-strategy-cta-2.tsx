@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Sparkles, Flag, Calendar, Landmark, Plus, ChevronDown, ChevronRight, Pencil, Goal } from 'lucide-react';
+import { ArrowRight, Sparkles, Calendar, Landmark, Plus, ChevronDown, ChevronRight, Pencil, Goal, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { PersonalizedStrategyPanel } from '@/components/ai-wealth/personalized-strategy-panel';
 import { GoalModal, LifeEventModal, ExternalAccountModal } from '@/components/ai-wealth/personalized-strategy-modals';
 import { useUser } from '@/store/user.store';
@@ -85,6 +86,7 @@ export function PersonalizedStrategyCTA2() {
   const [editingGoal, setEditingGoal] = useState<FinancialGoal | null>(null);
   const [editingEvent, setEditingEvent] = useState<LifeEvent | null>(null);
   const [editingAccount, setEditingAccount] = useState<ExternalAccount | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const user = useUser();
 
@@ -191,6 +193,54 @@ export function PersonalizedStrategyCTA2() {
     if (!accountId) return;
     const response = await ExternalAccountService.listExternalAccounts(accountId, { status: 'active' });
     setExternalAccounts(response.external_accounts || []);
+  };
+
+  const handleDeleteGoal = async (goal: FinancialGoal) => {
+    const accountId = user?.externalAccountId;
+    if (!accountId) return;
+    if (!window.confirm(`Remove goal "${goal.name}"?`)) return;
+    setDeletingId(goal.goal_id);
+    try {
+      await WidgetService.deleteFinancialGoal(accountId, goal.goal_id);
+      setGoals((prev) => prev.filter((g) => g.goal_id !== goal.goal_id));
+      toast.success('Goal removed');
+    } catch {
+      toast.error('Could not remove goal');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleDeleteEvent = async (event: LifeEvent) => {
+    const accountId = user?.externalAccountId;
+    if (!accountId) return;
+    if (!window.confirm(`Remove life event "${event.name}"?`)) return;
+    setDeletingId(event.event_id);
+    try {
+      await LifeEventService.deleteLifeEvent(accountId, event.event_id);
+      setLifeEvents((prev) => prev.filter((e) => e.event_id !== event.event_id));
+      toast.success('Life event removed');
+    } catch {
+      toast.error('Could not remove life event');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleDeleteExternalAccount = async (account: ExternalAccount) => {
+    const accountId = user?.externalAccountId;
+    if (!accountId) return;
+    if (!window.confirm(`Remove "${account.name}"?`)) return;
+    setDeletingId(account.external_account_id);
+    try {
+      await ExternalAccountService.deleteExternalAccount(accountId, account.external_account_id);
+      setExternalAccounts((prev) => prev.filter((a) => a.external_account_id !== account.external_account_id));
+      toast.success('External account removed');
+    } catch {
+      toast.error('Could not remove account');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const AddNewButton = ({ onClick, label }: { onClick: () => void; label: string }) => (
@@ -313,8 +363,9 @@ export function PersonalizedStrategyCTA2() {
                           <div className="shrink-0 px-4 py-[22px] min-w-[100px]">
                             <div className="text-sm font-normal text-[#B0B8BD]">{formatPriority(goal.priority)}</div>
                           </div>
-                          <div className="shrink-0 px-4 py-[22px] min-w-[100px] flex items-center justify-start">
+                          <div className="shrink-0 px-4 py-[22px] min-w-[140px] flex items-center justify-start gap-2">
                             <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleEditGoal(goal);
@@ -323,6 +374,18 @@ export function PersonalizedStrategyCTA2() {
                             >
                               <Pencil className="h-3.5 w-3.5" />
                               <span>Edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Delete goal ${goal.name}`}
+                              disabled={deletingId === goal.goal_id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handleDeleteGoal(goal);
+                              }}
+                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[#8DA69B] transition-colors hover:bg-red-500/15 hover:text-red-400 disabled:pointer-events-none disabled:opacity-40"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>
@@ -405,8 +468,9 @@ export function PersonalizedStrategyCTA2() {
                           <div className="shrink-0 px-4 py-[22px] min-w-[120px]">
                             <div className="text-sm font-normal text-[#B0B8BD]">{formatDate(event.expected_date)}</div>
                           </div>
-                          <div className="shrink-0 px-4 py-[22px] min-w-[100px] flex items-center justify-start">
+                          <div className="shrink-0 px-4 py-[22px] min-w-[100px] flex items-center justify-start gap-2">
                             <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleEditEvent(event);
@@ -415,6 +479,18 @@ export function PersonalizedStrategyCTA2() {
                             >
                               <Pencil className="h-3.5 w-3.5" />
                               <span>Edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Delete life event ${event.name}`}
+                              disabled={deletingId === event.event_id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handleDeleteEvent(event);
+                              }}
+                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[#8DA69B] transition-colors hover:bg-red-500/15 hover:text-red-400 disabled:pointer-events-none disabled:opacity-40"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>
@@ -504,8 +580,9 @@ export function PersonalizedStrategyCTA2() {
                           <div className="shrink-0 px-4 py-[22px] min-w-[120px]">
                             <div className="text-sm font-normal text-[#B0B8BD]">{account.is_asset ? 'Asset' : 'Liability'}</div>
                           </div>
-                          <div className="shrink-0 px-4 py-[22px] min-w-[100px] flex items-center justify-start">
+                          <div className="shrink-0 px-4 py-[22px] min-w-[100px] flex items-center justify-start gap-2">
                             <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleEditAccount(account);
@@ -514,6 +591,18 @@ export function PersonalizedStrategyCTA2() {
                             >
                               <Pencil className="h-3.5 w-3.5" />
                               <span>Edit</span>
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Delete external account ${account.name}`}
+                              disabled={deletingId === account.external_account_id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void handleDeleteExternalAccount(account);
+                              }}
+                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[#8DA69B] transition-colors hover:bg-red-500/15 hover:text-red-400 disabled:pointer-events-none disabled:opacity-40"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>
