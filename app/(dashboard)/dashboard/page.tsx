@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-
-import { InvestOnboarding } from '@/components/invest/onboarding';
 import { PortfolioPerformanceChart } from '@/components/invest/portfolio-performance-chart';
-import { QuickActionsWidget } from '@/components/invest/quick-actions-widget';
-
 import { InvestmentService, type Position } from '@/services/investment.service';
 import { AccountService } from '@/services/account.service';
 import { WidgetService, type PerformanceDataPoint } from '@/services/widget.service';

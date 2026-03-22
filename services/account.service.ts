@@ -4,10 +4,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
     const error = await response.json().catch(() => ({
       error: `HTTP ${response.status}: ${response.statusText}`,
     }));
-    const errorMessage =
-      typeof error.error === 'string'
-        ? error.error
-        : error.error?.message || 'An error occurred';
+    const errorMessage = typeof error.error === 'string' ? error.error : error.error?.message || 'An error occurred';
     const errorWithStatus = new Error(errorMessage) as Error & { status: number };
     errorWithStatus.status = response.status;
     throw errorWithStatus;
@@ -27,6 +24,14 @@ export interface Account {
   account_type: string;
 }
 
+export interface ComplianceCheck {
+  verification_url?: string;
+}
+
+export interface CreateAccountResponse extends Account {
+  compliance_checks?: ComplianceCheck[];
+}
+
 // Account Service
 export class AccountService {
   /**
@@ -40,7 +45,7 @@ export class AccountService {
   /**
    * Create a new investment account
    */
-  static async createAccount(accountData: any): Promise<Account> {
+  static async createAccount(accountData: any): Promise<CreateAccountResponse> {
     const response = await fetch('/api/investment/accounts', {
       method: 'POST',
       headers: {
@@ -48,6 +53,6 @@ export class AccountService {
       },
       body: JSON.stringify(accountData),
     });
-    return handleResponse<Account>(response);
+    return handleResponse<CreateAccountResponse>(response);
   }
 }

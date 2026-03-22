@@ -10,10 +10,9 @@ import { Separator } from '../ui/separator';
 import { Checkbox } from '../ui/checkbox';
 import { AccountService } from '@/services/account.service';
 import { toast } from 'sonner';
-import { InvestmentChoice, useUser } from '@/store/user.store';
+import { InvestmentChoice, useUser, useUserStore } from '@/store/user.store';
 
 interface InvestOnboardingProps {
-  onAccept: (accountId?: string) => void;
   initialStep?: number;
   investmentChoice: InvestmentChoice;
 }
@@ -88,9 +87,10 @@ const INITIAL_STATE: OnboardingState = {
   },
 };
 
-export function InvestOnboarding({ onAccept, initialStep = 0, investmentChoice }: InvestOnboardingProps) {
+export function InvestOnboarding({ initialStep = 0, investmentChoice }: InvestOnboardingProps) {
   const router = useRouter();
   const user = useUser();
+  const { setExternalAccountId, updateUser } = useUserStore();
   const [step, setStep] = useState(initialStep);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [formData, setFormData] = useState<OnboardingState>(INITIAL_STATE);
@@ -205,8 +205,21 @@ export function InvestOnboarding({ onAccept, initialStep = 0, investmentChoice }
       };
 
       const account = await AccountService.createAccount(payload as any);
-      toast.success('Account created successfully!');
-      onAccept(account.id);
+      const verificationUrl = account.compliance_checks?.find(
+        (check) => typeof check.verification_url === 'string' && check.verification_url.trim()
+      )?.verification_url;
+
+      // Set the external account ID and investment choice in auth
+      setExternalAccountId(account.id);
+      updateUser({ investmentChoice });
+
+      toast.success('Redirecting to verification page to complete onboarding.');
+      setTimeout(() => {
+        router.push('/invest');
+        if (verificationUrl) {
+          window.open(verificationUrl, '_blank');
+        }
+      }, 3000);
     } catch (error: any) {
       toast.error(error.message || 'Failed to create account');
     } finally {
@@ -262,7 +275,7 @@ export function InvestOnboarding({ onAccept, initialStep = 0, investmentChoice }
                   disabled={isCreatingAccount}
                   className="flex-1 bg-[#57B75C] hover:bg-[#57B75C]/90 text-white rounded-full h-12"
                 >
-                  {isCreatingAccount ? 'Creating Account...' : 'Continue'}
+                  {isCreatingAccount ? 'Processing...' : 'Continue'}
                 </Button>
               )}
             </div>

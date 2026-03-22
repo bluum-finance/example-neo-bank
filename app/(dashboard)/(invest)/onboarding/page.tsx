@@ -15,28 +15,6 @@ export default function OnboardingPage() {
   const choice = searchParams.get('choice');
   const investmentChoice: InvestmentChoice = choice === 'ai-wealth' ? 'AI-WEALTH' : 'SELF-DIRECTED';
 
-  const handleAccountCreated = (accountId?: string) => {
-    if (!accountId) {
-      toast.error('Failed to create account. Please try again.');
-      return;
-    }
-
-    if (!user) {
-      toast.error('User session not found. Please sign in again.');
-      router.push('/signin');
-      return;
-    }
-
-    // Set the external account ID and investment choice in auth
-    setExternalAccountId(accountId);
-    updateUser({
-      investmentChoice,
-    });
-
-    toast.success('Account created successfully!');
-    router.push('/invest');
-  };
-
   return (
     <div className="min-h-screen flex flex-col">
       {/* Custom Header for Onboarding */}
@@ -62,7 +40,7 @@ export default function OnboardingPage() {
       </header>
 
       <div className="container mx-auto py-8">
-        <InvestOnboarding onAccept={handleAccountCreated} investmentChoice={investmentChoice} />
+        <InvestOnboarding investmentChoice={investmentChoice} />
       </div>
     </div>
   );
