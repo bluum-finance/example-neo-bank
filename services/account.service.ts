@@ -1,3 +1,5 @@
+import type { AccountStatus } from '@/types/bluum';
+
 // Helper function to handle API errors
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
@@ -16,7 +18,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 export interface Account {
   id: string;
   account_number?: string;
-  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  status: AccountStatus;
   balance?: string;
   currency: string;
   last_equity: string;

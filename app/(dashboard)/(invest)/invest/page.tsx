@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { ChevronRight, ArrowDownLeft, ArrowUpRight, Plus, ArrowLeftRight } from 'lucide-react';
+import { ChevronRight, Plus, ArrowLeftRight, Clock3, ShieldX, RefreshCw, Loader2 } from 'lucide-react';
 
 import { PortfolioPerformanceChart } from '@/components/invest/portfolio-performance-chart';
 import { FinancialPlan } from '@/components/invest/financial-plan';
@@ -33,10 +33,12 @@ import { Watchlist } from '@/components/widget/watchlist';
 import QuickTrade from '@/components/trade/quick-trade';
 import { RecentTrades } from '@/components/widget/recent-trades';
 import { NewsInsights } from '@/components/widget/news-insights';
-import { PersonalizedStrategyCTA } from '@/components/ai-wealth/personalized-strategy-cta';
 import { PersonalizedStrategyCTA2 } from '@/components/ai-wealth/personalized-strategy-cta-2';
 import { DepositDialog } from '@/components/payment/deposit-dialog';
 import { WithdrawalDialog } from '@/components/payment/withdrawal-dialog';
+import { Mail } from 'lucide-react';
+
+type OnboardingGateStatus = 'PENDING' | 'REJECTED' | 'ACTIVE';
 
 export default function Invest() {
   const router = useRouter();
@@ -50,11 +52,11 @@ export default function Invest() {
   const summaryData = useSummaryData();
   const chartData = useChartData();
   const summaryLoading = useSummaryLoading();
-  const chartLoading = useChartLoading();
-  const { fetchAccount, fetchPositions, fetchSummary, fetchChartData } = useAccountStore();
+  const { isLoading, fetchAccount, fetchPositions, fetchSummary, fetchChartData } = useAccountStore();
 
   // Account & Portfolio State
   const [accountId, setAccountId] = useState<string | null>(null);
+  const [onboardingGateStatus, setOnboardingGateStatus] = useState<OnboardingGateStatus | null>(null);
 
   // Loading & Error States
   const [insightsLoading, setInsightsLoading] = useState(true);
@@ -96,9 +98,15 @@ export default function Invest() {
   const loadPortfolioData = useCallback(
     async (userAccountId: string) => {
       try {
-        await fetchAccount(userAccountId);
-        const currentPortfolioId = useAccountStore.getState().portfolioId;
+        const account = await fetchAccount(userAccountId);
+        // REJECTED | PENDING | ACTIVE
+        if (account?.status === 'REJECTED' || account?.status === 'PENDING') {
+          setOnboardingGateStatus(account.status);
+          return;
+        }
+        setOnboardingGateStatus(null);
 
+        const currentPortfolioId = useAccountStore.getState().portfolioId;
         await fetchPositions(userAccountId);
         await Promise.all([
           fetchSummary(userAccountId, currentPortfolioId).catch((err) => {}),
@@ -119,7 +127,6 @@ export default function Invest() {
 
   useEffect(() => {
     const userAccountId = user?.externalAccountId;
-
     if (!userAccountId) return;
 
     setAccountId(userAccountId);
@@ -145,42 +152,108 @@ export default function Invest() {
     );
   }
 
-  if (user?.investmentChoice === 'AI-WEALTH') {
+  const dashboardProps = {
+    insightsList,
+    insightsLoading,
+    totalPortfolioValue: accountBalance,
+    chartData,
+    portfolioGains,
+    summaryData,
+    summaryLoading,
+    handleRangeChange,
+    accountId,
+    portfolioId,
+    financialGoals,
+    goalsLoading,
+    investmentPolicy,
+  };
+
+  if (isLoading) {
     return (
-      <AiWealthDashboard
-        insightsList={insightsList}
-        insightsLoading={insightsLoading}
-        totalPortfolioValue={accountBalance}
-        chartData={chartData}
-        portfolioGains={portfolioGains}
-        summaryData={summaryData}
-        summaryLoading={summaryLoading}
-        handleRangeChange={handleRangeChange}
-        accountId={accountId}
-        portfolioId={portfolioId}
-        financialGoals={financialGoals}
-        goalsLoading={goalsLoading}
-        investmentPolicy={investmentPolicy}
-      />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
     );
   }
 
   return (
-    <SelfDirectedDashboard
-      insightsList={insightsList}
-      insightsLoading={insightsLoading}
-      totalPortfolioValue={accountBalance}
-      chartData={chartData}
-      portfolioGains={portfolioGains}
-      summaryData={summaryData}
-      summaryLoading={summaryLoading}
-      handleRangeChange={handleRangeChange}
-      accountId={accountId}
-      portfolioId={portfolioId}
-      financialGoals={financialGoals}
-      goalsLoading={goalsLoading}
-      investmentPolicy={investmentPolicy}
-    />
+    <>
+      {onboardingGateStatus && <OnboardingGate status={onboardingGateStatus} />}
+      {/* Dashboard */}
+      {user?.investmentChoice === 'AI-WEALTH' ? <AiWealthDashboard {...dashboardProps} /> : <SelfDirectedDashboard {...dashboardProps} />}
+    </>
+  );
+}
+
+function OnboardingGate({ status }: { status: OnboardingGateStatus }) {
+  const isRejected = status === 'REJECTED';
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md"
+      style={{ backgroundColor: 'rgba(5, 18, 12, 0.70)' }}
+    >
+      <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-300">
+        <div className="relative overflow-hidden rounded-2xl border border-[#1E3D2F] bg-[#0A1F16] shadow-2xl">
+          {/* Ambient glow strip at the top */}
+          <div
+            className={`absolute inset-x-0 top-0 h-px ${isRejected ? 'bg-linear-to-r from-transparent via-[#FF8EA1]/60 to-transparent' : 'bg-linear-to-r from-transparent via-[#57B75C]/60 to-transparent'}`}
+          />
+
+          <div className="p-7">
+            {/* Icon badge */}
+            <div className="mb-5 flex items-center gap-3">
+              <div
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
+                  isRejected ? 'bg-[#7A1E2A]/30 ring-1 ring-[#FF8EA1]/20' : 'bg-[#1A3A2C] ring-1 ring-[#57B75C]/20'
+                }`}
+              >
+                {isRejected ? <ShieldX className="h-5 w-5 text-[#FF8EA1]" /> : <Clock3 className="h-5 w-5 text-[#57B75C]" />}
+              </div>
+
+              <span className={`px-2 py-0.5 text-sm font-medium tracking-wide`}>{isRejected ? 'Not Approved' : 'Under Review'}</span>
+            </div>
+
+            {/* Heading */}
+            <h2 className="text-xl font-semibold tracking-tight text-white">
+              {isRejected ? 'Onboarding was not approved' : 'Your account is under review'}
+            </h2>
+
+            {/* Body */}
+            <p className="mt-2 text-sm leading-relaxed text-[#8BA59A]">
+              {isRejected
+                ? "We couldn't approve your application at this time. Please reach out to our support team for next steps."
+                : "We're verifying your information. You account will be active once your information is verified."}
+            </p>
+
+            {/* Divider */}
+            <div className="my-5 h-px bg-[#1E3D2F]" />
+
+            {/* Actions */}
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="inline-flex items-center gap-2 rounded-full bg-[#57B75C] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4ca651] active:scale-95"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Refresh
+              </button>
+
+              {isRejected && (
+                <a
+                  href="mailto:support@bluum.com"
+                  className="inline-flex items-center gap-2 rounded-full border border-[#2A4D3C] px-5 py-2 text-sm font-medium text-[#B0B8BD] transition-colors hover:border-[#57B75C]/40 hover:text-white"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  Contact support
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

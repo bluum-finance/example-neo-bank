@@ -1,8 +1,15 @@
 // Account Types
+export type AccountStatus =
+  | 'ACTIVE'
+  | 'INACTIVE'
+  | 'SUSPENDED'
+  | 'PENDING'
+  | 'REJECTED';
+
 export interface Account {
   id: string;
   account_number?: string;
-  status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  status: AccountStatus;
   balance?: string;
   crypto_status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   currency: string;
