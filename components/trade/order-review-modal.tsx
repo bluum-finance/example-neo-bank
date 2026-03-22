@@ -13,7 +13,7 @@ interface OrderReviewModalProps {
   onConfirm: () => void;
   placing: boolean;
   side: Side;
-  asset: { symbol: string; name: string; price: number | null; currency?: CurrencyCode };
+  asset: { symbol: string; name: string; price: number | null; currency?: CurrencyCode; market?: string };
   orderType: OrderType;
   shares: string;
   limitPrice: string;
@@ -76,6 +76,9 @@ export function OrderReviewModal({
               <div className="flex flex-col gap-0.5">
                 <span className="text-white text-xl font-bold font-inter leading-7">{asset.symbol}</span>
                 <span className="text-[#8DA69B] text-sm font-normal font-inter">{asset.name}</span>
+                {asset.market ? (
+                  <span className="text-[#6B7280] text-xs font-normal font-inter">{asset.market}</span>
+                ) : null}
               </div>
             </div>
             {/* Buy/Sell badge */}

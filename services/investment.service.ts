@@ -48,8 +48,9 @@ export class InvestmentService {
     return Array.isArray(data) ? data : data.data || [];
   }
 
-  static async getAssetBySymbol(symbol: string): Promise<any> {
-    const response = await fetch(`/api/investment/assets/${encodeURIComponent(symbol)}`);
+  static async getAssetBySymbol(symbol: string, params?: { market?: string }): Promise<any> {
+    const qs = params?.market ? `?market=${encodeURIComponent(params.market)}` : '';
+    const response = await fetch(`/api/investment/assets/${encodeURIComponent(symbol)}${qs}`);
     const data = await handleResponse<{ data?: any }>(response);
     return data.data || data;
   }

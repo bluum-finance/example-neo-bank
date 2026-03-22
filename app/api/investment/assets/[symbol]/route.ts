@@ -7,7 +7,8 @@ export async function GET(
 ) {
   try {
     const { symbol } = await params;
-    const asset = await bluumApi.getAssetBySymbol(symbol);
+    const market = request.nextUrl.searchParams.get('market')?.trim();
+    const asset = await bluumApi.getAssetBySymbol(symbol, market ? { market } : undefined);
     return NextResponse.json(asset);
   } catch (error: any) {
     return NextResponse.json(

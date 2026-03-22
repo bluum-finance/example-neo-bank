@@ -79,8 +79,10 @@ class BluumApiClient {
     return response.data;
   }
 
-  async getAssetBySymbol(symbol: string) {
-    const response = await this.client.get(`/assets/${symbol}`);
+  async getAssetBySymbol(symbol: string, params?: { market?: string }) {
+    const response = await this.client.get(`/assets/${symbol}`, {
+      params: params?.market ? { market: params.market } : undefined,
+    });
     return response.data;
   }
 

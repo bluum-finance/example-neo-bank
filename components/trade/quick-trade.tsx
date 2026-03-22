@@ -17,11 +17,30 @@ type AssetType = 'Stocks' | 'ETFs' | 'Crypto';
 
 const ASSET_TYPES: AssetType[] = ['Stocks', 'ETFs', 'Crypto'];
 
+/** Venue hints for `GET /assets/{symbol}?market=` — aligns with Bluum external API (MIC / venue codes). */
+const MARKET_OPTIONS: { value: string; label: string }[] = [
+  { value: '', label: 'All' },
+  { value: 'XNAS', label: 'NASDAQ (XNAS)' },
+  { value: 'XNYS', label: 'NYSE (XNYS)' },
+  { value: 'BATS', label: 'BATS' },
+  { value: 'ARCA', label: 'NYSE Arca (ARCA)' },
+  { value: 'OTC', label: 'OTC' },
+  { value: 'XNSA', label: 'NYSE American (XNSA)' },
+];
+
+const DEFAULT_MARKET_BY_TYPE: Record<AssetType, string> = {
+  Stocks: '',
+  ETFs: '',
+  Crypto: 'OTC',
+};
+
 interface AssetInfo {
   symbol: string;
   name: string;
   price: number | null;
   currency?: CurrencyCode;
+  /** Resolved venue from API (e.g. XNAS, XNYS). */
+  market?: string;
 }
 
 export function QuickTrade() {
@@ -34,9 +53,11 @@ export function QuickTrade() {
   const [showAssetMenu, setShowAssetMenu] = useState(false);
   const [orderType, setOrderType] = useState<OrderType>('limit');
   const [symbolInput, setSymbolInput] = useState('');
+  const [market, setMarket] = useState('');
   const [asset, setAsset] = useState<AssetInfo | null>(null);
   const [lookingUp, setLookingUp] = useState(false);
-  const [lastLookedUpSymbol, setLastLookedUpSymbol] = useState('');
+  /** `SYMBOL|marketHint` — empty market means auto. */
+  const [lastLookupKey, setLastLookupKey] = useState('');
   const [shares, setShares] = useState('');
   const [limitPrice, setLimitPrice] = useState('');
   const [placing, setPlacing] = useState(false);
@@ -48,12 +69,13 @@ export function QuickTrade() {
   const estimatedTotal = effectivePrice && shares ? parseFloat(shares) * effectivePrice : null;
 
   const handleLookup = useCallback(
-    async (sym: string) => {
+    async (sym: string, lookup?: { market?: string }) => {
       if (!sym.trim()) return;
+      const hint = lookup?.market !== undefined ? lookup.market : market;
       setLookingUp(true);
       setAsset(null);
       try {
-        const data = await InvestmentService.getAssetBySymbol(sym.trim().toUpperCase());
+        const data = await InvestmentService.getAssetBySymbol(sym.trim().toUpperCase(), hint ? { market: hint } : undefined);
         const price = data?.current_price ?? data?.price ?? data?.data?.current_price ?? data?.data?.price ?? null;
         const currency = (data?.currency ?? 'USD').toUpperCase() as CurrencyCode;
         setAsset({
@@ -61,8 +83,9 @@ export function QuickTrade() {
           name: data?.name ?? data?.display_name ?? sym.toUpperCase(),
           price: price ? parseFloat(price) : null,
           currency: currency || 'USD',
+          market: data?.market ?? undefined,
         });
-        setLastLookedUpSymbol(sym.toUpperCase());
+        setLastLookupKey(`${sym.trim().toUpperCase()}|${hint}`);
         if (orderType === 'limit' && price) {
           setLimitPrice(parseFloat(price).toFixed(2));
         }
@@ -72,14 +95,15 @@ export function QuickTrade() {
         setLookingUp(false);
       }
     },
-    [orderType]
+    [orderType, market]
   );
 
   const handleSideChange = (next: Side) => {
     setSide(next);
     setAsset(null);
     setSymbolInput('');
-    setLastLookedUpSymbol('');
+    setMarket('');
+    setLastLookupKey('');
     setShares('');
     setLimitPrice('');
   };
@@ -145,7 +169,8 @@ export function QuickTrade() {
     setLimitPrice('');
     setAsset(null);
     setSymbolInput('');
-    setLastLookedUpSymbol('');
+    setMarket('');
+    setLastLookupKey('');
   };
 
   const isSell = side === 'sell';
@@ -195,8 +220,17 @@ export function QuickTrade() {
                       <button
                         type="button"
                         onClick={() => {
-                          setAssetType(t);
                           setShowAssetMenu(false);
+                          if (t === assetType) return;
+                          setAssetType(t);
+                          const nextMarket = DEFAULT_MARKET_BY_TYPE[t];
+                          setMarket(nextMarket);
+                          setAsset(null);
+                          setLastLookupKey('');
+                          const sym = symbolInput.trim();
+                          if (sym) {
+                            void handleLookup(sym, { market: nextMarket });
+                          }
                         }}
                         className={cn(
                           'w-full text-left px-4 py-2.5 text-sm font-manrope transition-colors hover:bg-[#1E3D2F]',
@@ -212,54 +246,90 @@ export function QuickTrade() {
             </div>
           </div>
 
-          {/* Ticker Symbol */}
+          {/* Market + Ticker (one row) */}
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-medium font-manrope text-[#A1BEAD] uppercase tracking-wider">Ticker Symbol</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={symbolInput}
-                onChange={(e) => setSymbolInput(e.target.value.toUpperCase())}
-                onKeyDown={(e) => e.key === 'Enter' && handleLookup(symbolInput)}
-                onBlur={() => {
-                  const sym = symbolInput.trim();
-                  if (sym && sym !== lastLookedUpSymbol) {
-                    handleLookup(sym);
-                  }
-                }}
-                placeholder="e.g. NVDA"
-                className="w-full h-10.5 pl-12 pr-10 bg-[#0E231F] border border-[#1E3D2F] rounded-full text-base font-normal text-white uppercase placeholder:text-[#4B5563] placeholder:normal-case placeholder:text-sm placeholder:font-normal focus:outline-none focus:border-[#30D158] transition-colors"
-              />
-              {/* Ticker badge */}
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center bg-[#30D158] text-[#0E231F] text-[10px] font-normal font-manrope rounded">
-                {symbolInput ? symbolInput[0] : '#'}
-              </div>
-
-              {/* Lookup button */}
-              <button
-                type="button"
-                onClick={() => handleLookup(symbolInput)}
-                disabled={lookingUp || !symbolInput.trim()}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A1BEAD] hover:text-[#30D158] disabled:opacity-30 transition-colors"
-                aria-label="Look up symbol"
-              >
-                {lookingUp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-              </button>
-            </div>
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between px-1 min-h-4">
-                <span className="text-xs font-manrope text-[#A1BEAD]">
-                  {asset?.name ?? (lookingUp ? 'Looking up…' : 'Enter a symbol and press Enter')}
-                </span>
-                {asset?.price != null && (
-                  <span className="text-xs font-manrope text-[#30D158]">Last: {displayAmount(asset.price, asset.currency)}</span>
-                )}
-              </div>
-              {asset?.price != null && asset?.currency !== 'USD' && (
-                <div className="flex justify-end px-1">
-                  <span className="text-xs font-manrope text-[#6B7280]">≈ {displayAmountInUSD(asset.price, asset.currency)}</span>
+            <div className="flex flex-row gap-3 items-start">
+              <div className="flex flex-col gap-2 min-w-0 w-[min(11.5rem,34%)] shrink-0">
+                <label className="text-xs font-medium font-manrope text-[#A1BEAD] uppercase tracking-wider">Market</label>
+                <div className="relative">
+                  <select
+                    value={market}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setMarket(next);
+                      setAsset(null);
+                      setLastLookupKey('');
+                      const sym = symbolInput.trim();
+                      if (sym) {
+                        void handleLookup(sym, { market: next });
+                      }
+                    }}
+                    className="w-full h-10.5 pl-4 pr-10 bg-[#0E231F] border border-[#1E3D2F] rounded-full text-sm font-manrope text-white appearance-none cursor-pointer hover:border-[#30D158] focus:outline-none focus:border-[#30D158] transition-colors"
+                    aria-label="Market or exchange for symbol lookup"
+                  >
+                    {MARKET_OPTIONS.map((o) => (
+                      <option key={o.value || 'auto'} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B7280]" />
                 </div>
-              )}
+              </div>
+              <div className="flex flex-col gap-2 flex-1 min-w-0">
+                <label className="text-xs font-medium font-manrope text-[#A1BEAD] uppercase tracking-wider">Ticker Symbol</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={symbolInput}
+                    onChange={(e) => setSymbolInput(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => e.key === 'Enter' && handleLookup(symbolInput)}
+                    onBlur={() => {
+                      const sym = symbolInput.trim();
+                      const key = `${sym}|${market}`;
+                      if (sym && key !== lastLookupKey) {
+                        handleLookup(sym);
+                      }
+                    }}
+                    placeholder="e.g. NVDA"
+                    className="w-full h-10.5 pl-4 pr-10 bg-[#0E231F] border border-[#1E3D2F] rounded-full text-base font-normal text-white uppercase placeholder:text-[#4B5563] placeholder:normal-case placeholder:text-sm placeholder:font-normal focus:outline-none focus:border-[#30D158] transition-colors"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => handleLookup(symbolInput)}
+                    disabled={lookingUp || !symbolInput.trim()}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A1BEAD] hover:text-[#30D158] disabled:opacity-30 transition-colors"
+                    aria-label="Look up symbol"
+                  >
+                    {lookingUp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <div className="flex justify-between px-1 min-h-4 gap-2">
+                <span className="flex flex-col gap-1 text-xs font-manrope text-[#A1BEAD] min-w-0">
+                  {asset?.name ?? (lookingUp ? 'Looking up…' : 'Enter a symbol and/or market')}
+
+                  {asset?.market ? (
+                    <span className="text-[10px] font-manrope text-[#6B7280] uppercase tracking-wide">{asset.market}</span>
+                  ) : null}
+                </span>
+
+                <span className="flex flex-col gap-0.5 shrink-0 text-right">
+                  {asset?.price != null && (
+                    <span className="text-xs font-manrope text-[#30D158]">Last: {displayAmount(asset.price, asset.currency)}</span>
+                  )}
+
+                  {asset?.price != null && asset?.currency !== 'USD' && (
+                    <div className="flex justify-end px-1">
+                      <span className="text-xs font-manrope text-[#6B7280]">≈ {displayAmountInUSD(asset.price, asset.currency)}</span>
+                    </div>
+                  )}
+                </span>
+              </div>
             </div>
           </div>
         </div>
