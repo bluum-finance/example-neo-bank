@@ -171,7 +171,7 @@ export default function Invest() {
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md">
+      <div className="fixed inset-0 z-40 flex items-center justify-center p-4 backdrop-blur-md lg:inset-y-0 lg:left-64 lg:right-0 lg:top-0 lg:bottom-0">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -232,10 +232,10 @@ function OnboardingStatusGate({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-md"
+      className="fixed inset-0 z-40 flex items-center justify-center p-4 backdrop-blur-md lg:inset-y-0 lg:left-64 lg:right-0 lg:top-0 lg:bottom-0"
       style={{ backgroundColor: 'rgba(5, 18, 12, 0.70)' }}
     >
-      <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-300">
+      <div className="mx-auto w-full max-w-md shrink-0 animate-in fade-in zoom-in-95 duration-300">
         <div className="relative overflow-hidden rounded-2xl border border-[#1E3D2F] bg-[#0A1F16] shadow-2xl">
           {/* Ambient glow strip at the top */}
           <div

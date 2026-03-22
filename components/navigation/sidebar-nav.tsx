@@ -67,7 +67,7 @@ export function SidebarNav() {
     : 'johndoe@bluuminvest.com';
 
   return (
-    <aside className="hidden lg:flex lg:w-[248px] lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:border-r lg:bg-[#07120F] lg:border-[#1E3D2F]">
+    <aside className="hidden lg:z-50 lg:flex lg:w-[248px] lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:border-r lg:bg-[#07120F] lg:border-[#1E3D2F]">
       <div className="flex flex-col h-full w-full">
         {/* User Header */}
         <div className="p-6 flex justify-between items-center">

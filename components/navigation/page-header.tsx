@@ -45,7 +45,7 @@ export function PageHeader() {
   };
 
   return (
-    <div className="py-3 sm:py-4 border-b border-transparent flex flex-row justify-between items-center gap-3 sm:gap-4 overflow-hidden">
+    <div className="relative z-50 py-3 sm:py-4 border-b border-transparent flex flex-row justify-between items-center gap-3 sm:gap-4 overflow-hidden">
       {/* Search Bar (Left) */}
       <div className="min-w-0 w-full max-w-[440px]">
         <div className="px-4 h-11 bg-white dark:bg-[#0E231F] rounded-full border border-gray-200 dark:border-[#1E3D2F] flex items-center gap-2">
