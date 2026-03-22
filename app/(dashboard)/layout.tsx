@@ -6,6 +6,7 @@ import { useHasLoaded, useIsAuthenticated } from '@/store/user.store';
 import { BottomNav } from '@/components/navigation/bottom-nav';
 import { SidebarNav } from '@/components/navigation/sidebar-nav';
 import { PageHeader } from '@/components/navigation/page-header';
+import { DashboardOnboardingGate } from '@/components/invest/onboarding-status-gate';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -35,12 +36,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen bg-background">
       <SidebarNav />
-      <main className="flex-1 lg:ml-64 pb-20 lg:pb-0">
+      <main className="relative flex-1 lg:ml-64 pb-20 lg:pb-0">
         <div className={containerClassName}>
           <PageHeader />
         </div>
 
         <div className={`${containerClassName} py-6`}>{children}</div>
+        <DashboardOnboardingGate />
       </main>
       <BottomNav />
     </div>

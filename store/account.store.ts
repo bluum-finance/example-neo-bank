@@ -1,7 +1,15 @@
 import { create } from 'zustand';
+import type { AccountStatus } from '@/types/bluum';
 import { AccountService, type Account } from '@/services/account.service';
 import { InvestmentService, type Position } from '@/services/investment.service';
 import { WidgetService, type PerformanceDataPoint } from '@/services/widget.service';
+
+export type OnboardingGateStatus = Extract<AccountStatus, 'PENDING' | 'REJECTED'>;
+
+function deriveOnboardingGateStatus(status?: AccountStatus): OnboardingGateStatus | null {
+  if (status === 'PENDING' || status === 'REJECTED') return status;
+  return null;
+}
 
 interface AccountState {
   // Data
@@ -11,6 +19,8 @@ interface AccountState {
   positions: Position[];
   summaryData: unknown | null;
   chartData: PerformanceDataPoint[];
+  /** PENDING / REJECTED — dashboard shows compliance onboarding overlay */
+  onboardingGateStatus: OnboardingGateStatus | null;
 
   // Status
   isLoading: boolean;
@@ -26,6 +36,7 @@ interface AccountState {
   fetchChartData: (accountId: string, portfolioId: string, range?: '1W' | '1M' | '3M' | '1Y' | 'All') => Promise<void>;
   setAccountBalance: (balance: number) => void;
   setPortfolioId: (portfolioId: string) => void;
+  setOnboardingGateStatus: (status: OnboardingGateStatus | null) => void;
   clearAccount: () => void;
 }
 
@@ -36,6 +47,7 @@ export const useAccountStore = create<AccountState>()((set) => ({
   positions: [],
   summaryData: null,
   chartData: [],
+  onboardingGateStatus: null,
   isLoading: false,
   isPositionsLoading: false,
   isSummaryLoading: false,
@@ -54,11 +66,16 @@ export const useAccountStore = create<AccountState>()((set) => ({
         accountBalance: balanceValue,
         portfolioId,
         isLoading: false,
+        onboardingGateStatus: deriveOnboardingGateStatus(account.status as AccountStatus),
       });
 
       return account;
     } catch (err: any) {
-      set({ error: err?.message ?? 'Failed to load account', isLoading: false });
+      set({
+        onboardingGateStatus: null,
+        error: err?.message ?? 'Failed to load account',
+        isLoading: false,
+      });
       throw err;
     }
   },
@@ -101,6 +118,8 @@ export const useAccountStore = create<AccountState>()((set) => ({
 
   setPortfolioId: (portfolioId: string) => set({ portfolioId }),
 
+  setOnboardingGateStatus: (status: OnboardingGateStatus | null) => set({ onboardingGateStatus: status }),
+
   clearAccount: () =>
     set({
       account: null,
@@ -109,6 +128,7 @@ export const useAccountStore = create<AccountState>()((set) => ({
       positions: [],
       summaryData: null,
       chartData: [],
+      onboardingGateStatus: null,
       isPositionsLoading: false,
       isSummaryLoading: false,
       isChartLoading: false,
@@ -133,3 +153,4 @@ export const useChartData = () => useAccountStore((state) => state.chartData);
 export const useSummaryLoading = () => useAccountStore((state) => state.isSummaryLoading);
 export const useChartLoading = () => useAccountStore((state) => state.isChartLoading);
 export const usePortfolioValue = () => useAccountStore((state) => calculatePortfolioValue(state.accountBalance, state.positions));
+export const useOnboardingGateStatus = () => useAccountStore((state) => state.onboardingGateStatus);
