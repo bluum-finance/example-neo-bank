@@ -139,9 +139,14 @@ export function PersonalizedStrategyCTA2() {
     goals.length > 0
       ? goals
           .slice(0, 3)
-          .map((g) => `${g.name}${g.target_date ? ` (${new Date(g.target_date).getFullYear()})` : ''}`)
+          .map((g) => {
+            const parts: string[] = [g.name];
+            if (g.target_amount) parts.push(formatCurrency(g.target_amount));
+            if (g.target_date) parts.push(String(new Date(g.target_date).getFullYear()));
+            return parts.join(' · ');
+          })
           .join(', ')
-      : 'No Goals added yet';
+      : 'No goals added yet';
 
   const lifeEventsPreview =
     lifeEvents.length > 0
@@ -297,21 +302,27 @@ export function PersonalizedStrategyCTA2() {
           <div className="flex flex-col border-b border-white/5">
             <button
               onClick={() => setGoalsExpanded(!goalsExpanded)}
-              className="flex items-center justify-between p-5 transition-colors hover:bg-white/5"
+              className="flex items-center justify-between text-left p-5 transition-colors hover:bg-white/5"
             >
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1A3A2C]">
-                  <Goal className="h-4 w-4 text-[#30D158]" />
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[15px] font-medium text-white">Goals</span>
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/5 text-xs font-medium text-[#8DA69B]">
-                    {goalsLoading ? '...' : goals.length}
+              <div className="flex min-w-0 flex-1 items-center gap-4">
+                <div className="flex shrink-0 items-center gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1A3A2C]">
+                    <Goal className="h-4 w-4 text-[#30D158]" />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[15px] font-medium text-white">Goals</span>
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white/5 text-xs font-medium text-[#8DA69B]">
+                      {goalsLoading ? '...' : goals.length}
+                    </div>
                   </div>
                 </div>
-                <span className="ml-4 text-sm text-[#8DA69B]">{goals.length === 0 ? 'No Goals added yet' : ''}</span>
+                <div className="min-w-0 flex-1 pl-4">
+                  <div className="text-sm font-normal text-[#8DA69B] line-clamp-2 sm:line-clamp-1">
+                    {goalsLoading ? 'Loading…' : goalsPreview}
+                  </div>
+                </div>
               </div>
-              <ChevronDown className={`h-5 w-5 text-[#B0B8BD] transition-transform ${goalsExpanded ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`h-5 w-5 shrink-0 text-[#B0B8BD] transition-transform ${goalsExpanded ? 'rotate-180' : ''}`} />
             </button>
 
             {goalsExpanded && (
@@ -404,7 +415,7 @@ export function PersonalizedStrategyCTA2() {
           <div className="flex flex-col border-b border-[#1E3D2F]">
             <button
               onClick={() => setLifeEventsExpanded(!lifeEventsExpanded)}
-              className={`flex items-center justify-between px-5 py-5 ${lifeEventsExpanded ? 'border-b border-[#1E3D2F]' : ''}`}
+              className={`flex items-center justify-between text-left px-5 py-5 ${lifeEventsExpanded ? 'border-b border-[#1E3D2F]' : ''}`}
             >
               <div className="flex flex-1 items-center gap-4">
                 <div className="flex items-center gap-4">
@@ -509,7 +520,7 @@ export function PersonalizedStrategyCTA2() {
           <div className="flex flex-col">
             <button
               onClick={() => setExternalAccountsExpanded(!externalAccountsExpanded)}
-              className="flex items-center justify-between px-5 py-5"
+              className="flex items-center justify-between text-left px-5 py-5"
             >
               <div className="flex flex-1 items-center gap-4">
                 <div className="h-10 w-10 rounded-full bg-[#1A3A2C] flex items-center justify-center">
