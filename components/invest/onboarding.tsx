@@ -8,6 +8,7 @@ import { Label } from '../ui/label';
 import { Select } from '../ui/select';
 import { Separator } from '../ui/separator';
 import { Checkbox } from '../ui/checkbox';
+import { appendParamToUrl, getInvestRedirectUri } from '@/lib/utils';
 import { AccountService } from '@/services/account.service';
 import { toast } from 'sonner';
 import { InvestmentChoice, useUser, useUserStore } from '@/store/user.store';
@@ -215,9 +216,11 @@ export function InvestOnboarding({ initialStep = 0, investmentChoice }: InvestOn
 
       toast.success('Redirecting to verification page to complete onboarding.');
       setTimeout(() => {
-        router.push('/invest');
         if (verificationUrl) {
-          window.open(verificationUrl, '_blank');
+          const url = appendParamToUrl(verificationUrl, 'redirect-uri', getInvestRedirectUri());
+          window.location.assign(url);
+        } else {
+          router.push('/invest');
         }
       }, 3000);
     } catch (error: any) {

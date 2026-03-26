@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Clock3, ShieldX, RefreshCw, Loader2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { appendParamToUrl, getInvestRedirectUri } from '@/lib/utils';
 import { AccountService } from '@/services/account.service';
 import { useUser } from '@/store/user.store';
 import { useAccountStore, type OnboardingGateStatus } from '@/store/account.store';
@@ -43,14 +44,16 @@ export function OnboardingStatusGate({
       const data = await AccountService.restartComplianceWorkflow(accountId);
       const url = pickVerificationUrl(data);
       if (url) {
-        window.open(url, '_blank', 'noopener,noreferrer');
+        const target = appendParamToUrl(url, 'redirect-uri', getInvestRedirectUri());
         toast.success('Retry verification to complete onboarding.');
+        await onAccountRefresh();
+        window.location.assign(target);
       } else {
         toast.message('Verification workflow updated', {
           description: 'Use Refresh to check your account status.',
         });
+        await onAccountRefresh();
       }
-      await onAccountRefresh();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Could not start verification';
       toast.error(message);
