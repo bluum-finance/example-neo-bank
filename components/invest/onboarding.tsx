@@ -103,14 +103,14 @@ export function InvestOnboarding({ initialStep = 0, investmentChoice }: InvestOn
     setFormData((prev) => ({
       ...prev,
       profile: {
-        firstName: user.firstName || user.name?.split(' ')[0] || 'Oluwatosin',
-        lastName: user.lastName || user.name?.split(' ')[1] || 'Einstein',
-        dateOfBirth: user.dateOfBirth || '01/09/1908',
-        phoneNumber: user.phoneNumber || '+1 (341) 213–8356',
-        address: user.streetAddress?.[0] || '000 MB Bush Way',
-        city: user.city || 'Senal',
+        firstName: user.firstName || user.name?.split(' ')[0] || 'John',
+        lastName: user.lastName || user.name?.split(' ')[1] || 'Doe',
+        dateOfBirth: user.dateOfBirth || '1990-01-15',
+        phoneNumber: user.phoneNumber || '+15551234567',
+        address: user.streetAddress?.[0] || '123 Investment Ave',
+        city: user.city || 'San Francisco',
         state: user.state || 'CA',
-        zip: user.postalCode || '12122',
+        zip: user.postalCode || '94105',
       },
     }));
   }, [user]);
@@ -170,7 +170,7 @@ export function InvestOnboarding({ initialStep = 0, investmentChoice }: InvestOn
       const payload = {
         account_type: 'trading',
         contact: {
-          email_address: user.email,
+          email_address: user.email || 'demo1x11@bluuminvest.com',
           phone_number: formData.profile.phoneNumber,
           street_address: [formData.profile.address],
           city: formData.profile.city,
@@ -182,7 +182,7 @@ export function InvestOnboarding({ initialStep = 0, investmentChoice }: InvestOn
           first_name: formData.profile.firstName,
           last_name: formData.profile.lastName,
           date_of_birth: formData.profile.dateOfBirth,
-          tax_id: '000-00-0000', // Default or handled by backend
+          tax_id: '444-55-4321',
           tax_id_type: 'SSN',
           country_of_citizenship: 'US',
           country_of_birth: user.countryOfBirth || 'US',
