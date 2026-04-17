@@ -14,16 +14,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'amount is required' }, { status: 400 });
     }
 
-    if (!body.funding_source_id) {
-      return NextResponse.json({ error: 'funding_source_id is required' }, { status: 400 });
+    const method = body.method === 'ach_plaid' ? 'ach' : body.method;
+    if (!method || !['ach', 'wire'].includes(method)) {
+      return NextResponse.json({ error: 'method is required and must be ach or wire' }, { status: 400 });
     }
 
     const withdrawalData = {
       amount: body.amount,
       currency: body.currency || 'USD',
-      method: body.method || 'ach_plaid',
-      funding_source_id: body.funding_source_id,
+      method,
       description: body.description,
+      wire_options: body.wire_options,
     };
 
     const response = await bluumApi.createWithdrawal(accountId, withdrawalData, body.idempotency_key);

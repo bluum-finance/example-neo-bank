@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Building2, ArrowRight, Loader2, X, Trash2, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { Building2, ArrowRight, Loader2, X, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,9 @@ import { Select } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { PlaidLink } from '@/components/payment/plaid/plaid-link';
 import { PlaidService, type ConnectedAccount } from '@/services/plaid.service';
+import { TransferService } from '@/services/transfer.service';
 import { toast } from 'sonner';
+import type { ExternalWithdrawalResponse } from '@/types/bluum';
 
 interface WithdrawalDialogProps {
   accountId: string;
@@ -18,20 +20,15 @@ interface WithdrawalDialogProps {
   onCancel?: () => void;
 }
 
-type WithdrawalMethod = 'plaid' | 'manual';
-type Step = 1 | 2;
+type WithdrawalMethod = 'ach' | 'wire';
+type Step = 1 | 2 | 3;
 
 export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCancel }: WithdrawalDialogProps) {
   const [step, setStep] = useState<Step>(1);
   const [amount, setAmount] = useState('');
   const [processing, setProcessing] = useState(false);
-  const [withdrawalMethod, setWithdrawalMethod] = useState<WithdrawalMethod>('plaid');
-
-  // Bank transfer fields (for manual entry)
-  const [bankName, setBankName] = useState('');
-  const [routingNumber, setRoutingNumber] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
-  const [accountHolderName, setAccountHolderName] = useState('');
+  const [withdrawalMethod, setWithdrawalMethod] = useState<WithdrawalMethod>('ach');
+  const [withdrawalResponse, setWithdrawalResponse] = useState<ExternalWithdrawalResponse | null>(null);
 
   // Plaid fields
   const [publicToken, setPublicToken] = useState<string | null>(null);
@@ -39,18 +36,10 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
   const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
 
-  const formatRoutingNumber = (value: string) => {
-    return value.replace(/\D/g, '').substring(0, 9);
-  };
-
-  const formatAccountNumber = (value: string) => {
-    return value.replace(/\D/g, '');
-  };
-
   // Load connected Plaid accounts
   useEffect(() => {
     const loadConnectedAccounts = async () => {
-      if (withdrawalMethod === 'plaid') {
+      if (withdrawalMethod === 'ach') {
         setLoadingAccounts(true);
         try {
           const accounts = await PlaidService.getConnectedAccounts(accountId);
@@ -133,11 +122,11 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
       toast.error('Insufficient balance');
       return false;
     }
-    if (withdrawalMethod === 'plaid' && connectedAccounts.length > 0 && !selectedPlaidAccount) {
+    if (withdrawalMethod === 'ach' && connectedAccounts.length > 0 && !selectedPlaidAccount) {
       toast.error('Please select a destination account');
       return false;
     }
-    if (withdrawalMethod === 'plaid' && connectedAccounts.length === 0 && !publicToken) {
+    if (withdrawalMethod === 'ach' && connectedAccounts.length === 0 && !publicToken) {
       toast.error('Please connect a bank account');
       return false;
     }
@@ -165,43 +154,45 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
     try {
       const amountStr = parseFloat(amount).toFixed(2);
 
-      if (withdrawalMethod === 'plaid') {
-        const request: any = {
-          amount: amountStr,
-          currency: 'USD',
-          description: `Plaid ACH withdrawal of $${amountStr}`,
-        };
-
-        if (connectedAccounts.length > 0 && !publicToken) {
-          const selectedItem =
-            connectedAccounts.find((item) => item.accounts.some((acc) => acc.accountId === selectedPlaidAccount)) || connectedAccounts[0];
-
-          request.item_id = selectedItem.itemId || selectedItem.providerId;
-          if (selectedPlaidAccount) {
-            request.plaid_account_id = selectedPlaidAccount;
-          } else if (selectedItem.accounts.length > 0) {
-            request.plaid_account_id = selectedItem.accounts[0].accountId;
-          }
-        } else if (publicToken) {
-          request.public_token = publicToken;
-          if (selectedPlaidAccount) {
-            request.plaid_account_id = selectedPlaidAccount;
-          }
+      if (withdrawalMethod === 'ach') {
+        if (connectedAccounts.length > 0 && !selectedPlaidAccount) {
+          toast.error('Please select a destination account');
+          setProcessing(false);
+          return;
         }
 
-        await PlaidService.initiateWithdrawal(accountId, request);
-        toast.success('Withdrawal initiated successfully! Funds will be transferred once the ACH completes.');
-        onSuccess?.();
-        return;
+        if (connectedAccounts.length === 0 && !publicToken) {
+          toast.error('Please connect a bank account');
+          setProcessing(false);
+          return;
+        }
       }
 
-      toast.error('Manual bank transfers not available at this time');
-      setProcessing(false);
+      const response = await TransferService.createWithdrawal(accountId, {
+        amount: amountStr,
+        currency: 'USD',
+        method: withdrawalMethod,
+        description:
+          withdrawalMethod === 'ach'
+            ? `ACH withdrawal of $${amountStr}`
+            : `Wire withdrawal of $${amountStr}`,
+        wire_options: withdrawalMethod === 'wire' ? {} : undefined,
+      });
+
+      setWithdrawalResponse(response);
+      setStep(3);
+      toast.success('Withdrawal initiated successfully!');
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to process withdrawal';
       toast.error(errorMessage);
+    } finally {
       setProcessing(false);
     }
+  };
+
+  const handleDone = () => {
+    onSuccess?.();
+    onCancel?.();
   };
 
   const getSelectedAccountDetails = () => {
@@ -277,48 +268,72 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
             {step === 1 && (
               <>
                 <div className="flex flex-col gap-2">
-                  <Label className="text-white text-sm font-medium leading-5">Destination account</Label>
-                  {loadingAccounts ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-[#57B75C]" />
-                    </div>
-                  ) : connectedAccounts.length > 0 ? (
-                    <div className="flex flex-col gap-2">
-                      <Select
-                        value={selectedPlaidAccount || ''}
-                        onChange={(e) => setSelectedPlaidAccount(e.target.value || null)}
-                        className="h-11 bg-[#07120F] border-[#1E3D2F] text-white focus-visible:ring-0 focus-visible:border-[#57B75C] rounded-lg"
-                        disabled={processing}
-                      >
-                        <option value="">Select account...</option>
-                        {connectedAccounts.map((item) =>
-                          item.accounts.map((account) => (
-                            <option key={account.accountId} value={account.accountId}>
-                              {item.institutionName} •••• {account.mask} - {account.accountName}
-                            </option>
-                          ))
-                        )}
-                      </Select>
-                      <div className="text-xs text-[#9DB9AB]">
-                        Add a new linked account
-                        <PlaidLink accountId={accountId} onSuccess={handlePlaidSuccess} className="inline bg-transparent! p-1">
-                          <span className="text-[#57B75C] text-sm hover:underline cursor-pointer font-medium">Connect Account</span>
+                  <Label className="text-white text-sm font-medium leading-5">Transfer method</Label>
+                  <Select
+                    value={withdrawalMethod}
+                    onChange={(e) => setWithdrawalMethod(e.target.value as WithdrawalMethod)}
+                    className="h-11 bg-[#07120F] border-[#1E3D2F] text-white focus-visible:ring-0 focus-visible:border-[#57B75C] rounded-lg"
+                    disabled={processing}
+                  >
+                    <option value="ach">ACH (linked bank)</option>
+                    <option value="wire">Wire transfer</option>
+                  </Select>
+                  <p className="text-xs text-[#9DB9AB]">
+                    {withdrawalMethod === 'ach'
+                      ? 'Use a linked bank account to receive ACH transfers.'
+                      : 'Wire transfers will use bank instructions provided after submission.'}
+                  </p>
+                </div>
+
+                {withdrawalMethod === 'ach' ? (
+                  <div className="flex flex-col gap-2">
+                    <Label className="text-white text-sm font-medium leading-5">Destination account</Label>
+                    {loadingAccounts ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-[#57B75C]" />
+                      </div>
+                    ) : connectedAccounts.length > 0 ? (
+                      <div className="flex flex-col gap-2">
+                        <Select
+                          value={selectedPlaidAccount || ''}
+                          onChange={(e) => setSelectedPlaidAccount(e.target.value || null)}
+                          className="h-11 bg-[#07120F] border-[#1E3D2F] text-white focus-visible:ring-0 focus-visible:border-[#57B75C] rounded-lg"
+                          disabled={processing}
+                        >
+                          <option value="">Select account...</option>
+                          {connectedAccounts.map((item) =>
+                            item.accounts.map((account) => (
+                              <option key={account.accountId} value={account.accountId}>
+                                {item.institutionName} •••• {account.mask} - {account.accountName}
+                              </option>
+                            ))
+                          )}
+                        </Select>
+                        <div className="text-xs text-[#9DB9AB]">
+                          Add a new linked account
+                          <PlaidLink accountId={accountId} onSuccess={handlePlaidSuccess} className="inline bg-transparent! p-1">
+                            <span className="text-[#57B75C] text-sm hover:underline cursor-pointer font-medium">Connect Account</span>
+                          </PlaidLink>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-8 gap-4 border-2 border-dashed border-[#1E3D2F] rounded-xl">
+                        <Building2 className="h-12 w-12 text-[#1E3D2F]" />
+                        <div className="text-center">
+                          <p className="text-white font-medium">No bank account connected</p>
+                          <p className="text-[#9DB9AB] text-sm">Connect your bank to start withdrawing funds</p>
+                        </div>
+                        <PlaidLink accountId={accountId} onSuccess={handlePlaidSuccess}>
+                          <Button className="bg-[#57B75C] hover:bg-[#57B75C]/90 text-white px-8 rounded-full">Connect Bank Account</Button>
                         </PlaidLink>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-8 gap-4 border-2 border-dashed border-[#1E3D2F] rounded-xl">
-                      <Building2 className="h-12 w-12 text-[#1E3D2F]" />
-                      <div className="text-center">
-                        <p className="text-white font-medium">No bank account connected</p>
-                        <p className="text-[#9DB9AB] text-sm">Connect your bank to start withdrawing funds</p>
-                      </div>
-                      <PlaidLink accountId={accountId} onSuccess={handlePlaidSuccess}>
-                        <Button className="bg-[#57B75C] hover:bg-[#57B75C]/90 text-white px-8 rounded-full">Connect Bank Account</Button>
-                      </PlaidLink>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-[#07120F] border border-[#1E3D2F] rounded-lg p-4 text-sm text-[#9DB9AB]">
+                    Wire transfer instructions will be shown once your withdrawal is submitted.
+                  </div>
+                )}
 
                 <div className="bg-[#124031] border border-[#1E3D2F]/50 rounded-lg p-3 flex gap-3 items-start">
                   <CheckCircle2 className="h-4 w-4 text-[#0FBD66] shrink-0 mt-0.5" />
@@ -351,17 +366,21 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                     <div className="h-px w-full bg-[#1E3D2F]" />
 
                     <div className="flex justify-between items-start">
-                      <span className="text-[#9DB9AB] text-sm">Destination Account</span>
+                      <span className="text-[#9DB9AB] text-sm">Destination</span>
                       <div className="text-right">
-                        {getSelectedAccountDetails() ? (
-                          <>
-                            <div className="text-white text-sm font-medium">{getSelectedAccountDetails()!.institutionName}</div>
-                            <div className="text-[#9DB9AB] text-xs mt-1">
-                              {getSelectedAccountDetails()!.accountName} •••• {getSelectedAccountDetails()!.mask}
-                            </div>
-                          </>
+                        {withdrawalMethod === 'ach' ? (
+                          getSelectedAccountDetails() ? (
+                            <>
+                              <div className="text-white text-sm font-medium">{getSelectedAccountDetails()!.institutionName}</div>
+                              <div className="text-[#9DB9AB] text-xs mt-1">
+                                {getSelectedAccountDetails()!.accountName} •••• {getSelectedAccountDetails()!.mask}
+                              </div>
+                            </>
+                          ) : (
+                            <span className="text-[#9DB9AB] text-sm">Not selected</span>
+                          )
                         ) : (
-                          <span className="text-[#9DB9AB] text-sm">Not selected</span>
+                          <span className="text-[#9DB9AB] text-sm">Wire transfer</span>
                         )}
                       </div>
                     </div>
@@ -370,7 +389,9 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
 
                     <div className="flex justify-between items-center">
                       <span className="text-[#9DB9AB] text-sm">Estimated Arrival</span>
-                      <span className="text-white text-sm font-medium">1-3 business days</span>
+                      <span className="text-white text-sm font-medium">
+                        {withdrawalMethod === 'wire' ? 'Same day (business hours)' : '1-3 business days'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -383,22 +404,65 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                 </div>
               </div>
             )}
+
+            {step === 3 && withdrawalResponse && (
+              <div className="flex flex-col gap-6">
+                <div className="bg-[#07120F] border border-[#1E3D2F] rounded-lg p-4 flex flex-col gap-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-white text-lg font-semibold">Withdrawal submitted</h3>
+                      <p className="text-[#9DB9AB] text-sm">Your {withdrawalResponse.method} withdrawal is now pending.</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-[#9DB9AB]">Status</div>
+                      <div className="text-white text-sm font-semibold capitalize">{withdrawalResponse.status}</div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <div className="text-[#9DB9AB]">Amount</div>
+                      <div className="text-white font-semibold">${parseFloat(withdrawalResponse.amount).toFixed(2)}</div>
+                    </div>
+                    <div>
+                      <div className="text-[#9DB9AB]">Withdrawal ID</div>
+                      <div className="text-white font-semibold">{withdrawalResponse.withdrawal_id}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {withdrawalResponse.method_details && (
+                  <div className="bg-[#07120F] border border-[#1E3D2F]/70 rounded-xl p-5 space-y-3">
+                    <h4 className="text-white font-semibold">Transfer details</h4>
+                    <div className="text-sm text-[#9DB9AB]">
+                      Transfer ID:{' '}
+                      <span className="text-white">{(withdrawalResponse.method_details as any).transferId || 'Pending assignment'}</span>
+                    </div>
+                    <div className="text-sm text-[#9DB9AB]">
+                      Provider status:{' '}
+                      <span className="text-white">{(withdrawalResponse.method_details as any).alpacaStatus || 'Pending'}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Footer */}
           <div className="w-full py-4 flex flex-col gap-4">
             <p className="text-center text-[#A1BEAD] text-xs leading-4.5">Withdrawals may take 1–3 business days depending on method.</p>
             <div className="flex gap-3">
+              {step < 3 && (
+                <Button
+                  variant="ghost"
+                  onClick={step === 1 ? onCancel : handleBack}
+                  className="flex-1 px-6 h-11 bg-transparent border border-[#1E3D2F] hover:bg-[#1E3D2F] text-white rounded-lg font-medium"
+                  disabled={processing}
+                >
+                  {step === 1 ? 'Cancel' : 'Back'}
+                </Button>
+              )}
               <Button
-                variant="ghost"
-                onClick={step === 1 ? onCancel : handleBack}
-                className="flex-1 px-6 h-11 bg-transparent border border-[#1E3D2F] hover:bg-[#1E3D2F] text-white rounded-lg font-medium"
-                disabled={processing}
-              >
-                {step === 1 ? 'Cancel' : 'Back'}
-              </Button>
-              <Button
-                onClick={handleNext}
+                onClick={step === 3 ? handleDone : handleNext}
                 className="flex-1 px-6 h-11 bg-[#57B75C] hover:bg-[#57B75C]/90 text-white rounded-full font-semibold flex items-center justify-center gap-2"
                 disabled={processing}
               >
@@ -412,11 +476,13 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                     Review
                     <ArrowRight className="h-4 w-4" />
                   </>
-                ) : (
+                ) : step === 2 ? (
                   <>
                     Confirm Withdrawal
                     <ArrowRight className="h-4 w-4" />
                   </>
+                ) : (
+                  <>Done</>
                 )}
               </Button>
             </div>

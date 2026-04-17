@@ -18,45 +18,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Map legacy format (funding_details) or new format (plaidOptions) to createDeposit format
+    // Map legacy format (funding_details/plaidOptions) to external contract payload
     let depositData: any;
 
     if (body.plaidOptions) {
-      // New format: direct plaid_options structure
       depositData = {
         amount: body.amount,
         currency: body.currency || 'USD',
-        method: body.method || 'ach_plaid',
+        method: body.method === 'ach_plaid' ? 'ach' : body.method || 'ach',
         description: body.description,
-        plaid_options: body.plaidOptions,
+        manual_options: body.manual_options,
+        wire_options: body.wire_options,
       };
     } else if (body.funding_details) {
-      // Legacy format: map to new format
       if (body.public_token) {
-        // Plaid connection
         depositData = {
           amount: body.amount,
           currency: body.funding_details.fiat_currency || 'USD',
-          method: body.funding_details.method === 'ach' ? 'ach_plaid' : 'wire',
+          method: body.funding_details.method === 'ach' ? 'ach' : 'wire',
           description: body.description,
-          plaid_options: {
-            public_token: body.public_token,
-          },
+          wire_options: body.wire_options,
         };
       } else {
-        // Manual bank transfer
         depositData = {
           amount: body.amount,
           currency: body.funding_details.fiat_currency || 'USD',
           method: 'manual_bank_transfer',
           description: body.description,
+          manual_options: body.manual_options,
         };
       }
     } else {
       return NextResponse.json(
-        { error: 'Either plaidOptions or funding_details is required' },
+        { error: 'Either contract payload fields or funding_details is required' },
         { status: 400 }
       );
+    }
+
+    if (!['ach', 'manual_bank_transfer', 'wire'].includes(depositData.method)) {
+      return NextResponse.json({ error: 'method must be one of ach, manual_bank_transfer, or wire' }, { status: 400 });
     }
 
     const response = await bluumApi.createDeposit(accountId, depositData, body.external_reference_id);
@@ -70,4 +70,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowRight, Loader2, X, CreditCard, Wallet, Info, ChevronDown } from 'lucide-react';
+import { ArrowRight, ArrowLeftRight, Wallet, Loader2, X, Info, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { AccountsIcon } from '../icons/nav-icons';
 import { TransferService } from '@/services/transfer.service';
 import { useAccountStore } from '@/store/account.store';
+import type { ExternalDepositResponse } from '@/types/bluum';
 
 interface DepositDialogProps {
   accountId: string;
@@ -17,20 +18,27 @@ interface DepositDialogProps {
   onCancel?: () => void;
 }
 
-type PaymentMethod = 'plaid' | 'card' | 'wallet';
-type Step = 1 | 2;
+type DepositMethod = 'ach' | 'wire' | 'manual_bank_transfer';
+type Step = 1 | 2 | 3;
 
 export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogProps) {
   const [step, setStep] = useState<Step>(1);
   const [amount, setAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('wallet');
+  const [depositMethod, setDepositMethod] = useState<DepositMethod>('manual_bank_transfer');
   const [processing, setProcessing] = useState(false);
+  const [depositResponse, setDepositResponse] = useState<ExternalDepositResponse | null>(null);
 
-  const PAYMENT_METHODS = [
-    { id: 'wallet', label: 'Digital Wallet', icon: Wallet },
-    { id: 'plaid', label: 'Bank Transfer', icon: AccountsIcon },
-    { id: 'card', label: 'Credit Card', icon: CreditCard },
+  const DEPOSIT_METHODS = [
+    { id: 'manual_bank_transfer', label: 'Digital Wallet', icon: Wallet },
+    { id: 'ach', label: 'ACH Transfer', icon: AccountsIcon },
+    { id: 'wire', label: 'Wire Transfer', icon: ArrowLeftRight },
   ] as const;
+
+  const METHOD_LABELS: Record<DepositMethod, string> = {
+    ach: 'ACH Transfer',
+    wire: 'Wire Transfer',
+    manual_bank_transfer: 'Digital Wallet',
+  };
 
   const validateStep1 = () => {
     if (!amount || parseFloat(amount) <= 0) {
@@ -40,12 +48,14 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
     return true;
   };
 
-  const validateStep2 = () => {
-    if (paymentMethod === 'wallet') {
-      return true;
+  const getArrivalEstimate = (method: DepositMethod) => {
+    if (method === 'wire') {
+      return 'Same day (business hours)';
     }
-    toast.error('This payment method is not yet available');
-    return false;
+    if (method === 'manual_bank_transfer') {
+      return '1-3 business days after transfer';
+    }
+    return '1-3 business days';
   };
 
   const handleNext = () => {
@@ -54,9 +64,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
         setStep(2);
       }
     } else if (step === 2) {
-      if (validateStep2()) {
-        handleSubmit();
-      }
+      handleSubmit();
     }
   };
 
@@ -67,30 +75,147 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
   };
 
   const handleSubmit = async () => {
-    if (paymentMethod !== 'wallet') {
-      toast.error('This payment method is not yet available');
-      return;
-    }
-
     setProcessing(true);
     try {
-      await TransferService.createDeposit(accountId, {
-        amount: amount,
+      const amountValue = parseFloat(amount);
+      const amountStr = amountValue.toFixed(2);
+      const response = await TransferService.createDeposit(accountId, {
+        amount: amountStr,
         currency: 'USD',
-        method: 'manual_bank_transfer',
-        description: 'Wallet deposit',
+        method: depositMethod,
+        description: `${METHOD_LABELS[depositMethod]} deposit`,
+        manual_options: depositMethod === 'manual_bank_transfer' ? {} : undefined,
+        wire_options: depositMethod === 'wire' ? {} : undefined,
       });
 
+      setDepositResponse(response);
+      setStep(3);
       toast.success('Deposit initiated successfully');
       // Refetch account balance to reflect the new deposit
       useAccountStore.getState().fetchAccount(accountId).catch(() => null);
-      onSuccess?.();
     } catch (error: any) {
       console.error('Deposit error:', error);
       toast.error(error.message || 'An error occurred during deposit');
     } finally {
       setProcessing(false);
     }
+  };
+
+  const handleDone = () => {
+    onSuccess?.();
+    onCancel?.();
+  };
+
+  const renderDepositInstructions = () => {
+    if (!depositResponse) {
+      return null;
+    }
+
+    const methodDetails = depositResponse.method_details as any;
+    const responseMethod = depositResponse.method || depositMethod;
+    const fundingDetails = methodDetails?.fundingDetails || methodDetails?.funding_details;
+    const referenceCode = methodDetails?.referenceCode;
+    const bankDetails = methodDetails?.bankDetails;
+    const expiresAt = depositResponse.expires_at || methodDetails?.expiresAt;
+
+    return (
+      <div className="flex flex-col gap-4">
+        <div className="bg-[#07120F] border border-[#1F4536] rounded-xl p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-white font-bold text-lg">Deposit submitted</h3>
+              <p className="text-[#9DB9AB] text-sm">Your {METHOD_LABELS[responseMethod]} is now pending.</p>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-[#9DB9AB]">Status</div>
+              <div className="text-white text-sm font-semibold capitalize">{depositResponse.status}</div>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <div className="text-[#9DB9AB]">Amount</div>
+              <div className="text-white font-semibold">${parseFloat(depositResponse.amount).toFixed(2)}</div>
+            </div>
+            <div>
+              <div className="text-[#9DB9AB]">Deposit ID</div>
+              <div className="text-white font-semibold">{depositResponse.deposit_id}</div>
+            </div>
+          </div>
+        </div>
+
+        {responseMethod === 'ach' && (
+          <div className="bg-[#07120F] border border-[#1F4536]/70 rounded-xl p-5 space-y-3">
+            <h4 className="text-white font-semibold">ACH transfer details</h4>
+            <div className="text-sm text-[#9DB9AB]">
+              Transfer ID: <span className="text-white">{methodDetails?.transferId || 'Pending assignment'}</span>
+            </div>
+            <div className="text-sm text-[#9DB9AB]">
+              Provider status: <span className="text-white">{methodDetails?.alpacaStatus || 'Pending'}</span>
+            </div>
+          </div>
+        )}
+
+        {responseMethod === 'wire' && (
+          <div className="bg-[#07120F] border border-[#1F4536]/70 rounded-xl p-5 space-y-3">
+            <h4 className="text-white font-semibold">Wire instructions</h4>
+            {Array.isArray(fundingDetails) && fundingDetails.length > 0 ? (
+              <div className="space-y-3 text-sm">
+                {fundingDetails.map((detail: any, index: number) => (
+                  <div key={`${detail?.account_number || 'wire'}-${index}`} className="rounded-lg border border-[#1F4536] p-3">
+                    <div className="text-[#9DB9AB]">Bank</div>
+                    <div className="text-white font-semibold">{detail?.bank_name || 'Provided by bank'}</div>
+                    <div className="mt-2 text-[#9DB9AB]">Account Number</div>
+                    <div className="text-white font-semibold">{detail?.account_number || 'Provided by bank'}</div>
+                    <div className="mt-2 text-[#9DB9AB]">Routing Code</div>
+                    <div className="text-white font-semibold">{detail?.routing_code || 'Provided by bank'}</div>
+                    <div className="mt-2 text-[#9DB9AB]">Currency</div>
+                    <div className="text-white font-semibold">{detail?.currency || 'USD'}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-[#9DB9AB]">Wire instructions will be available once the provider prepares them.</p>
+            )}
+          </div>
+        )}
+
+        {responseMethod === 'manual_bank_transfer' && (
+          <div className="bg-[#07120F] border border-[#1F4536]/70 rounded-xl p-5 space-y-3">
+            <h4 className="text-white font-semibold">Digital wallet instructions</h4>
+            <div className="text-sm text-[#9DB9AB]">
+              Reference code: <span className="text-white font-semibold">{referenceCode || 'Pending assignment'}</span>
+            </div>
+            {bankDetails && (
+              <div className="space-y-2 text-sm">
+                {bankDetails.bankName && (
+                  <div className="text-[#9DB9AB]">Bank: <span className="text-white">{bankDetails.bankName}</span></div>
+                )}
+                {bankDetails.accountName && (
+                  <div className="text-[#9DB9AB]">Account Name: <span className="text-white">{bankDetails.accountName}</span></div>
+                )}
+                {bankDetails.accountNumber && (
+                  <div className="text-[#9DB9AB]">Account Number: <span className="text-white">{bankDetails.accountNumber}</span></div>
+                )}
+                {bankDetails.routingNumber && (
+                  <div className="text-[#9DB9AB]">Routing Number: <span className="text-white">{bankDetails.routingNumber}</span></div>
+                )}
+                {bankDetails.swiftCode && (
+                  <div className="text-[#9DB9AB]">SWIFT: <span className="text-white">{bankDetails.swiftCode}</span></div>
+                )}
+                {bankDetails.instructions && (
+                  <div className="text-[#9DB9AB]">Instructions: <span className="text-white">{bankDetails.instructions}</span></div>
+                )}
+              </div>
+            )}
+            {expiresAt && (
+              <div className="text-sm text-[#9DB9AB]">
+                Expires: <span className="text-white">{new Date(expiresAt).toLocaleString()}</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -142,16 +267,16 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
                 </div>
 
                 <div className="flex flex-col gap-3">
-                  <Label className="text-[#E2E8F0] text-sm font-medium leading-5">Payment Method</Label>
+                  <Label className="text-[#E2E8F0] text-sm font-medium leading-5">Deposit Method</Label>
 
                   <div className="grid grid-cols-3 gap-3">
-                    {PAYMENT_METHODS.map((method) => {
+                    {DEPOSIT_METHODS.map((method) => {
                       const Icon = method.icon;
-                      const isActive = paymentMethod === method.id;
+                      const isActive = depositMethod === method.id;
                       return (
                         <button
                           key={method.id}
-                          onClick={() => setPaymentMethod(method.id)}
+                          onClick={() => setDepositMethod(method.id)}
                           className={`relative flex flex-col items-center justify-center p-4 rounded-lg border transition-all ${
                             isActive ? 'bg-[#57B75C]/10 border-[#57B75C]' : 'bg-[#07120F] border-[#1F4536] hover:border-[#57B75C]/50'
                           }`}
@@ -177,15 +302,15 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[#9DB9AB] text-sm">Estimated Arrival</span>
-                    <span className="text-white text-sm font-medium">Instant</span>
+                    <span className="text-white text-sm font-medium">{getArrivalEstimate(depositMethod)}</span>
                   </div>
                 </div>
 
                 <div className="bg-[#124031] border border-blue-900/30 rounded-lg p-3 flex gap-3 items-start">
                   <Info className="h-5 w-5 text-[#30D158] shrink-0 mt-0.5" />
                   <p className="text-[#8DA69B] text-xs leading-5">
-                    Deposits are subject to verification and settlement timelines. Funds typically arrive within 1-3 business days depending
-                    on your bank.
+                    Deposits are subject to verification and settlement timelines. ACH deposits typically arrive within 1-3 business days,
+                    while wires may post sooner based on your bank.
                   </p>
                 </div>
               </>
@@ -194,67 +319,54 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
             {/* Step 2: Confirmation or Not Available */}
             {step === 2 && (
               <div className="flex flex-col gap-6">
-                {paymentMethod === 'wallet' ? (
-                  <div className="flex flex-col gap-4">
-                    <div className="bg-[#07120F] border border-[#1F4536] rounded-xl p-6 flex flex-col items-center gap-4">
-                      <div className="h-16 w-16 bg-[#57B75C]/10 rounded-full flex items-center justify-center">
-                        <Wallet className="h-8 w-8 text-[#57B75C]" />
+                <div className="flex flex-col gap-4">
+                  <div className="bg-[#07120F] border border-[#1F4536] rounded-xl p-6 flex flex-col items-center gap-4">
+                    <div className="h-16 w-16 bg-[#57B75C]/10 rounded-full flex items-center justify-center">
+                      {depositMethod === 'ach' && <AccountsIcon className="h-8 w-8 text-[#57B75C]" />}
+                      {depositMethod === 'wire' && <ArrowLeftRight className="h-8 w-8 text-[#57B75C]" />}
+                      {depositMethod === 'manual_bank_transfer' && <Wallet className="h-8 w-8 text-[#57B75C]" />}
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-white font-bold text-lg">Confirm Deposit</h3>
+                      <p className="text-[#9DB9AB] text-sm">You are about to deposit funds via {METHOD_LABELS[depositMethod]}.</p>
+                    </div>
+                    <div className="w-full border-t border-[#1F4536] pt-4 mt-2 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#9DB9AB] text-sm">Amount</span>
+                        <span className="text-white font-bold">
+                          ${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        </span>
                       </div>
-                      <div className="text-center">
-                        <h3 className="text-white font-bold text-lg">Confirm Deposit</h3>
-                        <p className="text-[#9DB9AB] text-sm">You are about to deposit funds from your digital wallet.</p>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#9DB9AB] text-sm">Deposit Method</span>
+                        <span className="text-white font-medium">{METHOD_LABELS[depositMethod]}</span>
                       </div>
-                      <div className="w-full border-t border-[#1F4536] pt-4 mt-2 space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[#9DB9AB] text-sm">Amount</span>
-                          <span className="text-white font-bold">
-                            ${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[#9DB9AB] text-sm">Payment Method</span>
-                          <span className="text-white font-medium">Digital Wallet</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[#9DB9AB] text-sm">Fee</span>
-                          <span className="text-[#57B75C] font-medium">Free</span>
-                        </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#9DB9AB] text-sm">Estimated Arrival</span>
+                        <span className="text-white font-medium">{getArrivalEstimate(depositMethod)}</span>
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-12 gap-4 border border-[#1F4536] rounded-xl bg-[#07120F]">
-                    <div className="h-16 w-16 bg-[#1F4536] rounded-full flex items-center justify-center">
-                      {paymentMethod === 'card' ? (
-                        <CreditCard className="h-8 w-8 text-[#9DB9AB]" />
-                      ) : (
-                        <AccountsIcon className="h-8 w-8 text-[#9DB9AB]" />
-                      )}
-                    </div>
-                    <div className="text-center space-y-2">
-                      <h3 className="text-white font-bold text-lg">Coming Soon</h3>
-                      <p className="text-[#9DB9AB] text-sm max-w-62.5">
-                        {paymentMethod === 'card' ? 'Credit Card' : 'Bank Transfer'} deposits are not available yet. We're working on
-                        bringing this feature to you soon!
-                      </p>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
             )}
+
+            {step === 3 && <div className="flex flex-col gap-6">{renderDepositInstructions()}</div>}
           </div>
           {/* Footer */}
           <div className="w-full py-4 bg-[#0F2A20] border-t border-[#1F4536] flex justify-end items-center gap-3">
+            {step < 3 && (
+              <Button
+                variant="ghost"
+                onClick={step === 1 ? onCancel : handleBack}
+                className="px-6 py-2.5 bg-[#1F4536] hover:bg-[#1F4536]/80! text-white rounded-full font-medium h-11 min-w-25"
+                disabled={processing}
+              >
+                {step === 1 ? 'Cancel' : 'Back'}
+              </Button>
+            )}
             <Button
-              variant="ghost"
-              onClick={step === 1 ? onCancel : handleBack}
-              className="px-6 py-2.5 bg-[#1F4536] hover:bg-[#1F4536]/80! text-white rounded-full font-medium h-11 min-w-25"
-              disabled={processing}
-            >
-              {step === 1 ? 'Cancel' : 'Back'}
-            </Button>
-            <Button
-              onClick={handleNext}
+              onClick={step === 3 ? handleDone : handleNext}
               disabled={processing}
               className="px-6 py-2.5 bg-[#57B75C] hover:bg-[#57B75C]/90 text-white rounded-full font-bold h-11 flex items-center gap-2 min-w-40"
             >
@@ -268,11 +380,13 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
                   Next
                   <ArrowRight className="h-4 w-4" />
                 </>
-              ) : (
+              ) : step === 2 ? (
                 <>
                   Confirm Deposit
                   <ArrowRight className="h-4 w-4" />
                 </>
+              ) : (
+                <>Done</>
               )}
             </Button>
           </div>

@@ -1,3 +1,5 @@
+import type { DepositMethod, ExternalDepositResponse, ExternalWithdrawalResponse, WithdrawalMethod } from '@/types/bluum';
+
 // Helper function to handle API errors
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
@@ -101,11 +103,12 @@ export class InvestmentService {
     account_id: string;
     amount: string;
     currency: string;
-    method: 'ach_plaid' | 'manual_bank_transfer' | 'wire';
-    funding_source_id?: string;
+    method: DepositMethod;
     description?: string;
-    idempotencyKey?: string;
-  }): Promise<any> {
+    manual_options?: Record<string, unknown>;
+    wire_options?: Record<string, unknown>;
+    idempotency_key?: string;
+  }): Promise<ExternalDepositResponse> {
     const response = await fetch('/api/investment/deposits', {
       method: 'POST',
       headers: {
@@ -113,7 +116,7 @@ export class InvestmentService {
       },
       body: JSON.stringify(depositData),
     });
-    return handleResponse(response);
+    return handleResponse<ExternalDepositResponse>(response);
   }
 
   // Withdrawals API
@@ -121,11 +124,11 @@ export class InvestmentService {
     account_id: string;
     amount: string;
     currency: string;
-    method: 'ach_plaid' | 'wire';
-    funding_source_id: string;
+    method: WithdrawalMethod;
     description?: string;
-    idempotencyKey?: string;
-  }): Promise<any> {
+    wire_options?: Record<string, unknown>;
+    idempotency_key?: string;
+  }): Promise<ExternalWithdrawalResponse> {
     const response = await fetch('/api/investment/withdrawals', {
       method: 'POST',
       headers: {
@@ -133,7 +136,7 @@ export class InvestmentService {
       },
       body: JSON.stringify(withdrawalData),
     });
-    return handleResponse(response);
+    return handleResponse<ExternalWithdrawalResponse>(response);
   }
 
   static async getTransactions(

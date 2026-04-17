@@ -215,3 +215,97 @@ export interface WithdrawalRequest {
   description?: string;
   external_reference_id?: string;
 }
+
+// External transfer contract types (deposit/withdrawal)
+export type DepositMethod = 'ach' | 'manual_bank_transfer' | 'wire';
+export type WithdrawalMethod = 'ach' | 'wire';
+
+export interface ManualBankDetails {
+  bankName?: string;
+  bankAddress?: string;
+  accountName?: string;
+  accountNumber?: string;
+  accountKind?: string;
+  routingNumber?: string;
+  swiftCode?: string;
+  beneficiaryAddress?: string;
+  instructions?: string;
+}
+
+export interface ManualBankTransferDetails {
+  referenceCode?: string;
+  bankDetails?: ManualBankDetails;
+  expiresAt?: string;
+}
+
+export interface AlpacaAchDetails {
+  providerName?: string;
+  provider?: string;
+  method?: 'ach';
+  transferId?: string;
+  alpacaStatus?: string;
+  externalDepositId?: string;
+}
+
+export interface AlpacaWireFundingDetail {
+  payment_type?: string;
+  currency?: string;
+  account_number?: string;
+  routing_code?: string;
+  bank_name?: string;
+}
+
+export interface AlpacaWireDetails {
+  providerName?: string;
+  provider?: string;
+  method?: 'wire';
+  fundingDetails?: AlpacaWireFundingDetail[];
+}
+
+export type DepositMethodDetails = AlpacaAchDetails | AlpacaWireDetails | ManualBankTransferDetails | Record<string, unknown>;
+
+export interface ExternalDepositResponse {
+  deposit_id: string;
+  account_id: string;
+  wallet_id?: string;
+  method: DepositMethod;
+  status: string;
+  amount: string;
+  currency: string;
+  description?: string;
+  method_details?: DepositMethodDetails;
+  initiated_at?: string | null;
+  received_at?: string | null;
+  completed_at?: string | null;
+  expires_at?: string | null;
+  failure_reason?: string | null;
+  created_at?: string;
+}
+
+export interface AlpacaWithdrawalDetails {
+  providerName?: string;
+  provider?: string;
+  method?: 'ach' | 'wire';
+  transferId?: string;
+  alpacaStatus?: string;
+}
+
+export type WithdrawalMethodDetails = AlpacaWithdrawalDetails | Record<string, unknown>;
+
+export interface ExternalWithdrawalResponse {
+  withdrawal_id: string;
+  account_id: string;
+  wallet_id?: string;
+  method: WithdrawalMethod;
+  status: string;
+  amount: string;
+  currency: string;
+  description?: string;
+  method_details?: WithdrawalMethodDetails;
+  destination_details?: Record<string, unknown>;
+  initiated_at?: string | null;
+  submitted_at?: string | null;
+  completed_at?: string | null;
+  failure_reason?: string | null;
+  created_at?: string;
+}

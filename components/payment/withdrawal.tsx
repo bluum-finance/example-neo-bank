@@ -198,10 +198,13 @@ export function Withdrawal({ accountId, availableBalance, onSuccess, onCancel }:
 
       // Handle Plaid withdrawals
       if (withdrawalMethod === 'plaid') {
-        const selectedItem =
-          connectedAccounts.find((item) => item.accounts.some((acc) => acc.accountId === selectedPlaidAccount)) || connectedAccounts[0];
+        if (!selectedPlaidAccount && connectedAccounts.length > 0) {
+          toast.error('Please select a bank account');
+          setProcessing(false);
+          return;
+        }
 
-        if (!selectedItem) {
+        if (connectedAccounts.length === 0 && !publicToken) {
           toast.error('Please connect a bank account');
           setProcessing(false);
           return;
@@ -211,7 +214,6 @@ export function Withdrawal({ accountId, availableBalance, onSuccess, onCancel }:
           amount: amountStr,
           currency: 'USD',
           description: `Plaid ACH withdrawal of $${amountStr}`,
-          funding_source_id: selectedItem.id,
         });
         toast.success('Withdrawal initiated successfully! Funds will be transferred once the ACH completes.');
         onSuccess?.();

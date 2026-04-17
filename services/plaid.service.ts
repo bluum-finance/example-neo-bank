@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api-client';
+import type { DepositMethod, WithdrawalMethod } from '@/types/bluum';
 
 export interface PlaidLinkTokenResponse {
   status: string;
@@ -10,15 +11,18 @@ export interface PlaidLinkTokenResponse {
 export interface CreateDepositRequest {
   amount: string;
   currency: string;
-  funding_source_id?: string;
   description?: string;
+  method?: DepositMethod;
+  manual_options?: Record<string, unknown>;
+  wire_options?: Record<string, unknown>;
 }
 
 export interface InitiateWithdrawalRequest {
   amount: string;
   currency: string;
-  funding_source_id: string;
   description?: string;
+  method?: WithdrawalMethod;
+  wire_options?: Record<string, unknown>;
 }
 
 export interface ConnectedAccount {
@@ -62,8 +66,9 @@ export class PlaidService {
       amount: request.amount,
       currency: request.currency,
       description: request.description,
-      method: 'ach_plaid',
-      funding_source_id: request.funding_source_id,
+      method: request.method || 'ach',
+      manual_options: request.manual_options,
+      wire_options: request.wire_options,
     });
     return response.data;
   }
@@ -77,9 +82,9 @@ export class PlaidService {
       account_id: accountId,
       amount: request.amount,
       currency: request.currency,
-      method: 'ach_plaid',
-      funding_source_id: request.funding_source_id,
+      method: request.method || 'ach',
       description: request.description,
+      wire_options: request.wire_options,
     });
     return response.data;
   }
