@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { ArrowRight, ArrowLeftRight, Wallet, Loader2, X, Info, ChevronDown } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowRight, ArrowLeftRight, Wallet, Loader2, X, Info, ChevronDown, Building2, Plus, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { AccountsIcon } from '../icons/nav-icons';
 import { TransferService } from '@/services/transfer.service';
+import { PlaidService, type ConnectedAccount } from '@/services/plaid.service';
+import { PlaidLink } from './plaid/plaid-link';
 import { useAccountStore } from '@/store/account.store';
 import type { ExternalDepositResponse } from '@/types/bluum';
 
@@ -28,6 +30,10 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
   const [processing, setProcessing] = useState(false);
   const [depositResponse, setDepositResponse] = useState<ExternalDepositResponse | null>(null);
 
+  const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
+  const [selectedPlaidItemId, setSelectedPlaidItemId] = useState<string | null>(null);
+
   const DEPOSIT_METHODS = [
     { id: 'manual_bank_transfer', label: 'Digital Wallet', icon: Wallet },
     { id: 'ach', label: 'ACH Transfer', icon: AccountsIcon },
@@ -40,45 +46,75 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
     manual_bank_transfer: 'Digital Wallet',
   };
 
+  useEffect(() => {
+    if (depositMethod === 'ach') {
+      fetchConnectedAccounts();
+    }
+  }, [depositMethod]);
+
+  const fetchConnectedAccounts = async () => {
+    setLoadingAccounts(true);
+    try {
+      const items = await PlaidService.getConnectedAccounts(accountId);
+      setConnectedAccounts(items);
+      if (items.length > 0 && !selectedPlaidItemId) {
+        setSelectedPlaidItemId(items[0].itemId || items[0].id);
+      }
+    } catch (err: any) {
+      toast.error('Failed to load connected bank accounts');
+    } finally {
+      setLoadingAccounts(false);
+    }
+  };
+
+  const handlePlaidSuccess = async (publicToken: string) => {
+    try {
+      await PlaidService.connectAccount(accountId, publicToken);
+      toast.success('Bank account connected');
+      await fetchConnectedAccounts();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to connect bank account');
+    }
+  };
+
   const validateStep1 = () => {
     if (!amount || parseFloat(amount) <= 0) {
       toast.error('Please enter a valid amount');
+      return false;
+    }
+    if (depositMethod === 'ach' && connectedAccounts.length === 0) {
+      toast.error('Please connect a bank account for ACH transfers');
+      return false;
+    }
+    if (depositMethod === 'ach' && !selectedPlaidItemId) {
+      toast.error('Please select a bank account');
       return false;
     }
     return true;
   };
 
   const getArrivalEstimate = (method: DepositMethod) => {
-    if (method === 'wire') {
-      return 'Same day (business hours)';
-    }
-    if (method === 'manual_bank_transfer') {
-      return '1-3 business days after transfer';
-    }
+    if (method === 'wire') return 'Same day (business hours)';
+    if (method === 'manual_bank_transfer') return '1-3 business days after transfer';
     return '1-3 business days';
   };
 
   const handleNext = () => {
     if (step === 1) {
-      if (validateStep1()) {
-        setStep(2);
-      }
+      if (validateStep1()) setStep(2);
     } else if (step === 2) {
       handleSubmit();
     }
   };
 
   const handleBack = () => {
-    if (step > 1) {
-      setStep((step - 1) as Step);
-    }
+    if (step > 1) setStep((step - 1) as Step);
   };
 
   const handleSubmit = async () => {
     setProcessing(true);
     try {
-      const amountValue = parseFloat(amount);
-      const amountStr = amountValue.toFixed(2);
+      const amountStr = parseFloat(amount).toFixed(2);
       const response = await TransferService.createDeposit(accountId, {
         amount: amountStr,
         currency: 'USD',
@@ -91,7 +127,6 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
       setDepositResponse(response);
       setStep(3);
       toast.success('Deposit initiated successfully');
-      // Refetch account balance to reflect the new deposit
       useAccountStore.getState().fetchAccount(accountId).catch(() => null);
     } catch (error: any) {
       console.error('Deposit error:', error);
@@ -106,10 +141,79 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
     onCancel?.();
   };
 
-  const renderDepositInstructions = () => {
-    if (!depositResponse) {
-      return null;
+  const selectedAccount = connectedAccounts.find(
+    (item) => (item.itemId || item.id) === selectedPlaidItemId,
+  );
+
+  const renderAchAccountSelector = () => {
+    if (loadingAccounts) {
+      return (
+        <div className="flex items-center gap-2 text-[#9DB9AB] text-sm py-3">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading connected accounts...
+        </div>
+      );
     }
+
+    if (connectedAccounts.length === 0) {
+      return (
+        <div className="bg-[#07120F] border border-[#1F4536] rounded-xl p-4 flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-[#9DB9AB]" />
+            <p className="text-[#9DB9AB] text-sm">No bank accounts connected. Connect one to use ACH transfers.</p>
+          </div>
+          <PlaidLink
+            accountId={accountId}
+            onSuccess={handlePlaidSuccess}
+            className="bg-[#57B75C] hover:bg-[#57B75C]/90 text-white rounded-full font-medium h-10 flex items-center gap-2 w-full justify-center"
+          >
+            <Plus className="h-4 w-4" />
+            Connect Bank Account
+          </PlaidLink>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-col gap-2">
+        {connectedAccounts.map((item) => {
+          const itemKey = item.itemId || item.id;
+          const isSelected = selectedPlaidItemId === itemKey;
+          return (
+            <button
+              key={itemKey}
+              onClick={() => setSelectedPlaidItemId(itemKey)}
+              className={`flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
+                isSelected ? 'bg-[#57B75C]/10 border-[#57B75C]' : 'bg-[#07120F] border-[#1F4536] hover:border-[#57B75C]/50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Building2 className={`h-5 w-5 ${isSelected ? 'text-[#57B75C]' : 'text-[#9DB9AB]'}`} />
+                <div>
+                  <div className="text-white text-sm font-medium">{item.institutionName}</div>
+                  <div className="text-[#9DB9AB] text-xs">
+                    {item.accounts.length} account{item.accounts.length !== 1 ? 's' : ''} linked
+                  </div>
+                </div>
+              </div>
+              {isSelected && <CheckCircle2 className="h-5 w-5 text-[#57B75C]" />}
+            </button>
+          );
+        })}
+        <PlaidLink
+          accountId={accountId}
+          onSuccess={handlePlaidSuccess}
+          className="flex items-center gap-2 text-[#57B75C] text-sm font-medium hover:underline bg-transparent border-none p-0 h-auto justify-start"
+        >
+          <Plus className="h-4 w-4" />
+          Add another bank
+        </PlaidLink>
+      </div>
+    );
+  };
+
+  const renderDepositInstructions = () => {
+    if (!depositResponse) return null;
 
     const methodDetails = depositResponse.method_details as any;
     const responseMethod = depositResponse.method || depositMethod;
@@ -124,7 +228,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
           <div className="flex items-start justify-between gap-3">
             <div>
               <h3 className="text-white font-bold text-lg">Deposit submitted</h3>
-              <p className="text-[#9DB9AB] text-sm">Your {METHOD_LABELS[responseMethod]} is now pending.</p>
+              <p className="text-[#9DB9AB] text-sm">Your {METHOD_LABELS[responseMethod as DepositMethod] ?? responseMethod} is now pending.</p>
             </div>
             <div className="text-right">
               <div className="text-xs text-[#9DB9AB]">Status</div>
@@ -238,6 +342,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
               </button>
             )}
           </div>
+
           {/* Content */}
           <div className="w-full flex flex-col gap-6 overflow-hidden">
             {/* Step 1: Amount and Payment Method */}
@@ -268,7 +373,6 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
 
                 <div className="flex flex-col gap-3">
                   <Label className="text-[#E2E8F0] text-sm font-medium leading-5">Deposit Method</Label>
-
                   <div className="grid grid-cols-3 gap-3">
                     {DEPOSIT_METHODS.map((method) => {
                       const Icon = method.icon;
@@ -278,11 +382,12 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
                           key={method.id}
                           onClick={() => setDepositMethod(method.id)}
                           className={`relative flex flex-col items-center justify-center p-4 rounded-lg border transition-all ${
-                            isActive ? 'bg-[#57B75C]/10 border-[#57B75C]' : 'bg-[#07120F] border-[#1F4536] hover:border-[#57B75C]/50'
+                            isActive
+                              ? 'bg-[#57B75C]/10 border-[#57B75C]'
+                              : 'bg-[#07120F] border-[#1F4536] hover:border-[#57B75C]/50'
                           }`}
                         >
                           <Icon className={`h-6 w-6 mb-1 ${isActive ? 'text-[#57B75C]' : 'text-[#9DB9AB]'}`} />
-
                           <span className="text-[#8DA69B] text-xs font-medium text-center">{method.label}</span>
                           {isActive && (
                             <div className="absolute top-2 right-2 h-3 w-3 bg-[#57B75C] rounded-full flex items-center justify-center">
@@ -294,6 +399,14 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
                     })}
                   </div>
                 </div>
+
+                {/* ACH bank account selector */}
+                {depositMethod === 'ach' && (
+                  <div className="flex flex-col gap-3">
+                    <Label className="text-[#E2E8F0] text-sm font-medium leading-5">Bank Account</Label>
+                    {renderAchAccountSelector()}
+                  </div>
+                )}
 
                 <div className="bg-[#07120F] border border-[#1F4536]/50 rounded-lg p-4 flex flex-col gap-2">
                   <div className="flex justify-between items-center">
@@ -316,7 +429,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
               </>
             )}
 
-            {/* Step 2: Confirmation or Not Available */}
+            {/* Step 2: Confirmation */}
             {step === 2 && (
               <div className="flex flex-col gap-6">
                 <div className="flex flex-col gap-4">
@@ -341,6 +454,12 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
                         <span className="text-[#9DB9AB] text-sm">Deposit Method</span>
                         <span className="text-white font-medium">{METHOD_LABELS[depositMethod]}</span>
                       </div>
+                      {depositMethod === 'ach' && selectedAccount && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-[#9DB9AB] text-sm">Bank</span>
+                          <span className="text-white font-medium">{selectedAccount.institutionName}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center">
                         <span className="text-[#9DB9AB] text-sm">Estimated Arrival</span>
                         <span className="text-white font-medium">{getArrivalEstimate(depositMethod)}</span>
@@ -353,6 +472,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
 
             {step === 3 && <div className="flex flex-col gap-6">{renderDepositInstructions()}</div>}
           </div>
+
           {/* Footer */}
           <div className="w-full py-4 bg-[#0F2A20] border-t border-[#1F4536] flex justify-end items-center gap-3">
             {step < 3 && (
@@ -367,7 +487,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
             )}
             <Button
               onClick={step === 3 ? handleDone : handleNext}
-              disabled={processing}
+              disabled={processing || (depositMethod === 'ach' && step === 1 && loadingAccounts)}
               className="px-6 py-2.5 bg-[#57B75C] hover:bg-[#57B75C]/90 text-white rounded-full font-bold h-11 flex items-center gap-2 min-w-40"
             >
               {processing ? (
