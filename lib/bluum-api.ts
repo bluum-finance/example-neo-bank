@@ -178,6 +178,7 @@ class BluumApiClient {
       currency: string;
       method: 'ach' | 'manual_bank_transfer' | 'wire';
       description?: string;
+      funding_source_id?: string;
       manual_options?: Record<string, unknown>;
       wire_options?: Record<string, unknown>;
     },
@@ -198,6 +199,7 @@ class BluumApiClient {
       currency: string;
       method: 'ach' | 'wire';
       description?: string;
+      funding_source_id?: string;
       wire_options?: Record<string, unknown>;
     },
     idempotencyKey?: string

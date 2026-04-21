@@ -119,6 +119,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
         amount: amountStr,
         currency: 'USD',
         method: depositMethod,
+        funding_source_id: depositMethod === 'ach' ? selectedPlaidItemId || undefined : undefined,
         description: `${METHOD_LABELS[depositMethod]} deposit`,
         manual_options: depositMethod === 'manual_bank_transfer' ? {} : undefined,
         wire_options: depositMethod === 'wire' ? {} : undefined,

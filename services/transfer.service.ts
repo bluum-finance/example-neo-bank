@@ -19,6 +19,7 @@ export interface DepositRequest {
   currency: string;
   method: DepositMethod;
   description?: string;
+  funding_source_id?: string;
   manual_options?: Record<string, unknown>;
   wire_options?: Record<string, unknown>;
   idempotency_key?: string;
@@ -29,6 +30,7 @@ export interface WithdrawalRequest {
   currency: string;
   method: WithdrawalMethod;
   description?: string;
+  funding_source_id?: string;
   wire_options?: Record<string, unknown>;
   idempotency_key?: string;
 }

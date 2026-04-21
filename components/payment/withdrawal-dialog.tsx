@@ -168,10 +168,19 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
         }
       }
 
+      let funding_source_id = undefined;
+      if (withdrawalMethod === 'ach' && selectedPlaidAccount) {
+        const item = connectedAccounts.find((a) =>
+          a.accounts.some((acc) => acc.accountId === selectedPlaidAccount)
+        );
+        funding_source_id = item?.id;
+      }
+
       const response = await TransferService.createWithdrawal(accountId, {
         amount: amountStr,
         currency: 'USD',
         method: withdrawalMethod,
+        funding_source_id,
         description:
           withdrawalMethod === 'ach'
             ? `ACH withdrawal of $${amountStr}`
@@ -275,7 +284,7 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                     className="h-11 bg-[#07120F] border-[#1E3D2F] text-white focus-visible:ring-0 focus-visible:border-[#57B75C] rounded-lg"
                     disabled={processing}
                   >
-                    <option value="ach">ACH (linked bank)</option>
+                    <option value="ach">ACH transfer</option>
                     <option value="wire">Wire transfer</option>
                   </Select>
                   <p className="text-xs text-[#9DB9AB]">

@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
       currency: body.currency || 'USD',
       description: body.description,
       method,
+      funding_source_id: body.funding_source_id,
       manual_options: body.manual_options,
       wire_options: body.wire_options,
     };
