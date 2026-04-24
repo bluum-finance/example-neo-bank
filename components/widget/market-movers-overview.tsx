@@ -7,16 +7,21 @@ import Link from 'next/link';
 import { InvestmentService, type AssetQuote } from '@/services/investment.service';
 import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 
-const MOVER_SYMBOLS = ['META', 'MTNN', 'AMD', 'TSLA', 'NFLX', 'NVDA', 'MSFT', 'GOOGL'];
-
-const FALLBACK_QUOTES: AssetQuote[] = [
-  { symbol: 'META', name: 'Meta Platforms', price: 312.45, change: 13.12, changePercent: 4.2 },
+const GAINERS: AssetQuote[] = [
   { symbol: 'AMD', name: 'AMD Inc.', price: 115.20, change: 3.23, changePercent: 2.8 },
+  { symbol: 'META', name: 'Meta Platforms', price: 312.45, change: 13.12, changePercent: 4.2 },
   { symbol: 'NVDA', name: 'Nvidia Corp.', price: 501.12, change: 17.04, changePercent: 3.5 },
+  { symbol: 'MTNN', name: 'MTN Nigeria', price: 185.00, change: 4.50, changePercent: 2.5 },
+];
+
+const LOSERS: AssetQuote[] = [
   { symbol: 'TSLA', name: 'Tesla, Inc.', price: 240.50, change: -7.46, changePercent: -3.1 },
   { symbol: 'AAPL', name: 'Apple Inc.', price: 175.20, change: -3.15, changePercent: -1.8 },
   { symbol: 'NFLX', name: 'Netflix', price: 420.10, change: -5.04, changePercent: -1.2 },
+  { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 142.30, change: -4.12, changePercent: -2.9 },
 ];
+
+const MOVER_SYMBOLS = ['META', 'NVDA', 'AMD', 'MTNN', 'TSLA', 'AAPL', 'NFLX', 'GOOGL'];
 
 interface MarketMover {
   symbol: string;
@@ -73,7 +78,7 @@ export function MarketMoversOverview() {
         setQuotes(data);
       } catch (err) {
         console.error('Failed to fetch market mover quotes, using fallback', err);
-        setQuotes(FALLBACK_QUOTES);
+        setQuotes([...GAINERS, ...LOSERS]);
       } finally {
         setLoading(false);
       }
@@ -82,11 +87,14 @@ export function MarketMoversOverview() {
   }, []);
 
   const { gainers, losers } = useMemo(() => {
-    const source = quotes.length > 0 ? quotes : FALLBACK_QUOTES;
-    const sorted = [...source].sort((a, b) => (b.changePercent ?? 0) - (a.changePercent ?? 0));
-    const positive = sorted.filter((q) => (q.changePercent ?? 0) >= 0).slice(0, 4);
-    const negative = sorted.filter((q) => (q.changePercent ?? 0) < 0).slice(0, 4);
-    return { gainers: positive, losers: negative };
+    // Use live quotes if available, updating the fixed lists with live prices
+    if (quotes.length > 0) {
+      const quoteMap = new Map(quotes.map((q) => [q.symbol, q]));
+      const liveGainers = GAINERS.map((g) => quoteMap.get(g.symbol) || g);
+      const liveLosers = LOSERS.map((l) => quoteMap.get(l.symbol) || l);
+      return { gainers: liveGainers, losers: liveLosers };
+    }
+    return { gainers: GAINERS, losers: LOSERS };
   }, [quotes]);
 
   const toMover = (q: AssetQuote): MarketMover => ({
