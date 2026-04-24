@@ -23,6 +23,18 @@ export interface Position {
   gainPercent: number;
 }
 
+export interface AssetQuote {
+  symbol: string;
+  name?: string;
+  price?: number;
+  change?: number;
+  changePercent?: number;
+  currency?: string;
+  previousClose?: number;
+  bidPrice?: number;
+  askPrice?: number;
+}
+
 export interface OrderRequest {
   symbol: string;
   side: 'buy' | 'sell';
@@ -55,6 +67,12 @@ export class InvestmentService {
     const response = await fetch(`/api/investment/assets/${encodeURIComponent(symbol)}${qs}`);
     const data = await handleResponse<{ data?: any }>(response);
     return data.data || data;
+  }
+
+  static async getAssetQuotes(symbols: string[]): Promise<AssetQuote[]> {
+    const response = await fetch(`/api/investment/market-data/assets?symbols=${encodeURIComponent(symbols.join(','))}`);
+    const data = await handleResponse<{ data?: AssetQuote[]; quotes?: AssetQuote[] }>(response);
+    return data.data || data.quotes || (Array.isArray(data) ? data : []);
   }
 
   static async getChartData(symbol: string, timeframe: string = '1Day', limit: number = 100): Promise<any> {

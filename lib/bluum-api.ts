@@ -86,6 +86,13 @@ class BluumApiClient {
     return response.data;
   }
 
+  async getAssetQuotes(symbols: string[]) {
+    const response = await this.client.get('/market-data/assets', {
+      params: { symbols: symbols.join(',') },
+    });
+    return response.data;
+  }
+
   async getChartData(params: {
     symbol: string;
     timeframe: '1Min' | '5Min' | '15Min' | '30Min' | '1Hour' | '1Day' | '1Week' | '1Month';

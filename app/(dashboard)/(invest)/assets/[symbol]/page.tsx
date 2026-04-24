@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, TrendingUp, TrendingDown, Loader2, DollarSign, BarChart3 } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Loader2, DollarSign, BarChart3, Star } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { InvestmentService } from '@/services/investment.service';
 import { toast } from 'sonner';
 import TradingViewChart from '@/components/invest/trading-view-chart';
 import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
+import { useUserStore } from '@/store/user.store';
 
 interface Asset {
   id: string;
@@ -102,6 +103,23 @@ export default function AssetDetailsPage() {
   const isPositive = priceChange >= 0;
   const { displayAmount } = useCurrency();
 
+  const watchlistSymbols = useUserStore((state) => state.user?.watchlistSymbols);
+  const addToWatchlist = useUserStore((state) => state.addToWatchlist);
+  const removeFromWatchlist = useUserStore((state) => state.removeFromWatchlist);
+  const isInWatchlist = !!symbol && watchlistSymbols?.includes(symbol);
+
+  const toggleWatchlist = () => {
+    if (!symbol) return;
+    const upper = symbol.toUpperCase();
+    if (isInWatchlist) {
+      removeFromWatchlist(upper);
+      toast.info(`${upper} removed from watchlist`);
+    } else {
+      addToWatchlist(upper);
+      toast.success(`${upper} added to watchlist`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -145,10 +163,21 @@ export default function AssetDetailsPage() {
           <h1 className="text-3xl font-bold">{asset.symbol}</h1>
           <p className="text-muted-foreground mt-1">{asset.name}</p>
         </div>
-        <Button onClick={() => router.push(`/trade?side=buy&symbol=${asset.symbol}`)}>
-          <TrendingUp className="h-4 w-4 mr-2" />
-          Trade Asset
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={toggleWatchlist}
+            className={isInWatchlist ? 'border-yellow-500 text-yellow-500' : ''}
+            aria-label={isInWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}
+          >
+            <Star className="h-4 w-4" fill={isInWatchlist ? 'currentColor' : 'none'} />
+          </Button>
+          <Button onClick={() => router.push(`/trade?side=buy&symbol=${asset.symbol}`)}>
+            <TrendingUp className="h-4 w-4 mr-2" />
+            Trade Asset
+          </Button>
+        </div>
       </div>
 
       {/* Asset Info Cards */}

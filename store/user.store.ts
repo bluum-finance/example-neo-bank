@@ -18,6 +18,7 @@ export interface User {
   lastName?: string;
   dateOfBirth?: string;
   countryOfBirth?: string;
+  watchlistSymbols?: string[];
 }
 
 interface UserState {
@@ -31,6 +32,8 @@ interface UserState {
   clearUser: () => void;
   setExternalAccountId: (accountId: string) => void;
   clearExternalAccountId: () => void;
+  addToWatchlist: (symbol: string) => void;
+  removeFromWatchlist: (symbol: string) => void;
   // Auth helpers
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
@@ -99,6 +102,23 @@ export const useUserStore = create<UserState>()(
         }
       },
 
+      addToWatchlist: (symbol: string) => {
+        const currentUser = get().user;
+        if (!currentUser) return;
+        const existing = currentUser.watchlistSymbols || [];
+        const upper = symbol.toUpperCase();
+        if (existing.includes(upper)) return;
+        set({ user: { ...currentUser, watchlistSymbols: [...existing, upper] } });
+      },
+
+      removeFromWatchlist: (symbol: string) => {
+        const currentUser = get().user;
+        if (!currentUser) return;
+        const existing = currentUser.watchlistSymbols || [];
+        const upper = symbol.toUpperCase();
+        set({ user: { ...currentUser, watchlistSymbols: existing.filter((s) => s !== upper) } });
+      },
+
       login: async (email: string, password: string) => {
         set({ isLoading: true });
 
@@ -135,6 +155,7 @@ export const useUserStore = create<UserState>()(
             countryOfBirth: mockUserAccount.countryOfBirth,
             externalAccountId: isNewInvestor ? undefined : DEMO_INVESTOR_ACCOUNT_ID,
             investmentChoice: isNewInvestor ? undefined : investmentChoice,
+            watchlistSymbols: ['AAPL', 'TSLA', 'NVDA', 'META', 'MSFT'],
           },
           isAuthenticated: true,
           isLoading: false,
@@ -153,6 +174,10 @@ export const useUserStore = create<UserState>()(
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.hasLoaded = true;
+          // Seed default watchlist if user exists but has no watchlistSymbols
+          if (state.user && state.user.watchlistSymbols === undefined) {
+            state.user.watchlistSymbols = ['AAPL', 'TSLA', 'NVDA', 'META', 'MSFT'];
+          }
         }
       },
     }

@@ -251,7 +251,7 @@ const SelfDirectedDashboard = ({
         </div>
 
         <div className="lg:col-span-1">
-          <HoldingsOverview data={data} />
+          <HoldingsOverview />
         </div>
       </section>
 
