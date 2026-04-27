@@ -2,7 +2,7 @@
 
 import { usePlaidLink } from 'react-plaid-link';
 import { useEffect, useState } from 'react';
-import { PlaidService } from '@/services/plaid.service';
+import { FundingSourceService } from '@/services/funding-source.service';
 import { Button } from '@/components/ui/button';
 
 interface PlaidLinkProps {
@@ -30,7 +30,7 @@ export function PlaidLink({
     const fetchLinkToken = async () => {
       try {
         setError(null);
-        const token = await PlaidService.getLinkToken(accountId);
+        const token = await FundingSourceService.getLinkToken(accountId);
         setLinkToken(token);
       } catch (err: any) {
         console.error('Failed to get link token:', err);
@@ -82,14 +82,14 @@ export function PlaidLink({
     );
   }
 
-  return (
-    <Button
-      onClick={() => open()}
-      disabled={!ready}
-      className={className}
-    >
-      {children || 'Connect Bank Account'}
-    </Button>
-  );
+    return (
+      <Button
+        onClick={() => open()}
+        disabled={!ready}
+        className={className}
+      >
+        {children || 'Connect Bank Account'}
+      </Button>
+    );
 }
 

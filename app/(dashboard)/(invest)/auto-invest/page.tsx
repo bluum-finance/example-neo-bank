@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { AutoInvestService, type AutoInvestSchedule } from '@/services/auto-invest.service';
 import { useUser } from '@/store/user.store';
 import { AccountService } from '@/services/account.service';
-import { PlaidService } from '@/services/plaid.service';
+import { FundingSourceService } from '@/services/funding-source.service';
 import { AutoInvestFormModal } from '@/components/invest/auto-invest-form-modal';
 import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 
@@ -83,7 +83,7 @@ export default function AutoInvestPage() {
 
         // Load funding sources
         try {
-          const sources = await PlaidService.getConnectedAccounts(accId);
+          const sources = await FundingSourceService.getFundingSources(accId);
           setFundingSources(sources);
         } catch (err) {
           console.error('Failed to load funding sources:', err);

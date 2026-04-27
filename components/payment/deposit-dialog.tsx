@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowRight, ArrowLeftRight, Wallet, Loader2, X, Info, ChevronDown, Building2, Plus, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, ArrowLeftRight, Wallet, Loader2, X, Info, ChevronDown, Building2, Plus, CheckCircle2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,9 +9,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { AccountsIcon } from '../icons/nav-icons';
 import { TransferService } from '@/services/transfer.service';
-import { PlaidService, type ConnectedAccount } from '@/services/plaid.service';
+import { FundingSourceService, type FundingSource } from '@/services/funding-source.service';
 import { PlaidLink } from './plaid/plaid-link';
+import { ManualBankLink } from './manual-bank-link';
 import { useAccountStore } from '@/store/account.store';
+import { cn } from '@/lib/utils';
 import type { ExternalDepositResponse } from '@/types/bluum';
 
 interface DepositDialogProps {
@@ -30,9 +32,9 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
   const [processing, setProcessing] = useState(false);
   const [depositResponse, setDepositResponse] = useState<ExternalDepositResponse | null>(null);
 
-  const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
+  const [fundingSources, setFundingSources] = useState<FundingSource[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
-  const [selectedPlaidItemId, setSelectedPlaidItemId] = useState<string | null>(null);
+  const [selectedFundingSourceId, setSelectedFundingSourceId] = useState<string | null>(null);
 
   const DEPOSIT_METHODS = [
     { id: 'manual_bank_transfer', label: 'Digital Wallet', icon: Wallet },
@@ -48,17 +50,18 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
 
   useEffect(() => {
     if (depositMethod === 'ach') {
-      fetchConnectedAccounts();
+      fetchFundingSources();
     }
   }, [depositMethod]);
 
-  const fetchConnectedAccounts = async () => {
+  const fetchFundingSources = async () => {
     setLoadingAccounts(true);
     try {
-      const items = await PlaidService.getConnectedAccounts(accountId);
-      setConnectedAccounts(items);
-      if (items.length > 0 && !selectedPlaidItemId) {
-        setSelectedPlaidItemId(items[0].itemId || items[0].id);
+      const sources = await FundingSourceService.getFundingSources(accountId, 'all');
+      const active = sources.filter((s) => s.status === 'active');
+      setFundingSources(active);
+      if (active.length > 0 && !selectedFundingSourceId) {
+        setSelectedFundingSourceId(active[0].id);
       }
     } catch (err: any) {
       toast.error('Failed to load connected bank accounts');
@@ -69,11 +72,41 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
 
   const handlePlaidSuccess = async (publicToken: string) => {
     try {
-      await PlaidService.connectAccount(accountId, publicToken);
+      await FundingSourceService.connectAccount(accountId, publicToken);
       toast.success('Bank account connected');
-      await fetchConnectedAccounts();
+      await fetchFundingSources();
     } catch (err: any) {
       toast.error(err.message || 'Failed to connect bank account');
+    }
+  };
+
+  const handleManualSuccess = async () => {
+    try {
+      await fetchFundingSources();
+    } catch (err: any) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteFundingSource = async (fundingSourceId: string, sourceType: 'plaid' | 'manual', e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!confirm('Are you sure you want to disconnect this bank account?')) return;
+
+    setLoadingAccounts(true);
+    try {
+      await FundingSourceService.disconnectFundingSource(accountId, fundingSourceId, sourceType);
+      const updated = await FundingSourceService.getFundingSources(accountId, 'all');
+      const active = updated.filter((s) => s.status === 'active');
+      setFundingSources(active);
+      if (selectedFundingSourceId === fundingSourceId) {
+        setSelectedFundingSourceId(active[0]?.id ?? null);
+      }
+      toast.success('Bank account disconnected');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to disconnect bank account');
+    } finally {
+      setLoadingAccounts(false);
     }
   };
 
@@ -82,11 +115,11 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
       toast.error('Please enter a valid amount');
       return false;
     }
-    if (depositMethod === 'ach' && connectedAccounts.length === 0) {
+    if (depositMethod === 'ach' && fundingSources.length === 0) {
       toast.error('Please connect a bank account for ACH transfers');
       return false;
     }
-    if (depositMethod === 'ach' && !selectedPlaidItemId) {
+    if (depositMethod === 'ach' && !selectedFundingSourceId) {
       toast.error('Please select a bank account');
       return false;
     }
@@ -119,7 +152,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
         amount: amountStr,
         currency: 'USD',
         method: depositMethod,
-        funding_source_id: depositMethod === 'ach' ? selectedPlaidItemId || undefined : undefined,
+        funding_source_id: depositMethod === 'ach' ? selectedFundingSourceId || undefined : undefined,
         description: `${METHOD_LABELS[depositMethod]} deposit`,
         manual_options: depositMethod === 'manual_bank_transfer' ? {} : undefined,
         wire_options: depositMethod === 'wire' ? {} : undefined,
@@ -142,9 +175,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
     onCancel?.();
   };
 
-  const selectedAccount = connectedAccounts.find(
-    (item) => (item.itemId || item.id) === selectedPlaidItemId,
-  );
+  const selectedFundingSource = fundingSources.find((s) => s.id === selectedFundingSourceId);
 
   const renderAchAccountSelector = () => {
     if (loadingAccounts) {
@@ -156,59 +187,94 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
       );
     }
 
-    if (connectedAccounts.length === 0) {
+    if (fundingSources.length === 0) {
       return (
         <div className="bg-[#07120F] border border-[#1F4536] rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <Building2 className="h-5 w-5 text-[#9DB9AB]" />
             <p className="text-[#9DB9AB] text-sm">No bank accounts connected. Connect one to use ACH transfers.</p>
           </div>
-          <PlaidLink
-            accountId={accountId}
-            onSuccess={handlePlaidSuccess}
-            className="bg-[#57B75C] hover:bg-[#57B75C]/90 text-white rounded-full font-medium h-10 flex items-center gap-2 w-full justify-center"
-          >
-            <Plus className="h-4 w-4" />
-            Connect Bank Account
-          </PlaidLink>
+          <div className="flex flex-col gap-2 w-full mt-2">
+            <PlaidLink
+              accountId={accountId}
+              onSuccess={handlePlaidSuccess}
+              className="bg-[#57B75C] hover:bg-[#57B75C]/90 text-white rounded-full font-medium h-10 flex items-center gap-2 w-full justify-center"
+            >
+              <Plus className="h-4 w-4" />
+              Connect Bank Account
+            </PlaidLink>
+            <ManualBankLink
+              accountId={accountId}
+              onSuccess={handleManualSuccess}
+              className="bg-transparent border border-[#57B75C] text-[#57B75C] hover:bg-[#57B75C]/10 rounded-full font-medium h-10 flex items-center gap-2 w-full justify-center"
+            >
+              <Plus className="h-4 w-4" />
+              Add Account Manually
+            </ManualBankLink>
+          </div>
         </div>
       );
     }
 
     return (
       <div className="flex flex-col gap-2">
-        {connectedAccounts.map((item) => {
-          const itemKey = item.itemId || item.id;
-          const isSelected = selectedPlaidItemId === itemKey;
+        {fundingSources.map((source) => {
+          const isSelected = selectedFundingSourceId === source.id;
           return (
-            <button
-              key={itemKey}
-              onClick={() => setSelectedPlaidItemId(itemKey)}
-              className={`flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
-                isSelected ? 'bg-[#57B75C]/10 border-[#57B75C]' : 'bg-[#07120F] border-[#1F4536] hover:border-[#57B75C]/50'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Building2 className={`h-5 w-5 ${isSelected ? 'text-[#57B75C]' : 'text-[#9DB9AB]'}`} />
-                <div>
-                  <div className="text-white text-sm font-medium">{item.institutionName}</div>
-                  <div className="text-[#9DB9AB] text-xs">
-                    {item.accounts.length} account{item.accounts.length !== 1 ? 's' : ''} linked
+            <div key={source.id} className="group relative w-full">
+              <button
+                type="button"
+                onClick={() => setSelectedFundingSourceId(source.id)}
+                className={cn(
+                  'w-full min-w-0 flex items-center justify-between gap-2 rounded-xl border p-4 pr-14 text-left transition-all',
+                  isSelected ? 'bg-[#57B75C]/10 border-[#57B75C] pr-19' : 'bg-[#07120F] border-[#1F4536] hover:border-[#57B75C]/50',
+                )}
+              >
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <Building2 className={`h-5 w-5 shrink-0 ${isSelected ? 'text-[#57B75C]' : 'text-[#9DB9AB]'}`} />
+                  <div className="min-w-0">
+                    <div className="text-white text-sm font-medium truncate">{source.bankName}</div>
+                    <div className="text-[#9DB9AB] text-xs truncate">
+                      {source.accountName ? `${source.accountName} ` : ''}
+                      {source.mask ? `•••• ${source.mask}` : ''}
+                    </div>
                   </div>
                 </div>
+              </button>
+              <div className="absolute right-2 top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5">
+                <button
+                  type="button"
+                  onClick={(e) => void handleDeleteFundingSource(source.id, source.type, e)}
+                  disabled={loadingAccounts}
+                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#9DB9AB] transition-opacity opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus:opacity-100 focus:pointer-events-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-[#57B75C]/50 hover:text-red-400 disabled:pointer-events-none disabled:opacity-0"
+                  aria-label="Disconnect bank account"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                {isSelected && <CheckCircle2 className="h-5 w-5 shrink-0 text-[#57B75C]" />}
               </div>
-              {isSelected && <CheckCircle2 className="h-5 w-5 text-[#57B75C]" />}
-            </button>
+            </div>
           );
         })}
-        <PlaidLink
-          accountId={accountId}
-          onSuccess={handlePlaidSuccess}
-          className="flex items-center gap-2 text-[#57B75C] text-sm font-medium hover:underline bg-transparent border-none p-0 h-auto justify-start"
-        >
-          <Plus className="h-4 w-4" />
-          Add another bank
-        </PlaidLink>
+        <div className="flex items-center gap-4 mt-2">
+          <PlaidLink
+            accountId={accountId}
+            onSuccess={handlePlaidSuccess}
+            className="flex items-center gap-2 text-[#57B75C] text-sm font-medium hover:underline bg-transparent border-none p-0 h-auto justify-start"
+          >
+            <Plus className="h-4 w-4" />
+            Connect via Plaid
+          </PlaidLink>
+          <div className="w-px h-4 bg-[#1F4536]" />
+          <ManualBankLink
+            accountId={accountId}
+            onSuccess={handleManualSuccess}
+            className="flex items-center gap-2 text-[#57B75C] text-sm font-medium hover:underline bg-transparent border-none p-0 h-auto justify-start"
+          >
+            <Plus className="h-4 w-4" />
+            Add manually
+          </ManualBankLink>
+        </div>
       </div>
     );
   };
@@ -455,10 +521,13 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
                         <span className="text-[#9DB9AB] text-sm">Deposit Method</span>
                         <span className="text-white font-medium">{METHOD_LABELS[depositMethod]}</span>
                       </div>
-                      {depositMethod === 'ach' && selectedAccount && (
+                      {depositMethod === 'ach' && selectedFundingSource && (
                         <div className="flex justify-between items-center">
                           <span className="text-[#9DB9AB] text-sm">Bank</span>
-                          <span className="text-white font-medium">{selectedAccount.institutionName}</span>
+                          <span className="text-white font-medium">
+                            {selectedFundingSource.bankName}
+                            {selectedFundingSource.mask ? ` ···· ${selectedFundingSource.mask}` : ''}
+                          </span>
                         </div>
                       )}
                       <div className="flex justify-between items-center">

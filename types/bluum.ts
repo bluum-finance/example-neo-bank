@@ -282,6 +282,21 @@ export interface ExternalDepositResponse {
   created_at?: string;
 }
 
+// Funding Sources
+export interface FundingSource {
+  id: string;
+  type: 'plaid' | 'manual';
+  status: 'active' | 'disconnected' | 'error';
+  bankName: string | null;
+  mask: string | null;
+  providerId?: string;
+  accountName?: string;
+  accountType?: string;
+  accountSubtype?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AlpacaWithdrawalDetails {
   providerName?: string;
   provider?: string;

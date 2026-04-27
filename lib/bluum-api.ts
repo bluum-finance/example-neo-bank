@@ -172,8 +172,8 @@ class BluumApiClient {
     return response.data;
   }
 
-  async connectPlaidFundingSource(accountId: string, data: Record<string, any>) {
-    const response = await this.client.post(`/accounts/${accountId}/funding-sources/plaid/connect`, data);
+  async connectFundingSource(accountId: string, data: Record<string, any>) {
+    const response = await this.client.post(`/accounts/${accountId}/funding-sources/connect`, data);
     return response.data;
   }
 
@@ -218,15 +218,17 @@ class BluumApiClient {
     return response.data;
   }
 
-  async getFundingSources(accountId: string, type: 'plaid' | 'all' = 'plaid') {
+  async getFundingSources(accountId: string, type: 'plaid' | 'manual' | 'all' = 'all') {
     const response = await this.client.get(`/accounts/${accountId}/funding-sources`, {
       params: { type },
     });
     return response.data;
   }
 
-  async disconnectPlaidItem(accountId: string, fundingSourceId: string) {
-    const response = await this.client.delete(`/accounts/${accountId}/funding-sources/${fundingSourceId}`);
+  async disconnectFundingSource(accountId: string, fundingSourceId: string, type: 'plaid' | 'manual' = 'plaid') {
+    const response = await this.client.delete(`/accounts/${accountId}/funding-sources/${fundingSourceId}`, {
+      params: { type },
+    });
     return response.data;
   }
 

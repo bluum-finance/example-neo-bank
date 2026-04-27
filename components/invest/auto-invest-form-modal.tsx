@@ -268,13 +268,11 @@ export function AutoInvestFormModal({
                 className={fieldClassName}
               >
                 <option value="">Select funding source</option>
-                {fundingSources.map((source) =>
-                  source.accounts?.map((account: any) => (
-                    <option key={account.id} value={account.id}>
-                      {source.institutionName} - {account.accountName} ({account.mask || '****'})
-                    </option>
-                  ))
-                )}
+                {fundingSources.map((source: any) => (
+                  <option key={source.id} value={source.id}>
+                    {source.bankName}{source.mask ? ` •••• ${source.mask}` : ''}{source.accountName ? ` - ${source.accountName}` : ''}
+                  </option>
+                ))}
               </Select>
               {fundingSources.length === 0 && (
                 <p className="text-xs text-muted-foreground">

@@ -1,14 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Building2, ArrowRight, Loader2, X, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { Building2, ArrowRight, Loader2, X, ChevronDown, CheckCircle2, Trash2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { PlaidLink } from '@/components/payment/plaid/plaid-link';
-import { PlaidService, type ConnectedAccount } from '@/services/plaid.service';
+import { ManualBankLink } from '@/components/payment/manual-bank-link';
+import { FundingSourceService, type FundingSource } from '@/services/funding-source.service';
 import { TransferService } from '@/services/transfer.service';
 import { toast } from 'sonner';
 import type { ExternalWithdrawalResponse } from '@/types/bluum';
@@ -30,82 +32,73 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
   const [withdrawalMethod, setWithdrawalMethod] = useState<WithdrawalMethod>('ach');
   const [withdrawalResponse, setWithdrawalResponse] = useState<ExternalWithdrawalResponse | null>(null);
 
-  // Plaid fields
-  const [publicToken, setPublicToken] = useState<string | null>(null);
-  const [selectedPlaidAccount, setSelectedPlaidAccount] = useState<string | null>(null);
-  const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
+  const [selectedFundingSourceId, setSelectedFundingSourceId] = useState<string | null>(null);
+  const [fundingSources, setFundingSources] = useState<FundingSource[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
 
-  // Load connected Plaid accounts
   useEffect(() => {
-    const loadConnectedAccounts = async () => {
-      if (withdrawalMethod === 'ach') {
-        setLoadingAccounts(true);
-        try {
-          const accounts = await PlaidService.getConnectedAccounts(accountId);
-          setConnectedAccounts(accounts || []);
-        } catch (error: any) {
-          console.error('Failed to load connected accounts:', error);
-          setConnectedAccounts([]);
-        } finally {
-          setLoadingAccounts(false);
+    if (withdrawalMethod !== 'ach') return;
+    setLoadingAccounts(true);
+    FundingSourceService.getFundingSources(accountId, 'all')
+      .then((sources) => {
+        const active = sources.filter((s) => s.status === 'active');
+        setFundingSources(active);
+        if (active.length > 0 && !selectedFundingSourceId) {
+          setSelectedFundingSourceId(active[0].id);
         }
-      }
-    };
-
-    loadConnectedAccounts();
+      })
+      .catch(() => setFundingSources([]))
+      .finally(() => setLoadingAccounts(false));
   }, [accountId, withdrawalMethod]);
 
-  const handlePlaidSuccess = async (token: string, metadata: any) => {
-    setPublicToken(token);
-    if (metadata.accounts && metadata.accounts.length > 0) {
-      setSelectedPlaidAccount(metadata.accounts[0].id);
-    }
-
+  const handlePlaidSuccess = async (token: string) => {
     setLoadingAccounts(true);
     try {
-      await PlaidService.connectAccount(accountId, token);
-      const accounts = await PlaidService.getConnectedAccounts(accountId);
-      setConnectedAccounts(accounts);
-
-      if (metadata.accounts && metadata.accounts.length > 0 && accounts.length > 0) {
-        const newAccountId = metadata.accounts[0].id;
-        const accountExists = accounts.some((item) => item.accounts.some((acc) => acc.accountId === newAccountId));
-        if (accountExists) {
-          setSelectedPlaidAccount(newAccountId);
-        }
+      const newSources = await FundingSourceService.connectAccount(accountId, token);
+      const allSources = await FundingSourceService.getFundingSources(accountId, 'all');
+      const active = allSources.filter((s) => s.status === 'active');
+      setFundingSources(active);
+      if (newSources.length > 0) {
+        setSelectedFundingSourceId(newSources[0].id);
       }
-
       toast.success('Bank account connected successfully!');
     } catch (error: any) {
-      console.error('Failed to connect or reload accounts:', error);
       toast.error(error.message || 'Failed to connect bank account');
     } finally {
       setLoadingAccounts(false);
     }
   };
 
-  const handleDeleteAccount = async (fundingSourceId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm('Are you sure you want to disconnect this bank account?')) {
-      return;
+  const handleManualSuccess = async (source: FundingSource) => {
+    setLoadingAccounts(true);
+    try {
+      const allSources = await FundingSourceService.getFundingSources(accountId, 'all');
+      const active = allSources.filter((s) => s.status === 'active');
+      setFundingSources(active);
+      setSelectedFundingSourceId(source.id);
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setLoadingAccounts(false);
     }
+  };
+
+  const handleDeleteAccount = async (fundingSourceId: string, sourceType: 'plaid' | 'manual', e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!confirm('Are you sure you want to disconnect this bank account?')) return;
 
     setLoadingAccounts(true);
     try {
-      await PlaidService.disconnectItem(accountId, fundingSourceId);
-      const accounts = await PlaidService.getConnectedAccounts(accountId);
-      setConnectedAccounts(accounts);
-
-      if (
-        connectedAccounts.some((item) => item.id === fundingSourceId && item.accounts.some((acc) => acc.accountId === selectedPlaidAccount))
-      ) {
-        setSelectedPlaidAccount(null);
+      await FundingSourceService.disconnectFundingSource(accountId, fundingSourceId, sourceType);
+      const updated = await FundingSourceService.getFundingSources(accountId, 'all');
+      const active = updated.filter((s) => s.status === 'active');
+      setFundingSources(active);
+      if (selectedFundingSourceId === fundingSourceId) {
+        setSelectedFundingSourceId(active[0]?.id ?? null);
       }
-
       toast.success('Bank account disconnected successfully');
     } catch (error: any) {
-      console.error('Failed to disconnect account:', error);
       toast.error(error.message || 'Failed to disconnect bank account');
     } finally {
       setLoadingAccounts(false);
@@ -117,17 +110,16 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
       toast.error('Please enter a valid amount');
       return false;
     }
-    const withdrawAmount = parseFloat(amount);
-    if (withdrawAmount > availableBalance) {
+    if (parseFloat(amount) > availableBalance) {
       toast.error('Insufficient balance');
       return false;
     }
-    if (withdrawalMethod === 'ach' && connectedAccounts.length > 0 && !selectedPlaidAccount) {
-      toast.error('Please select a destination account');
+    if (withdrawalMethod === 'ach' && fundingSources.length === 0) {
+      toast.error('Please connect a bank account');
       return false;
     }
-    if (withdrawalMethod === 'ach' && connectedAccounts.length === 0 && !publicToken) {
-      toast.error('Please connect a bank account');
+    if (withdrawalMethod === 'ach' && !selectedFundingSourceId) {
+      toast.error('Please select a destination account');
       return false;
     }
     return true;
@@ -153,38 +145,12 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
     setProcessing(true);
     try {
       const amountStr = parseFloat(amount).toFixed(2);
-
-      if (withdrawalMethod === 'ach') {
-        if (connectedAccounts.length > 0 && !selectedPlaidAccount) {
-          toast.error('Please select a destination account');
-          setProcessing(false);
-          return;
-        }
-
-        if (connectedAccounts.length === 0 && !publicToken) {
-          toast.error('Please connect a bank account');
-          setProcessing(false);
-          return;
-        }
-      }
-
-      let funding_source_id = undefined;
-      if (withdrawalMethod === 'ach' && selectedPlaidAccount) {
-        const item = connectedAccounts.find((a) =>
-          a.accounts.some((acc) => acc.accountId === selectedPlaidAccount)
-        );
-        funding_source_id = item?.id;
-      }
-
       const response = await TransferService.createWithdrawal(accountId, {
         amount: amountStr,
         currency: 'USD',
         method: withdrawalMethod,
-        funding_source_id,
-        description:
-          withdrawalMethod === 'ach'
-            ? `ACH withdrawal of $${amountStr}`
-            : `Wire withdrawal of $${amountStr}`,
+        funding_source_id: withdrawalMethod === 'ach' ? selectedFundingSourceId || undefined : undefined,
+        description: withdrawalMethod === 'ach' ? `ACH withdrawal of $${amountStr}` : `Wire withdrawal of $${amountStr}`,
         wire_options: withdrawalMethod === 'wire' ? {} : undefined,
       });
 
@@ -204,20 +170,7 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
     onCancel?.();
   };
 
-  const getSelectedAccountDetails = () => {
-    if (!selectedPlaidAccount) return null;
-    for (const item of connectedAccounts) {
-      const account = item.accounts.find((acc) => acc.accountId === selectedPlaidAccount);
-      if (account) {
-        return {
-          institutionName: item.institutionName,
-          accountName: account.accountName,
-          mask: account.mask,
-        };
-      }
-    }
-    return null;
-  };
+  const selectedFundingSource = fundingSources.find((s) => s.id === selectedFundingSourceId) ?? null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -301,28 +254,57 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                       <div className="flex items-center justify-center py-8">
                         <Loader2 className="h-6 w-6 animate-spin text-[#57B75C]" />
                       </div>
-                    ) : connectedAccounts.length > 0 ? (
+                    ) : fundingSources.length > 0 ? (
                       <div className="flex flex-col gap-2">
-                        <Select
-                          value={selectedPlaidAccount || ''}
-                          onChange={(e) => setSelectedPlaidAccount(e.target.value || null)}
-                          className="h-11 bg-[#07120F] border-[#1E3D2F] text-white focus-visible:ring-0 focus-visible:border-[#57B75C] rounded-lg"
-                          disabled={processing}
-                        >
-                          <option value="">Select account...</option>
-                          {connectedAccounts.map((item) =>
-                            item.accounts.map((account) => (
-                              <option key={account.accountId} value={account.accountId}>
-                                {item.institutionName} •••• {account.mask} - {account.accountName}
-                              </option>
-                            ))
-                          )}
-                        </Select>
-                        <div className="text-xs text-[#9DB9AB]">
-                          Add a new linked account
-                          <PlaidLink accountId={accountId} onSuccess={handlePlaidSuccess} className="inline bg-transparent! p-1">
-                            <span className="text-[#57B75C] text-sm hover:underline cursor-pointer font-medium">Connect Account</span>
+                        <div className="flex flex-col gap-2">
+                          {fundingSources.map((source) => {
+                            const isSelected = selectedFundingSourceId === source.id;
+                            return (
+                              <div key={source.id} className="group relative w-full">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedFundingSourceId(source.id)}
+                                  disabled={processing}
+                                  className={cn(
+                                    'w-full min-w-0 flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left transition-colors',
+                                    isSelected
+                                      ? 'bg-[#57B75C]/10 border-[#57B75C] pr-18'
+                                      : 'bg-[#07120F] border-[#1E3D2F] pr-14 hover:border-[#57B75C]/50',
+                                  )}
+                                >
+                                  <div className="min-w-0 flex-1">
+                                    <div className="text-white text-sm font-medium truncate">{source.bankName}</div>
+                                    <div className="text-[#9DB9AB] text-xs truncate">
+                                      {source.accountName ? `${source.accountName} · ` : ''}
+                                      {source.mask ? `•••• ${source.mask}` : ''}
+                                    </div>
+                                  </div>
+                                </button>
+                                <div className="absolute right-1.5 top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => void handleDeleteAccount(source.id, source.type, e)}
+                                    disabled={processing}
+                                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#9DB9AB] transition-opacity opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus:opacity-100 focus:pointer-events-auto focus:outline-none focus-visible:ring-2 focus-visible:ring-[#57B75C]/50 hover:text-red-400 disabled:pointer-events-none disabled:opacity-0"
+                                    aria-label="Disconnect bank account"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                  {isSelected && <CheckCircle2 className="h-4 w-4 shrink-0 text-[#57B75C]" />}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-[#9DB9AB]">
+                          Add a new linked account:
+                          <PlaidLink accountId={accountId} onSuccess={handlePlaidSuccess} className="inline bg-transparent! p-1 h-auto">
+                            <span className="text-[#57B75C] text-sm hover:underline cursor-pointer font-medium">via Plaid</span>
                           </PlaidLink>
+                          <span className="text-[#1E3D2F]">|</span>
+                          <ManualBankLink accountId={accountId} onSuccess={handleManualSuccess} className="inline bg-transparent! p-1 h-auto">
+                            <span className="text-[#57B75C] text-sm hover:underline cursor-pointer font-medium">Manually</span>
+                          </ManualBankLink>
                         </div>
                       </div>
                     ) : (
@@ -332,9 +314,14 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                           <p className="text-white font-medium">No bank account connected</p>
                           <p className="text-[#9DB9AB] text-sm">Connect your bank to start withdrawing funds</p>
                         </div>
-                        <PlaidLink accountId={accountId} onSuccess={handlePlaidSuccess}>
-                          <Button className="bg-[#57B75C] hover:bg-[#57B75C]/90 text-white px-8 rounded-full">Connect Bank Account</Button>
-                        </PlaidLink>
+                        <div className="flex flex-col gap-2 w-full max-w-xs mt-2">
+                          <PlaidLink accountId={accountId} onSuccess={handlePlaidSuccess} className="w-full bg-[#57B75C] hover:bg-[#57B75C]/90 text-white rounded-full h-10 font-medium">
+                            Connect via Plaid
+                          </PlaidLink>
+                          <ManualBankLink accountId={accountId} onSuccess={handleManualSuccess} className="w-full flex justify-center items-center h-10 border border-[#57B75C] text-[#57B75C] hover:bg-[#57B75C]/10 rounded-full font-medium">
+                            Add Account Manually
+                          </ManualBankLink>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -378,12 +365,14 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                       <span className="text-[#9DB9AB] text-sm">Destination</span>
                       <div className="text-right">
                         {withdrawalMethod === 'ach' ? (
-                          getSelectedAccountDetails() ? (
+                          selectedFundingSource ? (
                             <>
-                              <div className="text-white text-sm font-medium">{getSelectedAccountDetails()!.institutionName}</div>
-                              <div className="text-[#9DB9AB] text-xs mt-1">
-                                {getSelectedAccountDetails()!.accountName} •••• {getSelectedAccountDetails()!.mask}
-                              </div>
+                              <div className="text-white text-sm font-medium">{selectedFundingSource.bankName}</div>
+                              {(selectedFundingSource.accountName || selectedFundingSource.mask) && (
+                                <div className="text-[#9DB9AB] text-xs mt-1">
+                                  {selectedFundingSource.accountName}{selectedFundingSource.mask ? ` •••• ${selectedFundingSource.mask}` : ''}
+                                </div>
+                              )}
                             </>
                           ) : (
                             <span className="text-[#9DB9AB] text-sm">Not selected</span>
