@@ -70,9 +70,9 @@ export interface NewAccountRequest {
     country_of_tax_residence: string;
     funding_source?: ('employment_income' | 'business_income' | 'investment_income' | 'inheritance' | 'gift' | 'other')[];
     financial_profile: {
-      annual_income: string;
-      net_worth: string;
-      liquid_net_worth: string;
+      annual_income: { min: string; max: string };
+      net_worth: { min: string; max: string };
+      liquid_net_worth: { min: string; max: string };
     };
   };
   disclosures?: {

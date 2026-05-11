@@ -8,6 +8,11 @@ import { Label } from '../ui/label';
 import { Select } from '../ui/select';
 import { Separator } from '../ui/separator';
 import { Checkbox } from '../ui/checkbox';
+import {
+  annualIncomeBracketToRange,
+  liquidNetWorthBracketToRange,
+  netWorthBracketToRange,
+} from '@/lib/new-account-financial-profile';
 import { appendParamToUrl, getInvestRedirectUri } from '@/lib/utils';
 import { AccountService } from '@/services/account.service';
 import { toast } from 'sonner';
@@ -189,9 +194,9 @@ export function InvestOnboarding({ initialStep = 0, investmentChoice }: InvestOn
           country_of_tax_residence: 'US',
           funding_source: ['employment_income'],
           financial_profile: {
-            annual_income: formData.financialProfile.annualIncome,
-            net_worth: formData.financialProfile.netWorth,
-            liquid_net_worth: formData.financialProfile.liquidAssets,
+            annual_income: annualIncomeBracketToRange(formData.financialProfile.annualIncome),
+            net_worth: netWorthBracketToRange(formData.financialProfile.netWorth),
+            liquid_net_worth: liquidNetWorthBracketToRange(formData.financialProfile.liquidAssets),
           },
         },
         disclosures: {

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { bluumApi } from '@/lib/bluum-api';
-import type { NewAccountRequest } from '@/types/bluum';
+import { normalizeNewAccountFinancialProfile } from '@/lib/new-account-financial-profile';
 
 export async function POST(request: NextRequest) {
   try {
-    const accountData: NewAccountRequest = await request.json();
+    const raw = await request.json();
+    const accountData = normalizeNewAccountFinancialProfile(raw);
     const account = await bluumApi.createAccount(accountData);
     return NextResponse.json(account, { status: 201 });
   } catch (error: any) {
