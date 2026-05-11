@@ -69,8 +69,14 @@ export interface NewAccountRequest {
     country_of_birth: string;
     country_of_tax_residence: string;
     funding_source?: ('employment_income' | 'business_income' | 'investment_income' | 'inheritance' | 'gift' | 'other')[];
+    financial_profile: {
+      annual_income: string;
+      net_worth: string;
+      liquid_net_worth: string;
+    };
   };
   disclosures?: {
+    employment_status: 'employed' | 'unemployed' | 'student' | 'retired';
     is_control_person?: boolean;
     is_affiliated_exchange_or_finra?: boolean;
     is_politically_exposed?: boolean;

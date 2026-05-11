@@ -187,9 +187,19 @@ export function InvestOnboarding({ initialStep = 0, investmentChoice }: InvestOn
           country_of_citizenship: 'US',
           country_of_birth: user.countryOfBirth || 'US',
           country_of_tax_residence: 'US',
-          funding_source: ['employment_income'], // Default funding source
+          funding_source: ['employment_income'],
+          financial_profile: {
+            annual_income: formData.financialProfile.annualIncome,
+            net_worth: formData.financialProfile.netWorth,
+            liquid_net_worth: formData.financialProfile.liquidAssets,
+          },
         },
         disclosures: {
+          employment_status: formData.employmentInfo.employmentStatus as
+            | 'employed'
+            | 'unemployed'
+            | 'student'
+            | 'retired',
           is_control_person: formData.disclosures.isControlPerson,
           is_affiliated_exchange_or_finra: formData.disclosures.isAffiliatedExchangeOrFinra,
           is_politically_exposed: formData.disclosures.isPoliticallyExposed,
