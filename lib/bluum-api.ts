@@ -232,6 +232,11 @@ class BluumApiClient {
     return response.data;
   }
 
+  async getNigerianBanks() {
+    const response = await this.client.get('/lookup/nigerian-banks');
+    return response.data;
+  }
+
   // Wealth Management - Goals
   async getGoals(
     accountId: string,

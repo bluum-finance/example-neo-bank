@@ -1,7 +1,7 @@
 import { apiClient } from '@/lib/api-client';
-import type { FundingSource } from '@/types/bluum';
+import type { FundingSource, NigerianBank } from '@/types/bluum';
 
-export type { FundingSource };
+export type { FundingSource, NigerianBank };
 
 export interface PlaidLinkTokenResponse {
   status: string;
@@ -42,6 +42,13 @@ export interface ConnectManualResponse {
   message: string;
   data: {
     fundingSource: FundingSource;
+  };
+}
+
+export interface NigerianBanksResponse {
+  status: string;
+  data: {
+    banks: NigerianBank[];
   };
 }
 
@@ -91,5 +98,12 @@ export class FundingSourceService {
       params: { account_id: accountId, type },
     });
     return response.data;
+  }
+
+  static async getNigerianBanks(): Promise<NigerianBank[]> {
+    const response = await apiClient.get<NigerianBanksResponse>(
+      '/api/lookup/nigerian-banks'
+    );
+    return response.data.data.banks ?? [];
   }
 }

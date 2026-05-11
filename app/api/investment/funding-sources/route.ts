@@ -11,6 +11,8 @@ interface FundingSourceRaw {
   account_type?: string;
   account_subtype?: string;
   provider_id?: string;
+  currency?: string;
+  country?: string;
   created_at: string;
   updated_at: string;
 }
@@ -49,6 +51,8 @@ function normalizeFundingSource(source: FundingSourceRaw) {
     accountType: source.account_type,
     accountSubtype: source.account_subtype,
     providerId: source.provider_id,
+    currency: source.currency ?? null,
+    country: source.country ?? null,
     createdAt: source.created_at,
     updatedAt: source.updated_at,
   };

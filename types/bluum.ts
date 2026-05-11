@@ -293,8 +293,15 @@ export interface FundingSource {
   accountName?: string;
   accountType?: string;
   accountSubtype?: string;
+  currency: string | null;
+  country: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface NigerianBank {
+  name: string;
+  code: string;
 }
 
 export interface AlpacaWithdrawalDetails {

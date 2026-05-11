@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Building2, ArrowRight, Loader2, X, ChevronDown, CheckCircle2, Trash2 } from 'lucide-react';
+import { Building2, ArrowRight, Loader2, X, ChevronDown, CheckCircle2, Trash2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,8 @@ import { ManualBankLink } from '@/components/payment/manual-bank-link';
 import { FundingSourceService, type FundingSource } from '@/services/funding-source.service';
 import { TransferService } from '@/services/transfer.service';
 import { toast } from 'sonner';
-import type { ExternalWithdrawalResponse } from '@/types/bluum';
+import { useAccountStore } from '@/store/account.store';
+import type { ExternalWithdrawalResponse, AlpacaWithdrawalDetails } from '@/types/bluum';
 
 interface WithdrawalDialogProps {
   accountId: string;
@@ -24,10 +25,13 @@ interface WithdrawalDialogProps {
 
 type WithdrawalMethod = 'ach' | 'wire';
 type Step = 1 | 2 | 3;
+type SupportedCurrency = 'USD' | 'NGN';
 
 export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCancel }: WithdrawalDialogProps) {
   const [step, setStep] = useState<Step>(1);
   const [amount, setAmount] = useState('');
+  const [currency, setCurrency] = useState<SupportedCurrency>('USD');
+  const [showCurrencyMenu, setShowCurrencyMenu] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [withdrawalMethod, setWithdrawalMethod] = useState<WithdrawalMethod>('ach');
   const [withdrawalResponse, setWithdrawalResponse] = useState<ExternalWithdrawalResponse | null>(null);
@@ -38,18 +42,24 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
 
   useEffect(() => {
     if (withdrawalMethod !== 'ach') return;
+    setSelectedFundingSourceId(null);
     setLoadingAccounts(true);
     FundingSourceService.getFundingSources(accountId, 'all')
       .then((sources) => {
-        const active = sources.filter((s) => s.status === 'active');
+        const active = sources
+          .filter((s) => s.status === 'active')
+          .filter((s) => {
+            if (currency === 'NGN') return s.currency === null || s.currency === 'NGN';
+            return s.currency === null || s.currency === 'USD';
+          });
         setFundingSources(active);
-        if (active.length > 0 && !selectedFundingSourceId) {
+        if (active.length > 0) {
           setSelectedFundingSourceId(active[0].id);
         }
       })
       .catch(() => setFundingSources([]))
       .finally(() => setLoadingAccounts(false));
-  }, [accountId, withdrawalMethod]);
+  }, [accountId, withdrawalMethod, currency]);
 
   const handlePlaidSuccess = async (token: string) => {
     setLoadingAccounts(true);
@@ -62,8 +72,9 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
         setSelectedFundingSourceId(newSources[0].id);
       }
       toast.success('Bank account connected successfully!');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to connect bank account');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to connect bank account';
+      toast.error(message);
     } finally {
       setLoadingAccounts(false);
     }
@@ -76,7 +87,7 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
       const active = allSources.filter((s) => s.status === 'active');
       setFundingSources(active);
       setSelectedFundingSourceId(source.id);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
     } finally {
       setLoadingAccounts(false);
@@ -98,8 +109,9 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
         setSelectedFundingSourceId(active[0]?.id ?? null);
       }
       toast.success('Bank account disconnected successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to disconnect bank account');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to disconnect bank account';
+      toast.error(message);
     } finally {
       setLoadingAccounts(false);
     }
@@ -147,18 +159,19 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
       const amountStr = parseFloat(amount).toFixed(2);
       const response = await TransferService.createWithdrawal(accountId, {
         amount: amountStr,
-        currency: 'USD',
+        currency,
         method: withdrawalMethod,
         funding_source_id: withdrawalMethod === 'ach' ? selectedFundingSourceId || undefined : undefined,
-        description: withdrawalMethod === 'ach' ? `ACH withdrawal of $${amountStr}` : `Wire withdrawal of $${amountStr}`,
+        description: withdrawalMethod === 'ach' ? `ACH withdrawal of ${currency === 'NGN' ? '₦' : '$'}${amountStr}` : `Wire withdrawal of ${currency === 'NGN' ? '₦' : '$'}${amountStr}`,
         wire_options: withdrawalMethod === 'wire' ? {} : undefined,
       });
 
       setWithdrawalResponse(response);
       setStep(3);
       toast.success('Withdrawal initiated successfully!');
-    } catch (error: any) {
-      const errorMessage = error.message || 'Failed to process withdrawal';
+      useAccountStore.getState().fetchAccount(accountId).catch(() => null);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to process withdrawal';
       toast.error(errorMessage);
     } finally {
       setProcessing(false);
@@ -195,19 +208,21 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
 
           {/* Content */}
           <div className="w-full py-4 flex flex-col gap-6">
+            {step === 1 && (
+            <>
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-start">
-                <Label className="text-white text-sm font-medium leading-5">Amount to withdraw</Label>
+                <Label className="text-[#E2E8F0] text-sm font-medium leading-5">Amount to withdraw</Label>
                 <span className="text-[#30D158] text-xs leading-4">
-                  Available: $
+                  Available: {currency === 'NGN' ? '₦' : '$'}
                   {availableBalance.toLocaleString('en-US', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
-                  })}
+                  })} {currency}
                 </span>
               </div>
               <div className="relative flex items-center">
-                <div className="absolute left-4 text-[#A1BEAD] font-medium">$</div>
+                <div className="absolute left-4 text-[#9DB9AB] font-medium">{currency === 'NGN' ? '₦' : '$'}</div>
                 <Input
                   id="amount"
                   type="number"
@@ -216,25 +231,44 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   disabled={processing}
-                  className="h-11 pl-8 pr-24 bg-[#07120F] border-[#1E3D2F] text-white text-xl font-medium focus-visible:ring-0 focus-visible:border-[#57B75C] rounded-lg placeholder:text-[#5A7065]"
+                  className="h-11 pl-8 pr-24 bg-[#07120F] border-[#1F4536] text-white text-lg focus-visible:ring-0 focus-visible:border-[#57B75C] rounded-lg"
                 />
-                <div className="absolute right-4 flex items-center gap-2">
-                  <div className="bg-[#1A3329] rounded-md px-3 py-2">
-                    <span className="text-white text-sm font-medium">USD</span>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-[#A1BEAD]" />
+                <div className="absolute right-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrencyMenu((v) => !v)}
+                    className="flex items-center gap-1.5 bg-[#1A3329] hover:bg-[#1F4536] rounded-md px-2.5 py-1.5 transition-colors"
+                  >
+                    <span className="text-white text-sm font-medium">{currency}</span>
+                    <ChevronDown className="h-3.5 w-3.5 text-[#A1BEAD]" />
+                  </button>
+                  {showCurrencyMenu && (
+                    <div className="absolute right-0 top-full mt-1 z-10 bg-[#0F2A20] border border-[#1F4536] rounded-lg shadow-lg overflow-hidden min-w-30">
+                      {(['USD', 'NGN'] as SupportedCurrency[]).map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => { setCurrency(c); setShowCurrencyMenu(false); }}
+                          className={cn(
+                            'w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[#1F4536]',
+                            currency === c ? 'text-[#30D158] font-medium' : 'text-white',
+                          )}
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
-            {step === 1 && (
-              <>
                 <div className="flex flex-col gap-2">
-                  <Label className="text-white text-sm font-medium leading-5">Transfer method</Label>
+                  <Label className="text-[#E2E8F0] text-sm font-medium leading-5">Transfer method</Label>
                   <Select
                     value={withdrawalMethod}
                     onChange={(e) => setWithdrawalMethod(e.target.value as WithdrawalMethod)}
-                    className="h-11 bg-[#07120F] border-[#1E3D2F] text-white focus-visible:ring-0 focus-visible:border-[#57B75C] rounded-lg"
+                    className="h-11 bg-[#07120F] border-[#1F4536] text-white focus-visible:ring-0 focus-visible:border-[#57B75C] rounded-lg"
                     disabled={processing}
                   >
                     <option value="ach">ACH transfer</option>
@@ -249,7 +283,7 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
 
                 {withdrawalMethod === 'ach' ? (
                   <div className="flex flex-col gap-2">
-                    <Label className="text-white text-sm font-medium leading-5">Destination account</Label>
+                    <Label className="text-[#E2E8F0] text-sm font-medium leading-5">Destination account</Label>
                     {loadingAccounts ? (
                       <div className="flex items-center justify-center py-8">
                         <Loader2 className="h-6 w-6 animate-spin text-[#57B75C]" />
@@ -268,16 +302,19 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                                   className={cn(
                                     'w-full min-w-0 flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-left transition-colors',
                                     isSelected
-                                      ? 'bg-[#57B75C]/10 border-[#57B75C] pr-18'
-                                      : 'bg-[#07120F] border-[#1E3D2F] pr-14 hover:border-[#57B75C]/50',
+                                      ? 'bg-[#57B75C]/10 border-[#57B75C] pr-16'
+                                      : 'bg-[#07120F] border-[#1F4536] pr-14 hover:border-[#57B75C]/50',
                                   )}
                                 >
-                                  <div className="min-w-0 flex-1">
+                                  <div className="flex min-w-0 flex-1 items-center gap-3">
+                                  <Building2 className={`h-5 w-5 shrink-0 ${isSelected ? 'text-[#57B75C]' : 'text-[#9DB9AB]'}`} />
+                                  <div className="min-w-0">
                                     <div className="text-white text-sm font-medium truncate">{source.bankName}</div>
                                     <div className="text-[#9DB9AB] text-xs truncate">
                                       {source.accountName ? `${source.accountName} · ` : ''}
                                       {source.mask ? `•••• ${source.mask}` : ''}
                                     </div>
+                                  </div>
                                   </div>
                                 </button>
                                 <div className="absolute right-1.5 top-1/2 z-10 flex -translate-y-1/2 items-center gap-0.5">
@@ -298,27 +335,33 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                         </div>
                         <div className="flex items-center gap-2 text-xs text-[#9DB9AB]">
                           Add a new linked account:
-                          <PlaidLink accountId={accountId} onSuccess={handlePlaidSuccess} className="inline bg-transparent! p-1 h-auto">
-                            <span className="text-[#57B75C] text-sm hover:underline cursor-pointer font-medium">via Plaid</span>
-                          </PlaidLink>
-                          <span className="text-[#1E3D2F]">|</span>
-                          <ManualBankLink accountId={accountId} onSuccess={handleManualSuccess} className="inline bg-transparent! p-1 h-auto">
+                          {currency !== 'NGN' && (
+                            <>
+                              <PlaidLink accountId={accountId} onSuccess={handlePlaidSuccess} className="inline bg-transparent! p-1 h-auto">
+                                <span className="text-[#57B75C] text-sm hover:underline cursor-pointer font-medium">via Plaid</span>
+                              </PlaidLink>
+                              <span className="text-[#1F4536]">|</span>
+                            </>
+                          )}
+                          <ManualBankLink accountId={accountId} onSuccess={handleManualSuccess} currency={currency} className="inline bg-transparent! p-1 h-auto">
                             <span className="text-[#57B75C] text-sm hover:underline cursor-pointer font-medium">Manually</span>
                           </ManualBankLink>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-8 gap-4 border-2 border-dashed border-[#1E3D2F] rounded-xl">
-                        <Building2 className="h-12 w-12 text-[#1E3D2F]" />
+                      <div className="flex flex-col items-center justify-center py-8 gap-4 border-2 border-dashed border-[#1F4536] rounded-xl">
+                        <Building2 className="h-12 w-12 text-[#1F4536]" />
                         <div className="text-center">
                           <p className="text-white font-medium">No bank account connected</p>
                           <p className="text-[#9DB9AB] text-sm">Connect your bank to start withdrawing funds</p>
                         </div>
                         <div className="flex flex-col gap-2 w-full max-w-xs mt-2">
-                          <PlaidLink accountId={accountId} onSuccess={handlePlaidSuccess} className="w-full bg-[#57B75C] hover:bg-[#57B75C]/90 text-white rounded-full h-10 font-medium">
-                            Connect via Plaid
-                          </PlaidLink>
-                          <ManualBankLink accountId={accountId} onSuccess={handleManualSuccess} className="w-full flex justify-center items-center h-10 border border-[#57B75C] text-[#57B75C] hover:bg-[#57B75C]/10 rounded-full font-medium">
+                          {currency !== 'NGN' && (
+                            <PlaidLink accountId={accountId} onSuccess={handlePlaidSuccess} className="w-full bg-[#57B75C] hover:bg-[#57B75C]/90 text-white rounded-full h-10 font-medium">
+                              Connect via Plaid
+                            </PlaidLink>
+                          )}
+                          <ManualBankLink accountId={accountId} onSuccess={handleManualSuccess} currency={currency} className="w-full flex justify-center items-center h-10 border border-[#57B75C] text-[#57B75C] hover:bg-[#57B75C]/10 rounded-full font-medium">
                             Add Account Manually
                           </ManualBankLink>
                         </div>
@@ -326,16 +369,15 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                     )}
                   </div>
                 ) : (
-                  <div className="bg-[#07120F] border border-[#1E3D2F] rounded-lg p-4 text-sm text-[#9DB9AB]">
+                  <div className="bg-[#07120F] border border-[#1F4536] rounded-lg p-4 text-sm text-[#9DB9AB]">
                     Wire transfer instructions will be shown once your withdrawal is submitted.
                   </div>
                 )}
 
-                <div className="bg-[#124031] border border-[#1E3D2F]/50 rounded-lg p-3 flex gap-3 items-start">
-                  <CheckCircle2 className="h-4 w-4 text-[#0FBD66] shrink-0 mt-0.5" />
-                  <p className="text-[#A1BEAD] text-xs leading-[19.5px]">
-                    Please ensure your bank details are up to date. Transfers to external accounts may be subject to additional
-                    verification.
+                <div className="bg-[#124031] border border-[#1F4536]/50 rounded-lg p-3 flex gap-3 items-start">
+                  <Info className="h-4 w-4 text-[#30D158] shrink-0 mt-0.5" />
+                  <p className="text-[#8DA69B] text-xs leading-5">
+                    Please ensure your bank details are up to date. Transfers to external accounts may be subject to additional verification.
                   </p>
                 </div>
               </>
@@ -347,19 +389,19 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                 <div className="flex flex-col gap-4">
                   <h3 className="text-white text-lg font-semibold">Review Withdrawal</h3>
 
-                  <div className="bg-[#07120F] border border-[#1E3D2F] rounded-lg p-4 flex flex-col gap-4">
+                  <div className="bg-[#07120F] border border-[#1F4536] rounded-lg p-4 flex flex-col gap-4">
                     <div className="flex justify-between items-center">
                       <span className="text-[#9DB9AB] text-sm">Amount</span>
                       <span className="text-white text-lg font-semibold">
-                        $
+                        {currency === 'NGN' ? '₦' : '$'}
                         {parseFloat(amount || '0').toLocaleString('en-US', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
-                        })}
+                        })} {currency}
                       </span>
                     </div>
 
-                    <div className="h-px w-full bg-[#1E3D2F]" />
+                    <div className="h-px w-full bg-[#1F4536]" />
 
                     <div className="flex justify-between items-start">
                       <span className="text-[#9DB9AB] text-sm">Destination</span>
@@ -383,7 +425,7 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                       </div>
                     </div>
 
-                    <div className="h-px w-full bg-[#1E3D2F]" />
+                    <div className="h-px w-full bg-[#1F4536]" />
 
                     <div className="flex justify-between items-center">
                       <span className="text-[#9DB9AB] text-sm">Estimated Arrival</span>
@@ -394,9 +436,9 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                   </div>
                 </div>
 
-                <div className="bg-[#124031] border border-[#1E3D2F]/50 rounded-lg p-3 flex gap-3 items-start">
-                  <CheckCircle2 className="h-4 w-4 text-[#0FBD66] shrink-0 mt-0.5" />
-                  <p className="text-[#A1BEAD] text-xs leading-[19.5px]">
+                <div className="bg-[#124031] border border-[#1F4536]/50 rounded-lg p-3 flex gap-3 items-start">
+                  <Info className="h-4 w-4 text-[#30D158] shrink-0 mt-0.5" />
+                  <p className="text-[#8DA69B] text-xs leading-5">
                     Please review all details carefully. Once confirmed, this withdrawal cannot be cancelled.
                   </p>
                 </div>
@@ -405,7 +447,7 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
 
             {step === 3 && withdrawalResponse && (
               <div className="flex flex-col gap-6">
-                <div className="bg-[#07120F] border border-[#1E3D2F] rounded-lg p-4 flex flex-col gap-3">
+                <div className="bg-[#07120F] border border-[#1F4536] rounded-lg p-4 flex flex-col gap-3">
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="text-white text-lg font-semibold">Withdrawal submitted</h3>
@@ -419,7 +461,7 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <div className="text-[#9DB9AB]">Amount</div>
-                      <div className="text-white font-semibold">${parseFloat(withdrawalResponse.amount).toFixed(2)}</div>
+                      <div className="text-white font-semibold">{currency === 'NGN' ? '₦' : '$'}{parseFloat(withdrawalResponse.amount).toFixed(2)}</div>
                     </div>
                     <div>
                       <div className="text-[#9DB9AB]">Withdrawal ID</div>
@@ -428,19 +470,22 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                   </div>
                 </div>
 
-                {withdrawalResponse.method_details && (
-                  <div className="bg-[#07120F] border border-[#1E3D2F]/70 rounded-xl p-5 space-y-3">
+                {withdrawalResponse.method_details && (() => {
+                  const details = withdrawalResponse.method_details as AlpacaWithdrawalDetails;
+                  return (
+                  <div className="bg-[#07120F] border border-[#1F4536]/70 rounded-xl p-5 space-y-3">
                     <h4 className="text-white font-semibold">Transfer details</h4>
                     <div className="text-sm text-[#9DB9AB]">
                       Transfer ID:{' '}
-                      <span className="text-white">{(withdrawalResponse.method_details as any).transferId || 'Pending assignment'}</span>
+                      <span className="text-white">{details.transferId || 'Pending assignment'}</span>
                     </div>
                     <div className="text-sm text-[#9DB9AB]">
                       Provider status:{' '}
-                      <span className="text-white">{(withdrawalResponse.method_details as any).alpacaStatus || 'Pending'}</span>
+                      <span className="text-white">{details.alpacaStatus || 'Pending'}</span>
                     </div>
                   </div>
-                )}
+                  );
+                })()}
               </div>
             )}
           </div>
@@ -453,7 +498,7 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                 <Button
                   variant="ghost"
                   onClick={step === 1 ? onCancel : handleBack}
-                  className="flex-1 px-6 h-11 bg-transparent border border-[#1E3D2F] hover:bg-[#1E3D2F] text-white rounded-lg font-medium"
+                  className="flex-1 px-6 h-11 bg-transparent border border-[#1F4536] hover:bg-[#1F4536] text-white rounded-lg font-medium"
                   disabled={processing}
                 >
                   {step === 1 ? 'Cancel' : 'Back'}
