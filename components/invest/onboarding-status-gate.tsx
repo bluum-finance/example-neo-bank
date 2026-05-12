@@ -19,8 +19,9 @@ function isInvestRelatedPage(pathname: string): boolean {
 }
 
 function pickVerificationUrl(data: ComplianceInitiationResponse): string | undefined {
-  for (const check of data.complianceChecks ?? []) {
-    const raw = (check.verificationUrl ?? (check as { verification_url?: string }).verification_url)?.trim();
+  const checks = data.complianceChecks ?? data.compliance_checks ?? [];
+  for (const check of checks) {
+    const raw = (check.verificationUrl ?? check.verification_url)?.trim();
     if (raw) return raw;
   }
   return undefined;
@@ -35,7 +36,7 @@ export function OnboardingStatusGate({
   accountId: string;
   onAccountRefresh: () => Promise<void>;
 }) {
-  const isRejected = status === 'REJECTED';
+  const isRejected = status === 'declined';
   const [restarting, setRestarting] = useState(false);
 
   const handleRestartCompliance = async () => {

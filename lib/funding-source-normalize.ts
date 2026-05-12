@@ -35,7 +35,16 @@ export function toFundingSource(row: unknown): FundingSource {
   const status: FundingSource['status'] =
     statusRaw === 'active' || statusRaw === 'disconnected' || statusRaw === 'error' ? statusRaw : 'disconnected';
 
-  const createdAt = pickString(r, ['created_at', 'createdAt']) ?? '';
+  const createdSec =
+    typeof r.created === 'number'
+      ? r.created
+      : typeof r.created === 'string' && /^\d+$/.test(r.created)
+        ? parseInt(r.created, 10)
+        : undefined;
+  const createdAt =
+    createdSec != null && !Number.isNaN(createdSec)
+      ? new Date(createdSec * 1000).toISOString()
+      : (pickString(r, ['created_at', 'createdAt']) ?? '');
   const updatedAt = pickString(r, ['updated_at', 'updatedAt']) ?? createdAt;
 
   return {
@@ -64,6 +73,10 @@ export function extractFundingSourceRows(payload: unknown): unknown[] {
 
   const o = payload as Record<string, unknown>;
 
+  if (o.object === 'list' && Array.isArray(o.data)) {
+    return o.data;
+  }
+
   const fromKey = (v: unknown): unknown[] | null => (Array.isArray(v) ? v : null);
 
   const fromRoot = fromKey(o.funding_sources) ?? fromKey(o.fundingSources);
@@ -78,10 +91,20 @@ export function extractFundingSourceRows(payload: unknown): unknown[] {
   return [];
 }
 
-/** Rows from POST .../funding-sources/connect: `data.funding_sources` or legacy keys. */
+/** Rows from POST .../funding-sources/connect — list envelope, single envelope, or legacy keys. */
 export function extractConnectFundingSourceRows(bluumBody: unknown): unknown[] {
   if (bluumBody == null || typeof bluumBody !== 'object') return [];
-  const data = (bluumBody as Record<string, unknown>).data;
+  const b = bluumBody as Record<string, unknown>;
+
+  if (b.object === 'list' && Array.isArray(b.data)) {
+    return b.data;
+  }
+
+  if (b.object === 'funding_source') {
+    return [bluumBody];
+  }
+
+  const data = b.data;
   if (data == null || typeof data !== 'object') return [];
   const d = data as Record<string, unknown>;
   if (Array.isArray(d.funding_sources)) return d.funding_sources;

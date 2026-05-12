@@ -331,11 +331,13 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
           <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
             <div>
               <div className="text-[#9DB9AB]">Amount</div>
-              <div className="text-white font-semibold">{currencySymbol}{parseFloat(depositResponse.amount).toFixed(2)}</div>
+              <div className="text-white font-semibold">{currencySymbol}{parseFloat(depositResponse.amount ?? '0').toFixed(2)}</div>
             </div>
             <div>
               <div className="text-[#9DB9AB]">Deposit ID</div>
-              <div className="text-white font-semibold">{depositResponse.deposit_id}</div>
+              <div className="text-white font-semibold">
+                {(depositResponse as { id?: string }).id ?? depositResponse.deposit_id}
+              </div>
             </div>
           </div>
         </div>

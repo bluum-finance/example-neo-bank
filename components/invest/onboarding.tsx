@@ -12,7 +12,7 @@ import {
   annualIncomeBracketToRange,
   liquidNetWorthBracketToRange,
   netWorthBracketToRange,
-} from '@/lib/new-account-financial-profile';
+} from '@/lib/investor-money-brackets';
 import { appendParamToUrl, getInvestRedirectUri } from '@/lib/utils';
 import { AccountService } from '@/services/account.service';
 import { toast } from 'sonner';
@@ -173,47 +173,49 @@ export function InvestOnboarding({ initialStep = 0, investmentChoice }: InvestOn
       if (!user) throw new Error('Please sign in first');
 
       const payload = {
-        account_type: 'trading',
-        contact: {
-          email_address: user.email || 'demo1x11@bluuminvest.com',
-          phone_number: formData.profile.phoneNumber,
-          street_address: [formData.profile.address],
+        account_type: 'individual' as const,
+        first_name: formData.profile.firstName,
+        last_name: formData.profile.lastName,
+        date_of_birth: formData.profile.dateOfBirth,
+        tax_id: '444-55-4321',
+        tax_id_type: 'SSN',
+        country_of_citizenship: 'US',
+        country_of_birth: (user.countryOfBirth || 'US').toUpperCase().slice(0, 2),
+        country_of_tax_residence: 'US',
+        funding_source: ['employment_income'] as const,
+        annual_income: annualIncomeBracketToRange(formData.financialProfile.annualIncome),
+        liquid_net_worth: liquidNetWorthBracketToRange(formData.financialProfile.liquidAssets),
+        total_net_worth: netWorthBracketToRange(formData.financialProfile.netWorth),
+        email: user.email || 'demo1x11@bluuminvest.com',
+        phone: /^\+[1-9]/.test(formData.profile.phoneNumber.trim())
+          ? formData.profile.phoneNumber.trim()
+          : `+1${formData.profile.phoneNumber.replace(/\D/g, '').slice(-10)}`,
+        address: {
+          street: [formData.profile.address],
           city: formData.profile.city,
           state: formData.profile.state,
           postal_code: formData.profile.zip,
-          country: user.country || 'US',
+          country: (user.country || 'US').toUpperCase().slice(0, 2),
         },
-        identity: {
-          first_name: formData.profile.firstName,
-          last_name: formData.profile.lastName,
-          date_of_birth: formData.profile.dateOfBirth,
-          tax_id: '444-55-4321',
-          tax_id_type: 'SSN',
-          country_of_citizenship: 'US',
-          country_of_birth: user.countryOfBirth || 'US',
-          country_of_tax_residence: 'US',
-          funding_source: ['employment_income'],
-          financial_profile: {
-            annual_income: annualIncomeBracketToRange(formData.financialProfile.annualIncome),
-            net_worth: netWorthBracketToRange(formData.financialProfile.netWorth),
-            liquid_net_worth: liquidNetWorthBracketToRange(formData.financialProfile.liquidAssets),
-          },
-        },
-        disclosures: {
-          employment_status: formData.employmentInfo.employmentStatus as
-            | 'employed'
-            | 'unemployed'
-            | 'student'
-            | 'retired',
-          is_control_person: formData.disclosures.isControlPerson,
-          is_affiliated_exchange_or_finra: formData.disclosures.isAffiliatedExchangeOrFinra,
-          is_politically_exposed: formData.disclosures.isPoliticallyExposed,
-          immediate_family_exposed: formData.disclosures.immediateFamilyExposed,
-        },
-        agreements: [
+        is_control_person: formData.disclosures.isControlPerson,
+        is_affiliated_exchange_or_finra: formData.disclosures.isAffiliatedExchangeOrFinra,
+        is_politically_exposed: formData.disclosures.isPoliticallyExposed,
+        immediate_family_exposed: formData.disclosures.immediateFamilyExposed,
+        employment_status: formData.employmentInfo.employmentStatus as
+          | 'employed'
+          | 'unemployed'
+          | 'student'
+          | 'retired',
+        ...(formData.employmentInfo.employmentStatus === 'employed'
+          ? {
+              employer_name: formData.employmentInfo.employer,
+              employment_position: formData.employmentInfo.position,
+              employer_address: formData.employmentInfo.employerAddress || undefined,
+            }
+          : {}),
+        signed_agreements: [
           {
-            agreement: 'account_agreement',
-            agreed: true, // Implied by completing the onboarding flow
+            type: 'investor_agreement' as const,
             signed_at: new Date().toISOString(),
             ip_address: '127.0.0.1',
           },

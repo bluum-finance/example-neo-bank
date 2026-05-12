@@ -1,13 +1,24 @@
 import { create } from 'zustand';
-import type { AccountStatus } from '@/lib/bluum-api.types';
+import type { ExternalAccountStatus } from '@/lib/bluum-api.types';
 import { AccountService, type Account } from '@/services/account.service';
 import { InvestmentService, type Position } from '@/services/investment.service';
 import { WidgetService, type PerformanceDataPoint } from '@/services/widget.service';
+import { useUserStore } from '@/store/user.store';
 
-export type OnboardingGateStatus = Extract<AccountStatus, 'PENDING' | 'REJECTED'>;
+/** Investor not yet active — show compliance / verification overlay */
+export type OnboardingGateStatus = 'onboarding' | 'under_review' | 'awaiting_documents' | 'declined';
 
-function deriveOnboardingGateStatus(status?: AccountStatus): OnboardingGateStatus | null {
-  if (status === 'PENDING' || status === 'REJECTED') return status;
+function deriveOnboardingGateStatus(status?: ExternalAccountStatus): OnboardingGateStatus | null {
+  if (status === 'declined') return 'declined';
+  if (
+    status === 'onboarding' ||
+    status === 'under_review' ||
+    status === 'awaiting_documents' ||
+    status === 'setup_failed' ||
+    status === 'suspended'
+  ) {
+    return status === 'setup_failed' || status === 'suspended' ? 'under_review' : status;
+  }
   return null;
 }
 
@@ -19,7 +30,7 @@ interface AccountState {
   positions: Position[];
   summaryData: unknown | null;
   chartData: PerformanceDataPoint[];
-  /** PENDING / REJECTED — dashboard shows compliance onboarding overlay */
+  /** Non-active investor — dashboard may show compliance overlay */
   onboardingGateStatus: OnboardingGateStatus | null;
 
   // Status
@@ -58,6 +69,9 @@ export const useAccountStore = create<AccountState>()((set) => ({
     set({ isLoading: true, error: null });
     try {
       const account = await AccountService.getAccount(accountId);
+      if (account?.id && account.id !== accountId) {
+        useUserStore.getState().setExternalAccountId(account.id);
+      }
       const balanceValue = account?.balance ? parseFloat(account.balance) : 0;
       const portfolioId: string = (account as any)?.portfolios?.find((p: any) => p.status === 'active')?.id ?? 'ptf_demo_main';
 
@@ -66,7 +80,7 @@ export const useAccountStore = create<AccountState>()((set) => ({
         accountBalance: balanceValue,
         portfolioId,
         isLoading: false,
-        onboardingGateStatus: deriveOnboardingGateStatus(account.status as AccountStatus),
+        onboardingGateStatus: deriveOnboardingGateStatus(account.status as ExternalAccountStatus),
       });
 
       return account;

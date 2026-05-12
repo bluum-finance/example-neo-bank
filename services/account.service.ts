@@ -1,12 +1,12 @@
-import type { AccountStatus, ComplianceInitiationResponse } from '@/lib/bluum-api.types';
+import type { Account as BluumInvestorAccount, ComplianceInitiationResponse } from '@/lib/bluum-api.types';
 
-// Helper function to handle API errors
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const error = await response.json().catch(() => ({
       error: `HTTP ${response.status}: ${response.statusText}`,
     }));
-    const errorMessage = typeof error.error === 'string' ? error.error : error.error?.message || 'An error occurred';
+    const errorMessage =
+      typeof error.error === 'string' ? error.error : (error.error as { message?: string })?.message || 'An error occurred';
     const errorWithStatus = new Error(errorMessage) as Error & { status: number };
     errorWithStatus.status = response.status;
     throw errorWithStatus;
@@ -14,49 +14,27 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json();
 }
 
-// Account types
-export interface Account {
-  id: string;
-  account_number?: string;
-  status: AccountStatus;
-  balance?: string;
-  currency: string;
-  last_equity: string;
-  created_at: string;
-  account_type: string;
-}
+/** Investor resource from GET `/api/bluum/investors/:id` (Bluum `/v1/investors` envelope). */
+export type Account = BluumInvestorAccount;
 
-export interface ComplianceCheck {
-  verification_url?: string;
-}
+/** Same envelope as GET investor; POST create returns the resource. */
+export type CreateAccountResponse = Account;
 
-export interface CreateAccountResponse extends Account {
-  compliance_checks?: ComplianceCheck[];
-}
-
-// Account Service
 export class AccountService {
-  /**
-   * Get a specific account by ID
-   */
   static async getAccount(accountId: string): Promise<Account> {
-    const response = await fetch(`/api/investment/accounts/${accountId}`);
+    const response = await fetch(`/api/bluum/investors/${encodeURIComponent(accountId)}`);
     return handleResponse<Account>(response);
   }
 
-  // Restart compliance workflow after rejection / re-verify
   static async restartComplianceWorkflow(accountId: string): Promise<ComplianceInitiationResponse> {
-    const response = await fetch(`/api/investment/accounts/${accountId}/compliance/restart`, {
+    const response = await fetch(`/api/bluum/investors/${encodeURIComponent(accountId)}/compliance/restart`, {
       method: 'POST',
     });
     return handleResponse<ComplianceInitiationResponse>(response);
   }
 
-  /**
-   * Create a new investment account
-   */
-  static async createAccount(accountData: any): Promise<CreateAccountResponse> {
-    const response = await fetch('/api/investment/accounts', {
+  static async createAccount(accountData: unknown): Promise<CreateAccountResponse> {
+    const response = await fetch('/api/bluum/investors', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

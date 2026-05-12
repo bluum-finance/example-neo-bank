@@ -1,6 +1,23 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+function isBluumList(body: unknown): body is { object: 'list'; data: unknown[] } {
+  return (
+    body !== null &&
+    typeof body === 'object' &&
+    !Array.isArray(body) &&
+    (body as Record<string, unknown>).object === 'list' &&
+    Array.isArray((body as Record<string, unknown>).data)
+  );
+}
+
+/** Unwrap Bluum/Stripe-style `{ object: 'list', data: [...] }` or pass through arrays. */
+export function unwrapList<T>(body: unknown, fallback: T[] = []): T[] {
+  if (isBluumList(body)) return body.data as T[];
+  if (Array.isArray(body)) return body as T[];
+  return fallback;
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }

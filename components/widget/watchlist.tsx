@@ -118,7 +118,9 @@ export function Watchlist() {
         {loading ? (
           <li className="py-8 text-center text-sm text-[#A1BEAD]">Loading quotes...</li>
         ) : (
-          items.map((item) => <WatchlistItem key={item.symbol} {...item} onRemove={item.onRemove} />)
+          items.map((item, index) => (
+            <WatchlistItem key={`${item.symbol}-${index}`} {...item} onRemove={item.onRemove} />
+          ))
         )}
       </ul>
     </section>

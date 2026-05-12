@@ -95,7 +95,8 @@ export default function Invest() {
     async (userAccountId: string) => {
       try {
         const account = await fetchAccount(userAccountId);
-        if (account?.status === 'REJECTED' || account?.status === 'PENDING') {
+        const gate: string[] = ['onboarding', 'under_review', 'awaiting_documents', 'declined'];
+        if (account?.status && gate.includes(account.status)) {
           return;
         }
 
@@ -207,6 +208,8 @@ const SelfDirectedDashboard = ({
 }) => {
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const accountRecord = useAccountStore((s) => s.account);
+  const investorId = accountRecord?.id ?? accountId ?? undefined;
 
   const data: any[] = [
     { name: 'Stocks', value: 60, color: '#2BEE6C' },
@@ -274,13 +277,13 @@ const SelfDirectedDashboard = ({
         <NewsInsights />
       </section>
 
-      {showDepositModal && accountId && (
-        <DepositDialog accountId={accountId} onSuccess={() => setShowDepositModal(false)} onCancel={() => setShowDepositModal(false)} />
+      {showDepositModal && investorId && (
+        <DepositDialog accountId={investorId} onSuccess={() => setShowDepositModal(false)} onCancel={() => setShowDepositModal(false)} />
       )}
 
-      {showWithdrawModal && accountId && (
+      {showWithdrawModal && investorId && (
         <WithdrawalDialog
-          accountId={accountId}
+          accountId={investorId}
           availableBalance={0}
           onSuccess={() => setShowWithdrawModal(false)}
           onCancel={() => setShowWithdrawModal(false)}

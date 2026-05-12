@@ -64,13 +64,14 @@ export function QuickActionsWidget() {
       const userAccountId = user?.externalAccountId;
 
       if (userAccountId) {
-        setAccountId(userAccountId);
         try {
           const account = await AccountService.getAccount(userAccountId);
+          setAccountId(account.id ?? userAccountId);
           const balanceValue = account?.balance ? parseFloat(account.balance) : 0;
           setAvailableBalance(balanceValue);
         } catch (error) {
           console.error('Failed to load account balance:', error);
+          setAccountId(userAccountId);
           setAvailableBalance(0);
         }
       }

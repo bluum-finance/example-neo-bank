@@ -1,131 +1,202 @@
+/** Matches `ExternalAccountStatus` on Bluum `/v1` responses. */
+export type ExternalAccountStatus =
+  | 'onboarding'
+  | 'under_review'
+  | 'awaiting_documents'
+  | 'active'
+  | 'suspended'
+  | 'closed'
+  | 'declined'
+  | 'setup_failed';
+
+/** Matches `ExternalOrderStatus` on Bluum `/v1` order resources. */
+export type ExternalOrderStatus = 'pending' | 'filled' | 'partial' | 'cancelled' | 'failed';
+
+/** Matches `ExternalTransferStatus` where surfaced on wallet movements. */
+export type ExternalTransferStatus = 'pending' | 'processing' | 'completed' | 'cancelled' | 'failed';
+
+export type SignedAgreementType = 'investor_agreement' | 'margin_disclosure_acknowledged' | 'w8ben_certification';
+
+export type BluumFundingSourceEnum =
+  | 'employment_income'
+  | 'investments'
+  | 'inheritance'
+  | 'business_income'
+  | 'savings'
+  | 'family';
+
+export type FlatInvestorAddress = {
+  street: string[];
+  unit?: string;
+  city: string;
+  state?: string;
+  postal_code?: string;
+  country: string;
+};
+
+export type FlatMoneyRange = { min: string; max: string };
+
+/**
+ * Request body for `POST /v1/investors` — flat Bluum-native investor
+ * (see `flatInvestorRequestSchema` in bluum-web-api).
+ */
+export interface NewAccountRequest {
+  account_type: 'individual' | 'joint' | 'corporate';
+  management_type?: 'self_directed' | 'advised';
+  tax_advantaged?: boolean;
+  tax_designation?: string;
+  first_name: string;
+  middle_name?: string;
+  last_name: string;
+  date_of_birth: string;
+  tax_id: string;
+  tax_id_type: string;
+  tax_id_country?: string;
+  country_of_citizenship: string;
+  country_of_birth: string;
+  country_of_tax_residence: string;
+  funding_source: BluumFundingSourceEnum[];
+  annual_income: FlatMoneyRange;
+  liquid_net_worth: FlatMoneyRange;
+  total_net_worth?: FlatMoneyRange;
+  permanent_resident?: boolean;
+  visa_type?: string;
+  visa_expiration_date?: string;
+  email: string;
+  phone: string;
+  address: FlatInvestorAddress;
+  is_control_person: boolean;
+  is_affiliated_exchange_or_finra: boolean;
+  is_affiliated_exchange_or_iiroc?: boolean;
+  is_politically_exposed: boolean;
+  immediate_family_exposed: boolean;
+  employment_status: 'employed' | 'unemployed' | 'student' | 'retired';
+  employer_name?: string;
+  employer_address?: string;
+  employment_position?: string;
+  affiliated_company?: {
+    name?: string;
+    address?: string;
+    compliance_email?: string;
+    ticker?: string;
+  };
+  signed_agreements?: Array<{ type: SignedAgreementType; signed_at: string; ip_address: string }>;
+  trusted_contact?: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+  };
+  metadata?: Record<string, string>;
+}
+
+export type BluumListResponse<T> = {
+  object: 'list';
+  url: string;
+  has_more: boolean;
+  data: T[];
+};
+
+export type BluumErrorType =
+  | 'invalid_request_error'
+  | 'authentication_error'
+  | 'permission_error'
+  | 'not_found_error'
+  | 'conflict_error'
+  | 'idempotency_error'
+  | 'rate_limit_error'
+  | 'api_error';
+
+export interface BluumErrorBody {
+  type: BluumErrorType;
+  code: string;
+  message: string;
+  param?: string;
+  doc_url?: string;
+  request_log_url?: string;
+}
+
+export interface BluumApiErrorEnvelope {
+  error: BluumErrorBody;
+}
+
+/** Stripe-shaped resource: id, object, created, livemode, metadata + domain fields. */
+export type BluumResourceEnvelope<TFields extends object> = TFields & {
+  id: string;
+  object: string;
+  created: number | null;
+  livemode: boolean;
+  metadata: Record<string, unknown>;
+};
+
 export interface ComplianceCheckItem {
-  checkType: string;
+  checkType?: string;
+  check_type?: string;
   status: string;
   provider?: string;
   verificationUrl?: string;
+  verification_url?: string;
   verificationToken?: string;
+  verification_token?: string;
 }
 
-/** response from POST /accounts/{id}/compliance/restart */
+/** Restart workflow + create investor compliance payloads (camelCase from API). */
 export interface ComplianceInitiationResponse {
-  workflowId: string;
-  status: string;
-  complianceChecks: ComplianceCheckItem[];
+  workflowId?: string;
+  workflow_id?: string;
+  status?: string;
+  complianceChecks?: ComplianceCheckItem[];
+  compliance_checks?: ComplianceCheckItem[];
 }
 
-// Account Types
-export type AccountStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED' | 'PENDING' | 'REJECTED';
-
-export interface Account {
-  id: string;
-  account_number?: string;
-  status: AccountStatus;
+/** GET /investors/:id envelope (subset used by demo). */
+export interface Account extends BluumResourceEnvelope<{
+  status: ExternalAccountStatus;
+  account_type?: string;
   balance?: string;
-  crypto_status?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
-  currency: string;
-  last_equity: string;
-  created_at: string;
-  account_type: 'trading' | 'individual' | 'joint' | 'ira' | 'corporate';
-  trading_type?: 'margin' | 'cash';
-  contact?: {
-    email_address: string;
-    phone_number?: string;
-    street_address: string[];
-    city?: string;
-    state?: string;
-    postal_code?: string;
-    country?: string;
-  };
-  identity?: {
-    first_name: string;
-    last_name: string;
-    date_of_birth?: string;
-    country_of_citizenship?: string;
-    country_of_birth?: string;
-    tax_id_type?: string;
-    country_of_tax_residence?: string;
-    funding_source?: string[];
-  };
-}
+  last_equity?: string;
+  currency?: string;
+  account_number?: string | null;
+  portfolios?: Array<{ id?: string; status?: string }>;
+  compliance_checks?: ComplianceCheckItem[];
+}> {}
 
-export interface NewAccountRequest {
-  account_type: 'trading' | 'individual' | 'joint' | 'ira' | 'corporate';
-  contact: {
-    email_address: string;
-    phone_number: string;
-    street_address: string[];
-    city: string;
-    state: string;
-    postal_code: string;
-    country: string;
-  };
-  identity: {
-    first_name: string;
-    last_name: string;
-    date_of_birth: string;
-    tax_id: string;
-    tax_id_type: 'SSN' | 'ITIN' | 'EIN' | 'SIN' | 'NINO' | 'TFN' | 'VAT' | 'TIN' | 'OTHER';
-    country_of_citizenship: string;
-    country_of_birth: string;
-    country_of_tax_residence: string;
-    funding_source?: ('employment_income' | 'business_income' | 'investment_income' | 'inheritance' | 'gift' | 'other')[];
-    financial_profile: {
-      annual_income: { min: string; max: string };
-      net_worth: { min: string; max: string };
-      liquid_net_worth: { min: string; max: string };
-    };
-  };
-  disclosures?: {
-    employment_status: 'employed' | 'unemployed' | 'student' | 'retired';
-    is_control_person?: boolean;
-    is_affiliated_exchange_or_finra?: boolean;
-    is_politically_exposed?: boolean;
-    immediate_family_exposed?: boolean;
-  };
-  agreements?: Array<{
-    agreement: 'account_agreement' | 'customer_agreement' | 'margin_agreement' | 'options_agreement' | 'privacy_policy';
-    agreed: boolean;
-    signed_at: string;
-    ip_address: string;
-  }>;
-}
-
-// Asset Types
 export interface Asset {
-  id: string;
-  class: 'us_equity' | 'crypto' | 'us_option';
-  market: string;
-  symbol: string;
-  name: string;
-  currency: string;
-  status: 'active' | 'inactive';
-  tradable: boolean;
-  marginable: boolean;
-  shortable: boolean;
-  easy_to_borrow: boolean;
-  fractionable: boolean;
+  id?: string;
+  object?: string;
+  livemode?: boolean;
+  class?: 'us_equity' | 'crypto' | 'us_option';
+  market?: string;
+  symbol?: string;
+  name?: string;
+  currency?: string;
+  status?: 'active' | 'inactive';
+  tradable?: boolean;
+  marginable?: boolean;
+  shortable?: boolean;
+  easy_to_borrow?: boolean;
+  fractionable?: boolean;
 }
 
-// Position Types
+/** Position resource from `/v1/investors/:id/positions` list. */
 export interface Position {
   id: string;
-  account_id: string;
+  object?: string;
+  investor_id: string;
   symbol: string;
-  asset_id: string;
+  asset_id?: string;
   currency: string;
   quantity: string;
-  average_cost_basis: string;
-  total_cost_basis: string;
-  current_price: string;
-  market_value: string;
-  unrealized_pl: string;
-  unrealized_pl_percent: string;
-  last_transaction_at?: string;
-  created_at: string;
-  updated_at: string;
+  average_cost_basis?: string;
+  total_cost_basis?: string;
+  current_price?: string;
+  market_value?: string;
+  unrealized_pl?: string;
+  unrealized_pl_percent?: string;
+  last_transaction_at?: string | null;
+  created?: number | null;
 }
 
-// Order Types
 export interface OrderRequest {
   symbol: string;
   market?: string;
@@ -146,51 +217,49 @@ export interface OrderRequest {
   commission_type?: 'notional' | 'qty' | 'bps';
 }
 
-export interface Order {
-  id: string;
-  account_id: string;
+export interface Order extends BluumResourceEnvelope<{
+  investor_id: string;
   symbol: string;
-  currency: string;
-  qty?: string;
-  notional?: string;
-  side: 'buy' | 'sell';
-  type: 'market' | 'limit' | 'stop' | 'stop_limit' | 'trailing_stop';
-  time_in_force: 'day' | 'gtc' | 'opg' | 'cls' | 'ioc' | 'fok';
-  limit_price?: string;
-  stop_price?: string;
-  status: 'accepted' | 'filled' | 'partially_filled' | 'canceled' | 'rejected';
-  filled_qty?: string;
-  remaining_qty?: string;
-  average_price?: string;
-  commission?: string;
-  commission_type?: 'notional' | 'qty' | 'bps';
-  submitted_at: string;
-  filled_at?: string;
-  canceled_at?: string;
-  reject_reason?: string;
-}
+  currency?: string;
+  quantity?: string;
+  notional?: string | null;
+  side: string;
+  type: string;
+  time_in_force: string;
+  limit_price?: string | null;
+  stop_price?: string | null;
+  trail_percent?: string | null;
+  trail_price?: string | null;
+  extended_hours?: boolean;
+  client_order_id?: string | null;
+  status: ExternalOrderStatus;
+  filled_quantity?: string | null;
+  remaining_quantity?: string | null;
+  average_price?: string | null;
+  commission?: string | null;
+  commission_type?: string | null;
+  submitted_at?: string | null;
+  filled_at?: string | null;
+  cancelled_at?: string | null;
+  failure_reason?: string | null;
+}> {}
 
-// Transaction Types
-export interface Transaction {
-  transaction_id: string;
-  account_id: string;
-  type: 'deposit' | 'withdrawal';
-  status: 'pending' | 'processing' | 'settled' | 'failed' | 'canceled';
+export interface Transaction extends BluumResourceEnvelope<{
+  investor_id: string;
+  wallet_id?: string | null;
+  type: string;
+  status: string;
   amount: string;
   currency: string;
-  funding_type: 'fiat' | 'crypto';
-  funding_details: FiatFundingDetails | CryptoFundingDetails;
-  description?: string;
-  external_reference_id?: string;
-  fee: string;
-  net_amount: string;
-  created_at: string;
-  settled_at?: string | null;
+  method?: string | null;
+  description?: string | null;
+  balance_before?: string | null;
+  balance_after?: string | null;
+  completed_at?: string | null;
   failed_at?: string | null;
   failure_reason?: string | null;
-}
+}> {}
 
-// Funding Details Types
 export interface FiatFundingDetails {
   funding_type: 'fiat';
   fiat_currency: 'USD';
@@ -205,7 +274,6 @@ export interface CryptoFundingDetails {
   network: 'Bitcoin' | 'Ethereum' | 'Polygon';
 }
 
-// Fund Request (for deposits)
 export interface FundRequest {
   amount: string;
   funding_details: FiatFundingDetails | CryptoFundingDetails;
@@ -213,8 +281,8 @@ export interface FundRequest {
   external_reference_id?: string;
 }
 
-// Withdrawal Request
 export interface WithdrawalRequest {
+  /** Bluum investor id (same as historical `account_id` in demo routes). */
   account_id: string;
   amount: string;
   funding_details: FiatFundingDetails | CryptoFundingDetails;
@@ -222,7 +290,6 @@ export interface WithdrawalRequest {
   external_reference_id?: string;
 }
 
-// External transfer contract types (deposit/withdrawal)
 export type DepositMethod = 'ach' | 'manual_bank_transfer' | 'wire';
 export type WithdrawalMethod = 'ach' | 'wire';
 
@@ -270,25 +337,24 @@ export interface AlpacaWireDetails {
 
 export type DepositMethodDetails = AlpacaAchDetails | AlpacaWireDetails | ManualBankTransferDetails | Record<string, unknown>;
 
-export interface ExternalDepositResponse {
-  deposit_id: string;
-  account_id: string;
+export interface ExternalDepositResponse extends BluumResourceEnvelope<{
+  investor_id?: string;
   wallet_id?: string;
-  method: DepositMethod;
-  status: string;
-  amount: string;
-  currency: string;
-  description?: string;
+  method?: DepositMethod;
+  status?: string;
+  amount?: string;
+  currency?: string;
+  description?: string | null;
   method_details?: DepositMethodDetails;
   initiated_at?: string | null;
   received_at?: string | null;
   completed_at?: string | null;
   expires_at?: string | null;
   failure_reason?: string | null;
-  created_at?: string;
+}> {
+  deposit_id?: string;
 }
 
-// Funding Sources
 export interface FundingSource {
   id: string;
   type: 'plaid' | 'manual';
@@ -320,20 +386,20 @@ export interface AlpacaWithdrawalDetails {
 
 export type WithdrawalMethodDetails = AlpacaWithdrawalDetails | Record<string, unknown>;
 
-export interface ExternalWithdrawalResponse {
-  withdrawal_id: string;
-  account_id: string;
+export interface ExternalWithdrawalResponse extends BluumResourceEnvelope<{
+  investor_id?: string;
   wallet_id?: string;
-  method: WithdrawalMethod;
-  status: string;
-  amount: string;
-  currency: string;
-  description?: string;
+  method?: WithdrawalMethod;
+  status?: string;
+  amount?: string;
+  currency?: string;
+  description?: string | null;
   method_details?: WithdrawalMethodDetails;
   destination_details?: Record<string, unknown>;
   initiated_at?: string | null;
   submitted_at?: string | null;
   completed_at?: string | null;
   failure_reason?: string | null;
-  created_at?: string;
+}> {
+  withdrawal_id?: string;
 }

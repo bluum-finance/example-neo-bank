@@ -29,10 +29,10 @@ No test framework is configured.
 All data flows through three layers — never call the Bluum backend directly from client components:
 
 1. **`lib/bluum-api.ts`** — Server-only Bluum API client (Basic Auth with `BLUUM_API_KEY:BLUUM_SECRET_KEY`). Only used inside `app/api/` route handlers.
-2. **`app/api/`** — Next.js API routes that bridge client ↔ Bluum backend. Organized by feature: `investment/`, `wealth/`, `widget/`, `currency/`, `health/`.
+2. **`app/api/`** — Next.js API routes that bridge client ↔ Bluum backend. Investment/trading uses the dynamic proxy `app/api/bluum/[[...path]]/` (allowlisted segments); other areas include `wealth/`, `widget/`, `currency/`, `health/`.
 3. **`services/*.service.ts`** — Client-side service classes that call the Next.js API routes via `fetch()`. All API communication from components **must** go through services.
 
-**Example flow:** Component → `InvestmentService.getPositions(accountId)` → `fetch('/api/investment/positions')` → `bluumApi.listPositions()` → Bluum backend
+**Example flow:** Component → `InvestmentService.getPositions(accountId)` → `fetch('/api/bluum/investors/{id}/positions')` → `bluumApi.forward()` → Bluum backend
 
 ### State Management
 

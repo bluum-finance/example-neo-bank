@@ -1,11 +1,16 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosError, type AxiosRequestConfig } from 'axios';
 import { config } from './config';
+import { unwrapList } from './utils';
+
+export { unwrapList } from './utils';
 
 /**
  * Bluum API Client
  *
  * - Use in: app/api route.ts files (server-side only)
  * - Never import this module in client components or client-side code
+ *
+ * Paths are relative to `apiBaseUrl`, which should end in `/v1`.
  */
 const BLUUM_API_BASE_URL = config.apiBaseUrl;
 const BLUUM_API_KEY = config.apiKey;
@@ -15,7 +20,6 @@ class BluumApiClient {
   private client: AxiosInstance;
 
   constructor() {
-    // Create base64 encoded credentials for Basic Auth
     const credentials = Buffer.from(`${BLUUM_API_KEY}:${BLUUM_SECRET_KEY}`).toString('base64');
 
     this.client = axios.create({
@@ -26,11 +30,9 @@ class BluumApiClient {
       },
     });
 
-    // Add response interceptor for error handling
     this.client.interceptors.response.use(
       (response) => {
         console.info('Bluum API URL:', response.config.url);
-        // console.log('Bluum API Response:', response.data);
         return response;
       },
       (error: AxiosError) => {
@@ -46,24 +48,34 @@ class BluumApiClient {
     );
   }
 
-  /** POST /accounts/{accountId}/compliance/restart — new KYC workflow after rejection / re-verify */
-  async restartComplianceWorkflow(accountId: string) {
-    const response = await this.client.post(`/accounts/${accountId}/compliance/restart`);
+  /**
+   * Low-level forwarder for the dynamic API proxy. Does not throw on HTTP error status;
+   * returns Bluum response body and status as-is.
+   */
+  async forward(config: AxiosRequestConfig): Promise<{ status: number; data: unknown }> {
+    const response = await this.client.request({
+      ...config,
+      validateStatus: () => true,
+    });
+    return { status: response.status, data: response.data };
+  }
+
+  /** POST /investors/:investorId/compliance/restart */
+  async restartComplianceWorkflow(investorId: string) {
+    const response = await this.client.post(`/investors/${investorId}/compliance/restart`);
     return response.data;
   }
 
-  // Account Management
-  async createAccount(data: any) {
-    const response = await this.client.post('/accounts', data);
+  async createAccount(data: unknown) {
+    const response = await this.client.post('/investors', data);
     return response.data;
   }
 
-  async getAccount(accountId: string) {
-    const response = await this.client.get(`/accounts/${accountId}`);
+  async getAccount(investorId: string) {
+    const response = await this.client.get(`/investors/${investorId}`);
     return response.data;
   }
 
-  // Asset Management
   async searchAssets(params: {
     q?: string;
     status?: 'active' | 'inactive';
@@ -71,12 +83,12 @@ class BluumApiClient {
     limit?: number;
   }) {
     const response = await this.client.get('/assets/search', { params });
-    return response.data;
+    return unwrapList(response.data);
   }
 
   async listAssets(params?: { status?: 'active' | 'inactive'; asset_class?: 'us_equity' | 'crypto' | 'us_option'; tradable?: boolean }) {
-    const response = await this.client.get('/assets/list', { params });
-    return response.data;
+    const response = await this.client.get('/assets', { params });
+    return unwrapList(response.data);
   }
 
   async getAssetBySymbol(symbol: string, params?: { market?: string }) {
@@ -106,14 +118,13 @@ class BluumApiClient {
     return response.data;
   }
 
-  // Trading
-  async placeOrder(accountId: string, orderData: any) {
-    const response = await this.client.post(`/trading/accounts/${accountId}/orders`, orderData);
+  async placeOrder(investorId: string, orderData: unknown) {
+    const response = await this.client.post(`/investors/${investorId}/orders`, orderData);
     return response.data;
   }
 
   async listOrders(
-    accountId: string,
+    investorId: string,
     params?: {
       status?: 'accepted' | 'filled' | 'partially_filled' | 'canceled' | 'rejected';
       symbol?: string;
@@ -122,37 +133,32 @@ class BluumApiClient {
       offset?: number;
     }
   ) {
-    const response = await this.client.get(`/trading/accounts/${accountId}/orders`, {
-      params,
-    });
+    const response = await this.client.get(`/investors/${investorId}/orders`, { params });
+    return unwrapList(response.data);
+  }
+
+  async getOrder(investorId: string, orderId: string) {
+    const response = await this.client.get(`/investors/${investorId}/orders/${orderId}`);
     return response.data;
   }
 
-  async getOrder(orderId: string) {
-    const response = await this.client.get(`/trading/orders/${orderId}`);
-    return response.data;
-  }
-
-  // Positions
   async listPositions(
-    accountId: string,
+    investorId: string,
     params?: {
       symbol?: string;
       non_zero_only?: boolean;
       refresh_prices?: boolean;
     }
   ) {
-    const response = await this.client.get(`/trading/accounts/${accountId}/positions`, {
-      params,
-    });
-    return response.data;
+    const response = await this.client.get(`/investors/${investorId}/positions`, { params });
+    return unwrapList(response.data);
   }
 
   async listTransactions(
-    accountId: string,
+    investorId: string,
     params?: {
-      type?: 'deposit' | 'withdrawal';
-      status?: 'pending' | 'processing' | 'received' | 'completed' | 'submitted' | 'expired' | 'canceled' | 'failed';
+      type?: string;
+      status?: string;
       currency?: string;
       date_from?: string;
       date_to?: string;
@@ -160,26 +166,24 @@ class BluumApiClient {
       offset?: number;
     }
   ) {
-    const response = await this.client.get(`/accounts/${accountId}/transactions`, {
+    const response = await this.client.get(`/investors/${investorId}/transactions`, {
       params,
     });
-    return response.data.transactions;
+    return unwrapList(response.data);
   }
 
-  // Plaid Integration
-  async getPlaidLinkToken(accountId: string, body: Record<string, any> = {}) {
-    const response = await this.client.post(`/accounts/${accountId}/funding-sources/plaid/link-token`, body);
+  async getPlaidLinkToken(investorId: string, body: Record<string, unknown> = {}) {
+    const response = await this.client.post(`/investors/${investorId}/funding-sources/plaid/link-token`, body);
     return response.data;
   }
 
-  async connectFundingSource(accountId: string, data: Record<string, any>) {
-    const response = await this.client.post(`/accounts/${accountId}/funding-sources/connect`, data);
+  async connectFundingSource(investorId: string, data: Record<string, unknown>) {
+    const response = await this.client.post(`/investors/${investorId}/funding-sources/connect`, data);
     return response.data;
   }
 
-  // Deposits
   async createDeposit(
-    accountId: string,
+    investorId: string,
     depositData: {
       amount: string;
       currency: string;
@@ -192,15 +196,14 @@ class BluumApiClient {
     idempotencyKey?: string
   ) {
     const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {};
-    const response = await this.client.post(`/accounts/${accountId}/deposits`, depositData, {
+    const response = await this.client.post(`/investors/${investorId}/deposits`, depositData, {
       headers,
     });
     return response.data;
   }
 
-  // Withdrawals
   async createWithdrawal(
-    accountId: string,
+    investorId: string,
     withdrawalData: {
       amount: string;
       currency: string;
@@ -212,38 +215,36 @@ class BluumApiClient {
     idempotencyKey?: string
   ) {
     const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {};
-    const response = await this.client.post(`/accounts/${accountId}/withdrawals`, withdrawalData, {
+    const response = await this.client.post(`/investors/${investorId}/withdrawals`, withdrawalData, {
       headers,
     });
     return response.data;
   }
 
-  async getFundingSources(accountId: string, type: 'plaid' | 'manual' | 'all' = 'all') {
-    const response = await this.client.get(`/accounts/${accountId}/funding-sources`, {
+  async getFundingSources(investorId: string, type: 'plaid' | 'manual' | 'all' = 'all') {
+    const response = await this.client.get(`/investors/${investorId}/funding-sources`, {
       params: { type },
     });
-    return response.data;
+    return unwrapList(response.data);
   }
 
-  async disconnectFundingSource(accountId: string, fundingSourceId: string, type: 'plaid' | 'manual' = 'plaid') {
-    const response = await this.client.delete(`/accounts/${accountId}/funding-sources/${fundingSourceId}`, {
+  async disconnectFundingSource(investorId: string, fundingSourceId: string, type: 'plaid' | 'manual' = 'plaid') {
+    const response = await this.client.delete(`/investors/${investorId}/funding-sources/${fundingSourceId}`, {
       params: { type },
     });
     return response.data;
   }
 
   async getNigerianBanks() {
-    const response = await this.client.get('/lookup/nigerian-banks');
-    return response.data;
+    return this.getBanksByCountry('NG');
   }
 
-  /** GET /v1/banks?country=NG — contract banks list (falls back to getNigerianBanks via API route if needed). */
+  /** Contract: `{ status, data: { banks } }` — return payload as-is */
   async getBanksByCountry(country: string) {
     const response = await this.client.get('/banks', { params: { country } });
     return response.data;
   }
 
-  // Wealth Management - Goals
   async getGoals(
     accountId: string,
     params?: {
@@ -310,7 +311,6 @@ class BluumApiClient {
     return response.data;
   }
 
-  // Wealth Management - Life Events
   async createLifeEvent(
     accountId: string,
     data: {
@@ -368,7 +368,6 @@ class BluumApiClient {
     return response.data;
   }
 
-  // Wealth Management - External Accounts
   async createExternalAccount(
     accountId: string,
     data: {
@@ -427,7 +426,6 @@ class BluumApiClient {
     return response.data;
   }
 
-  // Wealth Management - Investment Policy
   async getInvestmentPolicy(
     accountId: string,
     params?: {
@@ -512,7 +510,6 @@ class BluumApiClient {
     return response.data;
   }
 
-  // Wealth Management - Insights
   async getInsights(
     accountId: string,
     params?: {
@@ -524,7 +521,6 @@ class BluumApiClient {
     return response.data.insights || [];
   }
 
-  // Wealth Management - Recommendations
   async getRecommendations(
     accountId: string,
     params?: {
@@ -538,7 +534,6 @@ class BluumApiClient {
     return response.data.recommendations || [];
   }
 
-  // Wealth Management - Portfolio Performance
   async getPortfolioPerformance(
     accountId: string,
     portfolioId: string,
@@ -553,7 +548,6 @@ class BluumApiClient {
     return response.data;
   }
 
-  // Wealth Management - Portfolio Summary
   async getPortfolioSummary(
     accountId: string,
     portfolioId: string,
@@ -565,7 +559,6 @@ class BluumApiClient {
     return response.data;
   }
 
-  // Wealth Management - Portfolio Holdings
   async getPortfolioHoldings(
     accountId: string,
     portfolioId: string,
@@ -579,7 +572,6 @@ class BluumApiClient {
     return response.data;
   }
 
-  // Wealth Management - AI Assistant Chat
   async chatWithAssistant(
     accountId: string,
     data: {
@@ -594,7 +586,6 @@ class BluumApiClient {
     return response.data;
   }
 
-  // Wealth Management - Auto-Invest
   async getAutoInvestSchedules(
     accountId: string,
     params?: {
@@ -672,7 +663,6 @@ class BluumApiClient {
     return response.data;
   }
 
-  // DRIP Configuration
   async getDripConfiguration(accountId: string, portfolioId: string) {
     const response = await this.client.get(`/wealth/accounts/${accountId}/portfolios/${portfolioId}/drip`);
     return response.data;

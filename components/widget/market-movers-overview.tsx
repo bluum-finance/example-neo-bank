@@ -143,7 +143,9 @@ export function MarketMoversOverview() {
         ) : currentMovers.length === 0 ? (
           <li className="py-8 text-center text-sm text-[#A1BEAD]">No market data available</li>
         ) : (
-          currentMovers.map((q) => <MarketMoverItem key={q.symbol} mover={toMover(q)} />)
+          currentMovers.map((q, index) => (
+            <MarketMoverItem key={`${activeTab}-${q.symbol}-${index}`} mover={toMover(q)} />
+          ))
         )}
       </ul>
     </section>
