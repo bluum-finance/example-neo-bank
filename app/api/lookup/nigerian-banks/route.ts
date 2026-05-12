@@ -1,10 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { bluumApi } from '@/lib/bluum-api';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const response = await bluumApi.getNigerianBanks();
-    return NextResponse.json(response, { status: 200 });
+    try {
+      const response = await bluumApi.getBanksByCountry('NG');
+      return NextResponse.json(response, { status: 200 });
+    } catch {
+      const response = await bluumApi.getNigerianBanks();
+      return NextResponse.json(response, { status: 200 });
+    }
   } catch (error: any) {
     return NextResponse.json(
       { error: error.response?.data || error.message },

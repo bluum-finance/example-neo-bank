@@ -19,8 +19,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'method is required and must be one of ach, manual_bank_transfer, or wire' }, { status: 400 });
     }
 
+    if (method === 'ach' && !body.funding_source_id) {
+      return NextResponse.json(
+        { error: 'funding_source_id is required when method is ach' },
+        { status: 400 }
+      );
+    }
+
+    const amountStr = String(body.amount);
+    if (!/^\d+(\.\d{1,2})?$/.test(amountStr)) {
+      return NextResponse.json(
+        { error: 'amount must be a valid decimal with up to two fractional digits' },
+        { status: 400 }
+      );
+    }
+
     const depositData = {
-      amount: body.amount,
+      amount: amountStr,
       currency: body.currency || 'USD',
       description: body.description,
       method,

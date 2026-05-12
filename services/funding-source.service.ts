@@ -37,14 +37,6 @@ export interface ConnectManualRequest {
   metadata?: Record<string, unknown>;
 }
 
-export interface ConnectManualResponse {
-  status: string;
-  message: string;
-  data: {
-    fundingSource: FundingSource;
-  };
-}
-
 export interface NigerianBanksResponse {
   status: string;
   data: {
@@ -78,11 +70,16 @@ export class FundingSourceService {
       ...data,
       routing_number: routingNumber 
     };
-    const response = await apiClient.post<ConnectManualResponse>(
+    const response = await apiClient.post<ConnectPlaidResponse>(
       '/api/investment/funding-sources/connect',
       payload
     );
-    return response.data.data.fundingSource;
+    const list = response.data.data.fundingSources;
+    const first = list?.[0];
+    if (!first) {
+      throw new Error('No funding source returned from connect');
+    }
+    return first;
   }
 
   static async getFundingSources(accountId: string, type: 'plaid' | 'manual' | 'all' = 'all'): Promise<FundingSource[]> {

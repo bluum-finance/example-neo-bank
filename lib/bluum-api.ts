@@ -237,6 +237,12 @@ class BluumApiClient {
     return response.data;
   }
 
+  /** GET /v1/banks?country=NG — contract banks list (falls back to getNigerianBanks via API route if needed). */
+  async getBanksByCountry(country: string) {
+    const response = await this.client.get('/banks', { params: { country } });
+    return response.data;
+  }
+
   // Wealth Management - Goals
   async getGoals(
     accountId: string,
