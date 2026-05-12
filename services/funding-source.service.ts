@@ -1,5 +1,5 @@
 import { apiClient } from '@/lib/api-client';
-import type { FundingSource, NigerianBank } from '@/types/bluum';
+import type { FundingSource, NigerianBank } from '@/lib/bluum-api.types';
 
 export type { FundingSource, NigerianBank };
 

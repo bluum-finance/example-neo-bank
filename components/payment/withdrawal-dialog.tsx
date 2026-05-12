@@ -14,7 +14,7 @@ import { FundingSourceService, type FundingSource } from '@/services/funding-sou
 import { TransferService } from '@/services/transfer.service';
 import { toast } from 'sonner';
 import { useAccountStore } from '@/store/account.store';
-import type { ExternalWithdrawalResponse, AlpacaWithdrawalDetails } from '@/types/bluum';
+import type { ExternalWithdrawalResponse, AlpacaWithdrawalDetails } from '@/lib/bluum-api.types';
 
 interface WithdrawalDialogProps {
   accountId: string;

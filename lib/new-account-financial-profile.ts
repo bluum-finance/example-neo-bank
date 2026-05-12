@@ -4,7 +4,7 @@
  * - coerce range min/max to strings on create-account payloads (server)
  */
 
-import type { NewAccountRequest } from '@/types/bluum';
+import type { NewAccountRequest } from '@/lib/bluum-api.types';
 
 export type IncomeBracketKey = '' | 'under_25000' | '25000_99999' | '100000_249999' | 'over_250000';
 export type NetWorthBracketKey = '' | 'under_205000' | '205000_499999' | 'over_500000';

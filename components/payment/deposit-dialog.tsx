@@ -14,7 +14,7 @@ import { PlaidLink } from './plaid/plaid-link';
 import { ManualBankLink } from './manual-bank-link';
 import { useAccountStore } from '@/store/account.store';
 import { cn } from '@/lib/utils';
-import type { ExternalDepositResponse, AlpacaAchDetails, AlpacaWireDetails, ManualBankTransferDetails } from '@/types/bluum';
+import type { ExternalDepositResponse, AlpacaAchDetails, AlpacaWireDetails, ManualBankTransferDetails } from '@/lib/bluum-api.types';
 
 interface DepositDialogProps {
   accountId: string;

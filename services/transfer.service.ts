@@ -1,4 +1,4 @@
-import type { DepositMethod, ExternalDepositResponse, ExternalWithdrawalResponse, WithdrawalMethod } from '@/types/bluum';
+import type { DepositMethod, ExternalDepositResponse, ExternalWithdrawalResponse, WithdrawalMethod } from '@/lib/bluum-api.types';
 
 // Helper function to handle API errors
 async function handleResponse<T>(response: Response): Promise<T> {

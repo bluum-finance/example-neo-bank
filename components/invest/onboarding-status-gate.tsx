@@ -9,7 +9,7 @@ import { appendParamToUrl, getInvestRedirectUri } from '@/lib/utils';
 import { AccountService } from '@/services/account.service';
 import { useUser } from '@/store/user.store';
 import { useAccountStore, type OnboardingGateStatus } from '@/store/account.store';
-import type { ComplianceInitiationResponse } from '@/types/bluum';
+import type { ComplianceInitiationResponse } from '@/lib/bluum-api.types';
 
 /** Route group `(invest)` + integration surfaces — not home/transactions/cards. */
 const INVEST_PAGE_PREFIXES = ['/invest', '/auto-invest', '/financial-plan', '/trade', '/assets', '/chat'] as const;

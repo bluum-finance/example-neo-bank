@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AccountStatus } from '@/types/bluum';
+import type { AccountStatus } from '@/lib/bluum-api.types';
 import { AccountService, type Account } from '@/services/account.service';
 import { InvestmentService, type Position } from '@/services/investment.service';
 import { WidgetService, type PerformanceDataPoint } from '@/services/widget.service';

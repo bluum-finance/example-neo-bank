@@ -1,4 +1,4 @@
-import type { FundingSource } from '@/types/bluum';
+import type { FundingSource } from '@/lib/bluum-api.types';
 
 function asRecord(row: unknown): Record<string, unknown> | null {
   if (row == null || typeof row !== 'object' || Array.isArray(row)) return null;

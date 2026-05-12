@@ -1,4 +1,4 @@
-import type { AccountStatus, ComplianceInitiationResponse } from '@/types/bluum';
+import type { AccountStatus, ComplianceInitiationResponse } from '@/lib/bluum-api.types';
 
 // Helper function to handle API errors
 async function handleResponse<T>(response: Response): Promise<T> {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { bluumApi } from '@/lib/bluum-api';
-import type { OrderRequest } from '@/types/bluum';
+import type { OrderRequest } from '@/lib/bluum-api.types';
 
 export async function POST(request: NextRequest) {
   try {
