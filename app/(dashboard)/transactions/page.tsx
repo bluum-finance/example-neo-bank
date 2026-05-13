@@ -1,134 +1,309 @@
 'use client';
 
 import {
-  ArrowDownIcon,
-  List,
+  ArrowDownLeft,
+  ArrowUpRight,
   ChevronDown,
+  Download,
   Filter,
   Grid,
-  SlidersHorizontal,
-  Download,
-  SortDescIcon,
+  List,
+  Receipt,
+  RefreshCw,
+  SortDesc,
 } from 'lucide-react';
-import { useState } from 'react';
+import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import type { Transaction } from '@/lib/bluum-api.types';
+import {
+  formatCounterpartyLabel,
+  formatMethodLabel,
+  formatTransactionDateTime,
+  transactionAmountDisplay,
+  transactionStatusTone,
+} from '@/lib/transaction-format';
+import { cn } from '@/lib/utils';
+import { ACCOUNT_TRANSACTIONS_PAGE_LIMIT, TransactionService } from '@/services/transaction.service';
+import { useExternalAccountId } from '@/store/user.store';
+
+type KindFilter = 'all' | 'deposit' | 'withdrawal';
+
+function StatusBadge({ status }: { status: string | undefined }) {
+  const tone = transactionStatusTone(status);
+  const label = (status || 'Unknown').replace(/_/g, ' ');
+  if (tone === 'success') {
+    return <Badge variant="outline" className="border-[#30D158]/40 bg-[#30D158]/10 text-[#30D158] font-medium capitalize">{label}</Badge>;
+  }
+  if (tone === 'fail') {
+    return <Badge variant="destructive" className="font-medium capitalize">{label}</Badge>;
+  }
+  if (tone === 'pending') {
+    return (
+      <Badge variant="outline" className="border-amber-500/35 bg-amber-500/10 text-amber-200/90 font-medium capitalize">
+        {label}
+      </Badge>
+    );
+  }
+  return <Badge variant="outline" className="text-muted-foreground border-border font-medium capitalize">{label}</Badge>;
+}
 
 export default function TransactionsPage() {
+  const accountId = useExternalAccountId();
   const [loading, setLoading] = useState(false);
-  const [transactions, setTransactions] = useState<any>([]);
+  const [kindFilter, setKindFilter] = useState<KindFilter>('all');
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  const loadTransactions = useCallback(
+    async (id: string, kind: KindFilter) => {
+      setLoading(true);
+      try {
+        const rows = await TransactionService.getAccountTransactions(id, {
+          limit: ACCOUNT_TRANSACTIONS_PAGE_LIMIT,
+          ...(kind !== 'all' ? { type: kind } : {}),
+        });
+        setTransactions(rows);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Failed to load transactions';
+        toast.error(message);
+        setTransactions([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!accountId) {
+      setTransactions([]);
+      return;
+    }
+    loadTransactions(accountId, kindFilter);
+  }, [accountId, kindFilter, loadTransactions]);
+
+  const accountSuffix = accountId && accountId.length > 10 ? `…${accountId.slice(-8)}` : accountId || '';
 
   return (
-    <div className="min-h-screen">
-      <div className="py-6">
-        <h1 className="text-2xl font-medium text-white mb-8">Transactions</h1>
-
-        {/* Header */}
-        <div className="w-full flex items-center justify-between mb-3 font-light">
-          <div className="flex items-center gap-2">
-            <button className="inline-flex items-center gap-2 px-3 py-2.5 bg-[#1A3A2C] rounded-md hover:opacity-90 transition">
-              <List className="w-4 h-4 text-white" />
-              <span className="text-sm text-white">Data views</span>
-              <ChevronDown className="w-4 h-4 text-white" />
-            </button>
-
-            <button className="inline-flex items-center gap-2 px-3 py-2.5 bg-[#1A3A2C] rounded-md hover:opacity-90 transition">
-              <Filter className="w-4 h-4 text-[#8DA69B]" />
-              <span className="text-sm text-white">Filters</span>
-            </button>
-
-            <button className="inline-flex items-center gap-2 px-3 py-2.5 bg-[#1A3A2C] rounded-md hover:opacity-90 transition">
-              <span className="text-sm text-white">Date</span>
-              <ChevronDown className="w-4 h-4 text-white" />
-            </button>
-
-            <button className="inline-flex items-center gap-2 px-3 py-2.5 bg-[#1A3A2C] rounded-md hover:opacity-90 transition">
-              <span className="text-sm text-white">Keyword</span>
-              <ChevronDown className="w-4 h-4 text-white" />
-            </button>
-
-            <button className="inline-flex items-center gap-2 px-3 py-2.5 bg-[#1A3A2C] rounded-md hover:opacity-90 transition">
-              <span className="text-sm text-white">Amount</span>
-              <ChevronDown className="w-4 h-4 text-white" />
-            </button>
+    <div className="min-h-screen pb-12">
+      <div className="py-6 max-w-6xl mx-auto px-4 lg:px-8">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground tracking-tight">Transactions</h1>
+            <CardDescription className="text-muted-foreground mt-1.5 text-sm">
+              Funding activity and transfers for your investor account
+            </CardDescription>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button className="p-2 rounded-md hover:bg-white/5 transition-colors">
-              <Grid className="w-5 h-5 text-[#8DA69B]" />
-            </button>
-            <button className="p-2 rounded-md hover:bg-white/5 transition-colors">
-              <SortDescIcon className="w-5 h-5 text-[#8DA69B]" />
-            </button>
-            <button className="p-2 rounded-md hover:bg-white/5 transition-colors">
-              <Download className="w-5 h-5 text-[#8DA69B]" />
-            </button>
-            <div className="pl-2">
-              <span className="text-sm font-medium text-[#8DA69B]">Export all</span>
-            </div>
-          </div>
-        </div>
-
-        {/* TRANSACTIONS */}
-        <div className="flex flex-col gap-2">
-          {/* Columns header */}
-          <div className="flex items-center gap-4 py-3 px-4 border-b border-[#1E3D2F]">
-            <div className="flex-0 flex items-center gap-3 pr-4">
-              <div className="w-4 h-4 rounded-full border border-[#1A3A2C]" />
-              <span className="text-xs font-medium text-[#B0B8BD] uppercase">Date</span>
-              <ArrowDownIcon className="w-3.5 h-3.5 text-[#8DA69B] ml-1" />
-            </div>
-
-            <div className="flex-1">
-              <span className="text-xs font-medium text-[#B0B8BD] uppercase tracking-wider">
-                To/From
-              </span>
-            </div>
-
-            <div className="flex-none text-right">
-              <span className="text-xs font-medium text-[#B0B8BD] uppercase tracking-wider">
-                Amount
-              </span>
-            </div>
-            <div className="flex-none">
-              <span className="text-xs font-medium text-[#B0B8BD] uppercase tracking-wider">
-                Account
-              </span>
-            </div>
-            <div className="flex-none">
-              <span className="text-xs font-medium text-[#B0B8BD] uppercase tracking-wider">
-                Method
-              </span>
-            </div>
-            <div className="flex-none text-center">
-              <span className="text-xs font-medium text-[#B0B8BD] uppercase tracking-wider">
-                Attachment
-              </span>
-            </div>
-          </div>
-
-          {/* Loading state */}
-          {(loading || transactions.length === 0) && (
-            <div className="flex flex-col gap-2 mt-2">
-              <div className="h-8 rounded-lg bg-[rgba(30,61,47,0.5)]" />
-              <div className="h-8 rounded-lg bg-[rgba(30,61,47,0.5)]" />
-            </div>
-          )}
-
-          {/* Empty state */}
-          {!loading && transactions.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-6">
-              <div className="text-sm font-medium text-white">No transactions yet</div>
-              <div className="max-w-[384px] text-center text-xs text-muted-foreground mt-2 px-4">
-                Recent transactions (like bank-to-bank transfers, debit card transactions, and
-                check deposits) will appear here once your account has funds.
-              </div>
-              <div className="mt-6">
-                <button className="px-6 py-2 bg-primary text-primary-foreground rounded-full shadow-sm font-normal">
-                  Fund account
-                </button>
-              </div>
-            </div>
+          {!loading && accountId && (
+            <p className="text-xs text-muted-foreground tabular-nums shrink-0">
+              {transactions.length} shown
+              {kindFilter !== 'all' ? ` · ${kindFilter === 'deposit' ? 'Deposits' : 'Withdrawals'} only` : ''}
+            </p>
           )}
         </div>
+
+        <Card className="border-border bg-card/50 shadow-none">
+          <CardHeader className="pb-4 border-b border-border/80 space-y-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div
+                role="tablist"
+                aria-label="Filter by transaction type"
+                className="inline-flex flex-wrap gap-2 p-1 rounded-xl bg-[#0F2A20]/90 border border-border"
+              >
+                {(
+                  [
+                    ['all', 'All activity'],
+                    ['deposit', 'Deposits'],
+                    ['withdrawal', 'Withdrawals'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    role="tab"
+                    aria-selected={kindFilter === key}
+                    disabled={!accountId || loading}
+                    onClick={() => setKindFilter(key)}
+                    className={cn(
+                      'px-3.5 py-2 rounded-lg text-xs font-medium transition-colors',
+                      kindFilter === key
+                        ? 'bg-[#1A3A2C] text-white shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="border-border bg-[#0F2A20]/80 text-foreground hover:bg-[#1A3A2C]"
+                  disabled={!accountId || loading}
+                  onClick={() => accountId && loadTransactions(accountId, kindFilter)}
+                  aria-label="Refresh transactions"
+                >
+                  <RefreshCw className={cn('size-4', loading && 'animate-spin')} />
+                  Refresh
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-muted-foreground hidden sm:inline-flex"
+                  disabled
+                  title="Coming soon"
+                >
+                  <Grid className="size-4" />
+                </Button>
+                <Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground hidden sm:inline-flex" disabled title="Coming soon">
+                  <SortDesc className="size-4" />
+                </Button>
+                <Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground hidden sm:inline-flex" disabled title="Coming soon">
+                  <Download className="size-4" />
+                </Button>
+                <span className="text-xs text-muted-foreground pl-1 hidden md:inline">Export</span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 opacity-70 pointer-events-none select-none">
+              <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#1A3A2C]/50 text-xs text-muted-foreground">
+                <List className="size-3.5" /> Views
+                <ChevronDown className="size-3.5" />
+              </span>
+              <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[#1A3A2C]/50 text-xs text-muted-foreground">
+                <Filter className="size-3.5" /> Filters
+              </span>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground/80 hidden sm:inline">
+                Advanced filters soon
+              </span>
+            </div>
+          </CardHeader>
+
+          <CardContent className="pt-0 px-0">
+            <div className="overflow-x-auto">
+              <div className="min-w-[760px]">
+                <div className="grid grid-cols-[minmax(140px,1fr)_minmax(180px,2fr)_minmax(100px,1fr)_minmax(88px,0.8fr)_minmax(100px,1fr)_minmax(100px,0.9fr)] gap-3 items-center py-3 px-4 sm:px-6 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border bg-[#0E231F]/50">
+                  <div className="flex items-center gap-2">
+                    <span>Date</span>
+                  </div>
+                  <div>Description</div>
+                  <div className="text-right">Amount</div>
+                  <div className="hidden sm:block">Account</div>
+                  <div>Method</div>
+                  <div className="text-center">Status</div>
+                </div>
+
+                {loading && (
+                  <div className="px-4 sm:px-6 py-4 space-y-3">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="h-14 rounded-lg bg-muted/20 animate-pulse" style={{ animationDelay: `${i * 60}ms` }} />
+                    ))}
+                  </div>
+                )}
+
+                {!loading && !accountId && (
+                  <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                    <div className="rounded-full bg-[#1A3A2C]/80 p-4 mb-4">
+                      <Receipt className="size-8 text-muted-foreground" />
+                    </div>
+                    <CardTitle className="text-lg font-medium text-foreground">Link an account first</CardTitle>
+                    <CardDescription className="max-w-md mt-2 text-sm leading-relaxed">
+                      After you sign in and finish onboarding, your cash movements and transfers will show up here.
+                    </CardDescription>
+                    <Button asChild className="mt-8 rounded-full">
+                      <Link href="/invest">Go to Invest</Link>
+                    </Button>
+                  </div>
+                )}
+
+                {!loading && accountId && transactions.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                    <div className="rounded-full bg-[#1A3A2C]/80 p-4 mb-4">
+                      <Receipt className="size-8 text-[#8DA69B]" />
+                    </div>
+                    <CardTitle className="text-lg font-medium text-foreground">
+                      {kindFilter === 'all' ? 'No transactions yet' : `No ${kindFilter === 'deposit' ? 'deposits' : 'withdrawals'} yet`}
+                    </CardTitle>
+                    <CardDescription className="max-w-md mt-2 text-sm leading-relaxed">
+                      Bank transfers, ACH, and wires appear here once funding settles. Try another filter or add funds from Invest.
+                    </CardDescription>
+                    <div className="mt-8 flex flex-wrap justify-center gap-3">
+                      <Button asChild className="rounded-full">
+                        <Link href="/invest">Fund account</Link>
+                      </Button>
+                      {kindFilter !== 'all' && (
+                        <Button type="button" variant="outline" className="rounded-full border-border" onClick={() => setKindFilter('all')}>
+                          Show all activity
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {!loading &&
+                  accountId &&
+                  transactions.length > 0 &&
+                  transactions.map((tx) => {
+                    const typeKey = String(tx.type).toLowerCase();
+                    const isWithdrawal = typeKey === 'withdrawal';
+                    const { text: amountText, flow } = transactionAmountDisplay(tx);
+
+                    return (
+                      <div
+                        key={tx.id}
+                        className={cn(
+                          'grid grid-cols-[minmax(140px,1fr)_minmax(180px,2fr)_minmax(100px,1fr)_minmax(88px,0.8fr)_minmax(100px,1fr)_minmax(100px,0.9fr)] gap-3 items-center py-3.5 px-4 sm:px-6',
+                          'border-b border-border/60 last:border-b-0 text-sm',
+                          'hover:bg-[#0F2A20]/80 transition-colors'
+                        )}
+                      >
+                        <div className="flex items-start gap-2 min-w-0">
+                         
+                          <div className="min-w-0">
+                            <div className="text-xs text-muted-foreground tabular-nums leading-snug">{formatTransactionDateTime(tx)}</div>
+                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground/80 mt-0.5">{typeKey || '—'}</div>
+                          </div>
+                        </div>
+
+                        <div className="min-w-0 font-normal text-sm text-foreground leading-snug line-clamp-2" title={formatCounterpartyLabel(tx)}>
+                          {formatCounterpartyLabel(tx)}
+                        </div>
+
+                        <div
+                          className={cn(
+                            'text-right tabular-nums font-medium text-sm tracking-tight',
+                            flow === 'in' && 'text-[#30D158]',
+                            flow === 'out' && 'text-orange-200/95',
+                            flow === 'neutral' && 'text-foreground'
+                          )}
+                        >
+                          {amountText}
+                        </div>
+
+                        <div className="hidden sm:block text-xs text-muted-foreground font-mono truncate" title={accountId || undefined}>
+                          {accountSuffix}
+                        </div>
+
+                        <div className="text-xs text-muted-foreground">{formatMethodLabel(tx)}</div>
+
+                        <div className="flex justify-center">
+                          <StatusBadge status={tx.status} />
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

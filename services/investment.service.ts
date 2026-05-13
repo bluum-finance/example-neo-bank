@@ -3,9 +3,11 @@ import type {
   ExternalDepositResponse,
   ExternalWithdrawalResponse,
   OrderRequest,
+  Transaction,
   WithdrawalMethod,
 } from '@/lib/bluum-api.types';
 import { unwrapList } from '@/lib/utils';
+import { TransactionService } from '@/services/transaction.service';
 import { TransferService } from '@/services/transfer.service';
 
 // Helper function to handle API errors
@@ -184,18 +186,12 @@ export class InvestmentService {
       status?: string;
       limit?: number;
     }
-  ): Promise<any[]> {
-    const queryParams = new URLSearchParams({
-      ...(params?.type && { type: params.type }),
-      ...(params?.status && { status: params.status }),
-      ...(params?.limit && { limit: params.limit.toString() }),
+  ): Promise<Transaction[]> {
+    return TransactionService.getAccountTransactions(accountId, {
+      type: params?.type,
+      status: params?.status,
+      limit: params?.limit,
     });
-
-    const response = await fetch(
-      `/api/bluum/investors/${encodeURIComponent(accountId)}/transactions?${queryParams}`
-    );
-    const raw = await handleResponse<unknown>(response);
-    return unwrapList(raw);
   }
 
   // Helper function to calculate portfolio totals from positions

@@ -1,19 +1,13 @@
 import { apiClient } from '@/lib/api-client';
-import {
-  extractConnectFundingSourceRows,
-  extractFundingSourceRows,
-  toFundingSource,
-} from '@/lib/funding-source-normalize';
+import { extractConnectFundingSourceRows, extractFundingSourceRows, toFundingSource } from '@/lib/funding-source-normalize';
 import type { FundingSource, NigerianBank } from '@/lib/bluum-api.types';
 
 export type { FundingSource, NigerianBank };
 
 export interface PlaidLinkTokenResponse {
   status: string;
-  data: {
-    link_token: string;
-    hosted_link_url: string | null;
-  };
+  link_token: string;
+  hosted_link_url: string | null;
 }
 
 export interface ConnectManualRequest {
@@ -43,7 +37,7 @@ export class FundingSourceService {
       `/api/bluum/investors/${encodeURIComponent(accountId)}/funding-sources/plaid/link-token`,
       {}
     );
-    return response.data.data.link_token;
+    return response.data?.link_token;
   }
 
   static async connectAccount(accountId: string, publicToken: string): Promise<FundingSource[]> {
@@ -62,7 +56,10 @@ export class FundingSourceService {
       ...data,
       routing_number: routingNumber,
     };
-    const response = await apiClient.post<unknown>(`/api/bluum/investors/${encodeURIComponent(accountId)}/funding-sources/connect`, payload);
+    const response = await apiClient.post<unknown>(
+      `/api/bluum/investors/${encodeURIComponent(accountId)}/funding-sources/connect`,
+      payload
+    );
     const rows = extractConnectFundingSourceRows(response.data);
     const list = rows.map((row) => toFundingSource(row));
     const first = list[0];
@@ -81,9 +78,12 @@ export class FundingSourceService {
   }
 
   static async disconnectFundingSource(accountId: string, fundingSourceId: string, type: 'plaid' | 'manual' = 'plaid') {
-    const response = await apiClient.delete(`/api/bluum/investors/${encodeURIComponent(accountId)}/funding-sources/${encodeURIComponent(fundingSourceId)}`, {
-      params: { type },
-    });
+    const response = await apiClient.delete(
+      `/api/bluum/investors/${encodeURIComponent(accountId)}/funding-sources/${encodeURIComponent(fundingSourceId)}`,
+      {
+        params: { type },
+      }
+    );
     return response.data;
   }
 
