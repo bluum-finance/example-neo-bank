@@ -2,99 +2,103 @@
 
 import { useState, useEffect } from 'react';
 import numeral from 'numeral';
+import {
+  CURRENCIES,
+  DEFAULT_CURRENCY,
+  FALLBACK_RATES,
+  isKnownCurrency,
+  resolveRate,
+  type CurrencyCode,
+  type CurrencyDefinition,
+} from '@/lib/currency';
 
-// TYPES
-export type CurrencyCode = 'USD' | 'NGN' | 'GBP' | 'EUR';
-export interface CurrencyDefinition {
-  code: CurrencyCode;
-  name: string;
-  symbol: string;
-  precision: number;
+export type { CurrencyCode, CurrencyDefinition };
+
+const KNOWN_CODES = new Set<string>(Object.keys(CURRENCIES));
+
+let cachedRates: Record<string, number> | null = null;
+let cacheTimestamp = 0;
+let inFlight: Promise<Record<string, number>> | null = null;
+const CACHE_TTL_MS = 60 * 60 * 1000;
+
+async function loadExchangeRates(): Promise<Record<string, number>> {
+  if (cachedRates && Date.now() - cacheTimestamp < CACHE_TTL_MS) {
+    return cachedRates;
+  }
+  if (inFlight) return inFlight;
+
+  inFlight = (async () => {
+    try {
+      const response = await fetch('/api/currency/exchange-rate?base=USD');
+      if (!response.ok) throw new Error('Failed to fetch exchange rates');
+      const data = await response.json();
+      const rates = Object.fromEntries(
+        Object.entries(data.rates as Record<string, number>).filter(([currency]) => KNOWN_CODES.has(currency))
+      );
+      cachedRates = rates;
+      cacheTimestamp = Date.now();
+      return rates;
+    } catch {
+      cachedRates = { ...FALLBACK_RATES };
+      cacheTimestamp = Date.now();
+      return cachedRates;
+    } finally {
+      inFlight = null;
+    }
+  })();
+
+  return inFlight;
 }
 
-// CONSTANTS
-const CURRENCIES: Record<CurrencyCode, CurrencyDefinition> = {
-  USD: { code: 'USD', name: 'US Dollar', symbol: '$', precision: 2 },
-  NGN: { code: 'NGN', name: 'Nigerian Naira', symbol: '₦', precision: 2 },
-  GBP: { code: 'GBP', name: 'British Pound', symbol: '£', precision: 2 },
-  EUR: { code: 'EUR', name: 'Euro', symbol: '€', precision: 2 },
-};
-
-const DEFAULT_CURRENCY = CURRENCIES.USD;
-
-// Fallback exchange rates (used if API fails)
-const FALLBACK_RATES: Record<CurrencyCode, number> = {
-  USD: 1,
-  NGN: 1450,
-  GBP: 0.79,
-  EUR: 0.92,
-};
-
 export function useCurrency() {
-  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>(FALLBACK_RATES);
-  const [loading, setLoading] = useState(true);
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>(cachedRates ?? FALLBACK_RATES);
+  const [loading, setLoading] = useState(!cachedRates);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchExchangeRates = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await fetch('/api/currency/exchange-rate?base=USD');
-        if (!response.ok) {
-          throw new Error('Failed to fetch exchange rates');
+    let cancelled = false;
+    void loadExchangeRates()
+      .then((rates) => {
+        if (!cancelled) {
+          setExchangeRates(rates);
+          setLoading(false);
         }
-
-        const data = await response.json();
-        // Only set rates supported currencies [USD, NGN, GBP, EUR]
-        const rates = Object.fromEntries(Object.entries(data.rates).filter(([currency]) => Object.keys(CURRENCIES).includes(currency)));
-        setExchangeRates(rates as Record<CurrencyCode, number>);
-      } catch (err) {
-        console.error('Error fetching exchange rates:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        // Use fallback rates on error
-        setExchangeRates(FALLBACK_RATES);
-      } finally {
-        setLoading(false);
-      }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Unknown error');
+          setExchangeRates(FALLBACK_RATES);
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
     };
-
-    fetchExchangeRates();
   }, []);
 
-  /**
-   * Convert amount from one currency to another
-   * @param amount - Amount to convert
-   * @param from - Source currency code (default: USD)
-   * @param to - Target currency code
-   * @returns Converted amount
-   */
-  function convertCurrency(amount: number, from: CurrencyCode = 'USD', to: CurrencyCode): number {
-    if (from === to) return amount;
-    // Get rates relative to USD
-    const fromRate = exchangeRates[from];
-    const toRate = exchangeRates[to];
-
-    // Convert: amount -> USD -> target currency
-    const amountInUSD = amount / fromRate;
-    const convertedAmount = amountInUSD * toRate;
-
-    return convertedAmount;
+  function canConvertCurrency(from: string, to: string = 'USD'): boolean {
+    if (from === to) return true;
+    return resolveRate(from, exchangeRates) != null && resolveRate(to, exchangeRates) != null;
   }
 
-  /**
-   * Get exchange rate between two currencies
-   * @param from - Source currency code
-   * @param to - Target currency code
-   * @returns Exchange rate (how many 'to' units per 1 'from' unit)
-   */
+  function convertToCurrency(amount: number, from: string, to: string = 'USD'): number | null {
+    if (from === to) return amount;
+    const fromRate = resolveRate(from, exchangeRates);
+    const toRate = resolveRate(to, exchangeRates);
+    if (fromRate == null || toRate == null) return null;
+    return (amount / fromRate) * toRate;
+  }
+
+  /** @deprecated Use convertToCurrency */
+  function convertCurrency(amount: number, from: CurrencyCode = 'USD', to: CurrencyCode): number {
+    return convertToCurrency(amount, from, to) ?? amount;
+  }
+
   function getExchangeRate(from: CurrencyCode, to: CurrencyCode): number {
     if (from === to) return 1;
-
-    const fromRate = exchangeRates[from] || FALLBACK_RATES[from];
-    const toRate = exchangeRates[to] || FALLBACK_RATES[to];
-
+    const fromRate = resolveRate(from, exchangeRates);
+    const toRate = resolveRate(to, exchangeRates);
+    if (fromRate == null || toRate == null) return NaN;
     return toRate / fromRate;
   }
 
@@ -103,29 +107,33 @@ export function useCurrency() {
     if (!currency) {
       throw new Error(`Currency ${code} not found`);
     }
-
     const symbol = currency.symbol;
     const formatStyle = currency.precision === 2 ? '0,0.00' : '0,0';
-    return `${symbol}${numeral(amount).format(formatStyle)}`;
+    return `${symbol} ${numeral(amount).format(formatStyle)}`;
   }
 
   function displayAmount(amount: number, code?: string) {
-    const currencyCode = code && CURRENCIES[code as CurrencyCode] ? (code as CurrencyCode) : DEFAULT_CURRENCY.code;
-    return formatAmount(amount, currencyCode);
+    if (code && isKnownCurrency(code)) {
+      return formatAmount(amount, code);
+    }
+    if (code) {
+      return `${numeral(amount).format('0,0.00')} ${code}`;
+    }
+    return formatAmount(amount, DEFAULT_CURRENCY.code);
   }
 
-  // Convert amount to USD and display it
-  function displayAmountInUSD(amount: number, from: CurrencyCode = 'USD'): string {
-    if (from === 'USD') {
-      return displayAmount(amount, 'USD');
-    }
-    const amountInUSD = convertCurrency(amount, from, 'USD');
+  function displayAmountInUSD(amount: number | null | undefined, from?: string): string | null {
+    if (amount == null || !from || from === 'USD') return null;
+    const amountInUSD = convertToCurrency(amount, from, 'USD');
+    if (amountInUSD == null) return null;
     return displayAmount(amountInUSD, 'USD');
   }
 
   return {
     exchangeRates,
     currencies: CURRENCIES,
+    canConvertCurrency,
+    convertToCurrency,
     convertCurrency,
     getExchangeRate,
     formatAmount,

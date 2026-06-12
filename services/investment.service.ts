@@ -1,6 +1,7 @@
 import type {
   MarketDataAsset,
   Order,
+  OrderListStatus,
   OrderRequest,
   Position,
 } from '@/lib/bluum-api.types';
@@ -44,6 +45,23 @@ export class InvestmentService {
     return results
       .filter((r): r is PromiseFulfilledResult<MarketDataAsset> => r.status === 'fulfilled')
       .map((r) => r.value);
+  }
+
+  static async getOrders(
+    accountId: string,
+    params?: { limit?: number; offset?: number; status?: OrderListStatus; symbol?: string }
+  ): Promise<Order[]> {
+    const qs = new URLSearchParams();
+    if (params?.limit != null) qs.set('limit', String(params.limit));
+    if (params?.offset != null) qs.set('offset', String(params.offset));
+    if (params?.status) qs.set('status', params.status);
+    if (params?.symbol) qs.set('symbol', params.symbol);
+    const query = qs.toString();
+    const response = await fetch(
+      `/api/bluum/investors/${encodeURIComponent(accountId)}/orders${query ? `?${query}` : ''}`
+    );
+    const raw = await handleResponse<unknown>(response);
+    return unwrapList<Order>(raw);
   }
 
   static async placeOrder(accountId: string, orderData: OrderRequest): Promise<Order> {

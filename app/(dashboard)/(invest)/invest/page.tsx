@@ -50,6 +50,7 @@ export default function Invest() {
   const chartData = useChartData();
   const summaryLoading = useSummaryLoading();
   const { isLoading, fetchAccount, fetchPositions, fetchSummary, fetchChartData } = useAccountStore();
+  const accountRecord = useAccountStore((s) => s.account);
 
   // Account & Portfolio State
   const [accountId, setAccountId] = useState<string | null>(null);
@@ -162,7 +163,7 @@ export default function Invest() {
     investmentPolicy,
   };
 
-  if (isLoading) {
+  if (isLoading && !accountRecord) {
     return (
       <div className="fixed inset-0 z-40 flex items-center justify-center p-4 backdrop-blur-md lg:inset-y-0 lg:left-64 lg:right-0 lg:top-0 lg:bottom-0">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

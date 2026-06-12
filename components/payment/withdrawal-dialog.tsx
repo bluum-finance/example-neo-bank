@@ -12,10 +12,14 @@ import { PlaidLink } from '@/components/payment/plaid/plaid-link';
 import { ManualBankLink } from '@/components/payment/manual-bank-link';
 import { FundingSourceService, type FundingSource } from '@/services/funding-source.service';
 import { TransferService } from '@/services/transfer.service';
-import { WalletService } from '@/services/wallet.service';
-import type { Wallet } from '@/lib/bluum-api.types';
 import { toast } from 'sonner';
 import { useAccountStore } from '@/store/account.store';
+import { useWallets, useFetchWallets } from '@/store/wallet.store';
+import {
+  defaultWithdrawalMethodForCurrency,
+  getAvailableWithdrawalMethods,
+  WITHDRAWAL_METHOD_SELECT_LABELS,
+} from '@/lib/funding';
 import type { ExternalWithdrawalResponse, AlpacaWithdrawalDetails } from '@/lib/bluum-api.types';
 
 interface WithdrawalDialogProps {
@@ -42,19 +46,22 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
   const [fundingSources, setFundingSources] = useState<FundingSource[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
 
-  const [wallets, setWallets] = useState<Wallet[]>([]);
-  const [loadingWallets, setLoadingWallets] = useState(true);
+  const wallets = useWallets();
+  const fetchWallets = useFetchWallets();
 
   useEffect(() => {
-    setLoadingWallets(true);
-    WalletService.getWallets(accountId)
-      .then(setWallets)
-      .catch(() => setWallets([]))
-      .finally(() => setLoadingWallets(false));
-  }, [accountId]);
+    void fetchWallets(accountId);
+  }, [accountId, fetchWallets]);
 
   const activeWallet = wallets.find((w) => w.currency === currency && w.status === 'active') ?? null;
   const walletAvailable = activeWallet ? parseFloat(activeWallet.available_balance) : availableBalance;
+  const availableWithdrawalMethods = getAvailableWithdrawalMethods(currency);
+
+  useEffect(() => {
+    if (!availableWithdrawalMethods.includes(withdrawalMethod)) {
+      setWithdrawalMethod(defaultWithdrawalMethodForCurrency(currency));
+    }
+  }, [currency, availableWithdrawalMethods, withdrawalMethod]);
 
   useEffect(() => {
     if (withdrawalMethod !== 'ach') return;

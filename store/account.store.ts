@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { ExternalAccountStatus } from '@/lib/bluum-api.types';
 import { AccountService, type Account } from '@/services/account.service';
-import { InvestmentService, type Position } from '@/services/investment.service';
+import { InvestmentService, type Order, type Position } from '@/services/investment.service';
 import { WidgetService, type PerformanceDataPoint } from '@/services/widget.service';
 import { useUserStore } from '@/store/user.store';
 
@@ -28,6 +28,7 @@ interface AccountState {
   accountBalance: number;
   portfolioId: string;
   positions: Position[];
+  orders: Order[];
   summaryData: unknown | null;
   chartData: PerformanceDataPoint[];
   /** Non-active investor — dashboard may show compliance overlay */
@@ -36,13 +37,15 @@ interface AccountState {
   // Status
   isLoading: boolean;
   isPositionsLoading: boolean;
+  isOrdersLoading: boolean;
   isSummaryLoading: boolean;
   isChartLoading: boolean;
   error: string | null;
 
   // Actions
-  fetchAccount: (accountId: string) => Promise<Account | null>;
+  fetchAccount: (accountId: string, options?: { silent?: boolean }) => Promise<Account | null>;
   fetchPositions: (accountId: string) => Promise<Position[]>;
+  fetchOrders: (accountId: string, opts?: { limit?: number }) => Promise<Order[]>;
   fetchSummary: (accountId: string, portfolioId: string) => Promise<void>;
   fetchChartData: (accountId: string, portfolioId: string, range?: '1W' | '1M' | '3M' | '1Y' | 'All') => Promise<void>;
   setAccountBalance: (balance: number) => void;
@@ -56,17 +59,21 @@ export const useAccountStore = create<AccountState>()((set) => ({
   accountBalance: 0,
   portfolioId: 'ptf_demo_main',
   positions: [],
+  orders: [],
   summaryData: null,
   chartData: [],
   onboardingGateStatus: null,
   isLoading: false,
   isPositionsLoading: false,
+  isOrdersLoading: false,
   isSummaryLoading: false,
   isChartLoading: false,
   error: null,
 
-  fetchAccount: async (accountId: string) => {
-    set({ isLoading: true, error: null });
+  fetchAccount: async (accountId: string, options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      set({ isLoading: true, error: null });
+    }
     try {
       const account = await AccountService.getAccount(accountId);
       if (account?.id && account.id !== accountId) {
@@ -106,6 +113,18 @@ export const useAccountStore = create<AccountState>()((set) => ({
     }
   },
 
+  fetchOrders: async (accountId: string, opts?: { limit?: number }) => {
+    set({ isOrdersLoading: true, error: null });
+    try {
+      const orders = await InvestmentService.getOrders(accountId, { limit: opts?.limit ?? 50 });
+      set({ orders, isOrdersLoading: false });
+      return orders;
+    } catch (err: any) {
+      set({ error: err?.message ?? 'Failed to load orders', isOrdersLoading: false });
+      throw err;
+    }
+  },
+
   fetchSummary: async (accountId: string, portfolioId: string) => {
     set({ isSummaryLoading: true, error: null });
     try {
@@ -140,10 +159,12 @@ export const useAccountStore = create<AccountState>()((set) => ({
       accountBalance: 0,
       portfolioId: 'ptf_demo_main',
       positions: [],
+      orders: [],
       summaryData: null,
       chartData: [],
       onboardingGateStatus: null,
       isPositionsLoading: false,
+      isOrdersLoading: false,
       isSummaryLoading: false,
       isChartLoading: false,
       error: null,
@@ -165,6 +186,8 @@ export const useAccountBalance = () => useAccountStore((state) => state.accountB
 export const usePortfolioId = () => useAccountStore((state) => state.portfolioId);
 export const useAccountLoading = () => useAccountStore((state) => state.isLoading);
 export const usePositions = () => useAccountStore((state) => state.positions);
+export const useOrders = () => useAccountStore((state) => state.orders);
+export const useOrdersLoading = () => useAccountStore((state) => state.isOrdersLoading);
 export const useSummaryData = () => useAccountStore((state) => state.summaryData);
 export const useChartData = () => useAccountStore((state) => state.chartData);
 export const useSummaryLoading = () => useAccountStore((state) => state.isSummaryLoading);

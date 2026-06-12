@@ -126,7 +126,13 @@ export default function AssetDetailsPage() {
           >
             <Star className="h-4 w-4" fill={isInWatchlist ? 'currentColor' : 'none'} />
           </Button>
-          <Button onClick={() => router.push(`/trade?side=buy&symbol=${displaySymbol}`)}>
+          <Button
+            onClick={() => {
+              const qs = new URLSearchParams({ side: 'buy', symbol: displaySymbol });
+              if (asset?.market) qs.set('market', asset.market);
+              router.push(`/trade?${qs.toString()}`);
+            }}
+          >
             <TrendingUp className="h-4 w-4 mr-2" />
             Trade Asset
           </Button>

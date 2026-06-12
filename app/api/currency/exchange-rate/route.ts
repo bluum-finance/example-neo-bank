@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { FALLBACK_RATES } from '@/lib/currency';
 
 // Cache exchange rates for 1 hour (3600 seconds)
 const CACHE_DURATION = 3600;
@@ -47,16 +48,11 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         base: 'USD',
-        rates: {
-          USD: 1,
-          NGN: 1450, // Fallback rate
-          GBP: 0.79,
-          EUR: 0.92,
-        },
+        rates: FALLBACK_RATES,
         error: error.message,
         fallback: true,
       },
-      { status: 200 } // Return 200 so frontend can still use fallback
+      { status: 200 }
     );
   }
 }
