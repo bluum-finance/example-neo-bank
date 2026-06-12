@@ -219,6 +219,11 @@ export function InvestOnboarding({ initialStep = 0, investmentChoice }: InvestOn
             signed_at: new Date().toISOString(),
             ip_address: '127.0.0.1',
           },
+          {
+            type: 'margin_disclosure_acknowledged' as const,
+            signed_at: new Date().toISOString(),
+            ip_address: '127.0.0.1',
+          },
         ],
       };
 
