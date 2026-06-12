@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+# Bluum API contract
+
+For Bluum API integration, read `.local/bluum-api-contract.md` and follow it if available.
+
+Read Access **only** the OpenAPI spec path defined there for endpoints, methods, paths, parameters, request/response schemas, enums, errors, etc..
