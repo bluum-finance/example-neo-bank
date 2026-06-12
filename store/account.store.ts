@@ -43,8 +43,8 @@ interface AccountState {
   error: string | null;
 
   // Actions
-  fetchAccount: (accountId: string, options?: { silent?: boolean }) => Promise<Account | null>;
-  fetchPositions: (accountId: string) => Promise<Position[]>;
+  fetchAccount: (accountId: string, options?: { silent?: boolean; force?: boolean }) => Promise<Account | null>;
+  fetchPositions: (accountId: string, options?: { force?: boolean }) => Promise<Position[]>;
   fetchOrders: (accountId: string, opts?: { limit?: number }) => Promise<Order[]>;
   fetchSummary: (accountId: string, portfolioId: string) => Promise<void>;
   fetchChartData: (accountId: string, portfolioId: string, range?: '1W' | '1M' | '3M' | '1Y' | 'All') => Promise<void>;
@@ -54,7 +54,10 @@ interface AccountState {
   clearAccount: () => void;
 }
 
-export const useAccountStore = create<AccountState>()((set) => ({
+const accountFetchInFlight = new Map<string, Promise<Account | null>>();
+const positionsFetchInFlight = new Map<string, Promise<Position[]>>();
+
+export const useAccountStore = create<AccountState>()((set, get) => ({
   account: null,
   accountBalance: 0,
   portfolioId: 'ptf_demo_main',
@@ -70,47 +73,81 @@ export const useAccountStore = create<AccountState>()((set) => ({
   isChartLoading: false,
   error: null,
 
-  fetchAccount: async (accountId: string, options?: { silent?: boolean }) => {
-    if (!options?.silent) {
-      set({ isLoading: true, error: null });
+  fetchAccount: async (accountId: string, options?: { silent?: boolean; force?: boolean }) => {
+    const cached = get().account;
+    if (!options?.force && cached?.id === accountId) {
+      return cached;
     }
-    try {
-      const account = await AccountService.getAccount(accountId);
-      if (account?.id && account.id !== accountId) {
-        useUserStore.getState().setExternalAccountId(account.id);
+
+    const pending = accountFetchInFlight.get(accountId);
+    if (!options?.force && pending) {
+      return pending;
+    }
+
+    const run = (async () => {
+      if (!options?.silent) {
+        set({ isLoading: true, error: null });
       }
-      const balanceValue = account?.balance ? parseFloat(account.balance) : 0;
-      const portfolioId: string = (account as any)?.portfolios?.find((p: any) => p.status === 'active')?.id ?? 'ptf_demo_main';
+      try {
+        const account = await AccountService.getAccount(accountId);
+        if (account?.id && account.id !== accountId) {
+          useUserStore.getState().setExternalAccountId(account.id);
+        }
+        const balanceValue = account?.balance ? parseFloat(account.balance) : 0;
+        const portfolioId: string = (account as any)?.portfolios?.find((p: any) => p.status === 'active')?.id ?? 'ptf_demo_main';
 
-      set({
-        account,
-        accountBalance: balanceValue,
-        portfolioId,
-        isLoading: false,
-        onboardingGateStatus: deriveOnboardingGateStatus(account.status as ExternalAccountStatus),
-      });
+        set({
+          account,
+          accountBalance: balanceValue,
+          portfolioId,
+          isLoading: false,
+          onboardingGateStatus: deriveOnboardingGateStatus(account.status as ExternalAccountStatus),
+        });
 
-      return account;
-    } catch (err: any) {
-      set({
-        onboardingGateStatus: null,
-        error: err?.message ?? 'Failed to load account',
-        isLoading: false,
-      });
-      throw err;
-    }
+        return account;
+      } catch (err: any) {
+        set({
+          onboardingGateStatus: null,
+          error: err?.message ?? 'Failed to load account',
+          isLoading: false,
+        });
+        throw err;
+      } finally {
+        accountFetchInFlight.delete(accountId);
+      }
+    })();
+
+    accountFetchInFlight.set(accountId, run);
+    return run;
   },
 
-  fetchPositions: async (accountId: string) => {
-    set({ isPositionsLoading: true, error: null });
-    try {
-      const positions = await InvestmentService.getPositions(accountId);
-      set({ positions, isPositionsLoading: false });
+  fetchPositions: async (accountId: string, options?: { force?: boolean }) => {
+    const { account, positions, isPositionsLoading } = get();
+    if (!options?.force && account?.id === accountId && positions.length > 0 && !isPositionsLoading) {
       return positions;
-    } catch (err: any) {
-      set({ error: err?.message ?? 'Failed to load positions', isPositionsLoading: false });
-      throw err;
     }
+
+    const pending = positionsFetchInFlight.get(accountId);
+    if (!options?.force && pending) {
+      return pending;
+    }
+
+    const run = (async () => {
+      set({ isPositionsLoading: true, error: null });
+      try {
+        const nextPositions = await InvestmentService.getPositions(accountId);
+        set({ positions: nextPositions, isPositionsLoading: false });
+        return nextPositions;
+      } catch (err: any) {
+        set({ error: err?.message ?? 'Failed to load positions', isPositionsLoading: false });
+        throw err;
+      } finally {
+        positionsFetchInFlight.delete(accountId);
+      }
+    })();
+
+    positionsFetchInFlight.set(accountId, run);
+    return run;
   },
 
   fetchOrders: async (accountId: string, opts?: { limit?: number }) => {
@@ -126,6 +163,9 @@ export const useAccountStore = create<AccountState>()((set) => ({
   },
 
   fetchSummary: async (accountId: string, portfolioId: string) => {
+    if (get().summaryData && !get().isSummaryLoading) {
+      return;
+    }
     set({ isSummaryLoading: true, error: null });
     try {
       const summaryData = await WidgetService.getPortfolioSummary(accountId, portfolioId);

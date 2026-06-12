@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { ArrowUpRight, History } from 'lucide-react';
 import Link from 'next/link';
 import type { Position } from '@/lib/bluum-api.types';
@@ -51,19 +51,9 @@ const FALLBACK_POSITIONS: Position[] = [
 ];
 
 export function RecentTrades() {
-  const account = useAccountStore((state) => state.account);
   const positions = useAccountStore((state) => state.positions);
   const isPositionsLoading = useAccountStore((state) => state.isPositionsLoading);
-  const fetchPositions = useAccountStore((state) => state.fetchPositions);
   const { displayAmount } = useCurrency();
-
-  useEffect(() => {
-    if (account?.id) {
-      fetchPositions(account.id).catch((err) => {
-        console.error('Failed to fetch positions', err);
-      });
-    }
-  }, [account?.id, fetchPositions]);
 
   const displayPositions = positions.length > 0 ? positions : FALLBACK_POSITIONS;
   const loading = isPositionsLoading;

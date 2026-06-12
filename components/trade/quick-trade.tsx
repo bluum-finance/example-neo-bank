@@ -172,8 +172,8 @@ export function QuickTrade({ initialSymbol, initialMarket, initialSide, onOrderP
       setPlacedOrder(result);
 
       const { fetchAccount, fetchPositions } = useAccountStore.getState();
-      fetchAccount(accountId).catch(() => null);
-      fetchPositions(accountId).catch(() => null);
+      fetchAccount(accountId, { force: true, silent: true }).catch(() => null);
+      fetchPositions(accountId, { force: true }).catch(() => null);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to place order.');
       setShowReview(false);

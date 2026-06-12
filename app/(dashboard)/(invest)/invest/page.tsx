@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { ChevronRight, Plus, ArrowLeftRight, Loader2 } from 'lucide-react';
+import { ChevronRight, Plus, ArrowLeftRight } from 'lucide-react';
 
 import { PortfolioPerformanceChart } from '@/components/invest/portfolio-performance-chart';
 import { FinancialPlan } from '@/components/invest/financial-plan';
@@ -20,7 +20,6 @@ import {
   useAccountBalance,
   useAccountStore,
   useChartData,
-  useChartLoading,
   usePortfolioId,
   usePositions,
   useSummaryData,
@@ -49,8 +48,8 @@ export default function Invest() {
   const summaryData = useSummaryData();
   const chartData = useChartData();
   const summaryLoading = useSummaryLoading();
-  const { isLoading, fetchAccount, fetchPositions, fetchSummary, fetchChartData } = useAccountStore();
-  const accountRecord = useAccountStore((s) => s.account);
+  const { fetchAccount, fetchPositions, fetchSummary, fetchChartData } = useAccountStore();
+  const isAiWealth = user?.investmentChoice === 'AI-WEALTH';
 
   // Account & Portfolio State
   const [accountId, setAccountId] = useState<string | null>(null);
@@ -102,12 +101,20 @@ export default function Invest() {
         }
 
         const currentPortfolioId = useAccountStore.getState().portfolioId;
-        await fetchPositions(userAccountId);
-        await Promise.all([
-          fetchSummary(userAccountId, currentPortfolioId).catch((err) => {}),
-          fetchChartData(userAccountId, currentPortfolioId).catch((err) => {}),
-          loadWidgetData(userAccountId).catch((err) => {}),
-        ]);
+        const portfolioTasks = [
+          fetchPositions(userAccountId).catch(() => {}),
+          fetchSummary(userAccountId, currentPortfolioId).catch(() => {}),
+          fetchChartData(userAccountId, currentPortfolioId).catch(() => {}),
+        ];
+
+        if (isAiWealth) {
+          portfolioTasks.push(loadWidgetData(userAccountId).catch(() => {}));
+        } else {
+          setInsightsLoading(false);
+          setGoalsLoading(false);
+        }
+
+        await Promise.all(portfolioTasks);
       } catch (err: any) {
         if (err?.status === 404) {
           clearExternalAccountId();
@@ -117,7 +124,7 @@ export default function Invest() {
         toast.error(err?.message || 'Failed to load portfolio');
       }
     },
-    [clearExternalAccountId, fetchAccount, fetchChartData, fetchPositions, fetchSummary, loadWidgetData, router]
+    [clearExternalAccountId, fetchAccount, fetchChartData, fetchPositions, fetchSummary, isAiWealth, loadWidgetData, router]
   );
 
   useEffect(() => {
@@ -162,14 +169,6 @@ export default function Invest() {
     goalsLoading,
     investmentPolicy,
   };
-
-  if (isLoading && !accountRecord) {
-    return (
-      <div className="fixed inset-0 z-40 flex items-center justify-center p-4 backdrop-blur-md lg:inset-y-0 lg:left-64 lg:right-0 lg:top-0 lg:bottom-0">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
 
   return user?.investmentChoice === 'AI-WEALTH' ? (
     <AiWealthDashboard {...dashboardProps} />

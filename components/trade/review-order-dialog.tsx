@@ -235,8 +235,8 @@ export function ReviewOrderDialog({
                 type="button"
                 disabled={placing || insufficientFunds}
                 onClick={onConfirm}
-                className="flex-[2] h-11 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-60"
-                style={{ background: accentColor }}
+                className="flex-2 h-11 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-60"
+                style={{ background: '#57B75C' }}
               >
                 {placing ? <Loader2 className="w-4 h-4 animate-spin" /> : `Confirm ${side}`}
               </button>

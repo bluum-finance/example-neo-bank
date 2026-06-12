@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowUp, ArrowDown, TrendingUp, Clock, ChevronRight } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { DepositDialog } from '@/components/payment/deposit-dialog';
 import { WithdrawalDialog } from '@/components/payment/withdrawal-dialog';
 import { useUser } from '@/store/user.store';
-import { AccountService } from '@/services/account.service';
+import { useAccountBalance, useAccountStore } from '@/store/account.store';
 
 interface QuickAction {
   id: string;
@@ -53,32 +53,14 @@ const defaultQuickActions: Omit<QuickAction, 'icon'>[] = [
 export function QuickActionsWidget() {
   const router = useRouter();
   const user = useUser();
+  const account = useAccountStore((state) => state.account);
+  const accountBalance = useAccountBalance();
+  const fetchAccount = useAccountStore((state) => state.fetchAccount);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-  const [accountId, setAccountId] = useState<string | null>(null);
-  const [availableBalance, setAvailableBalance] = useState<number>(0);
 
-  // Get account ID and balance
-  useEffect(() => {
-    const loadAccount = async () => {
-      const userAccountId = user?.externalAccountId;
-
-      if (userAccountId) {
-        try {
-          const account = await AccountService.getAccount(userAccountId);
-          setAccountId(account.id ?? userAccountId);
-          const balanceValue = account?.balance ? parseFloat(account.balance) : 0;
-          setAvailableBalance(balanceValue);
-        } catch (error) {
-          console.error('Failed to load account balance:', error);
-          setAccountId(userAccountId);
-          setAvailableBalance(0);
-        }
-      }
-    };
-
-    loadAccount();
-  }, [user?.externalAccountId]);
+  const accountId = account?.id ?? user?.externalAccountId ?? null;
+  const availableBalance = accountBalance;
 
   // Map action IDs to their corresponding icons
   const getIconForAction = (id: string): React.ReactNode => {
@@ -117,27 +99,15 @@ export function QuickActionsWidget() {
 
   const handleDepositSuccess = () => {
     setShowDepositModal(false);
-    // Reload account balance
     if (accountId) {
-      AccountService.getAccount(accountId)
-        .then((account) => {
-          const balanceValue = account?.balance ? parseFloat(account.balance) : 0;
-          setAvailableBalance(balanceValue);
-        })
-        .catch(console.error);
+      fetchAccount(accountId, { force: true, silent: true }).catch(console.error);
     }
   };
 
   const handleWithdrawSuccess = () => {
     setShowWithdrawModal(false);
-    // Reload account balance
     if (accountId) {
-      AccountService.getAccount(accountId)
-        .then((account) => {
-          const balanceValue = account?.balance ? parseFloat(account.balance) : 0;
-          setAvailableBalance(balanceValue);
-        })
-        .catch(console.error);
+      fetchAccount(accountId, { force: true, silent: true }).catch(console.error);
     }
   };
 

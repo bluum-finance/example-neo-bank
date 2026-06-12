@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useAccountStore } from '@/store/account.store';
-import { WidgetService } from '@/services/widget.service';
 import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 
 const ASSET_CLASS_COLORS: Record<string, string> = {
@@ -54,21 +53,9 @@ interface PortfolioSummary {
 }
 
 export const HoldingsOverview = () => {
-  const account = useAccountStore((state) => state.account);
-  const portfolioId = useAccountStore((state) => state.portfolioId);
   const summaryData = useAccountStore((state) => state.summaryData) as PortfolioSummary | null;
   const isSummaryLoading = useAccountStore((state) => state.isSummaryLoading);
-  const fetchSummary = useAccountStore((state) => state.fetchSummary);
   const { displayAmount } = useCurrency();
-
-  useEffect(() => {
-    const accountId = account?.id;
-    if (!accountId) return;
-    // Only fetch if we don't have summary data yet
-    if (!summaryData) {
-      fetchSummary(accountId, portfolioId).catch(console.error);
-    }
-  }, [account?.id, portfolioId, fetchSummary]);
 
   const allocation = summaryData?.allocation?.by_asset_class?.length
     ? summaryData.allocation.by_asset_class
