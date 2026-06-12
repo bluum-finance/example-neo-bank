@@ -21,6 +21,7 @@ import {
   useAccountStore,
   useChartData,
   usePortfolioId,
+  usePortfolioValue,
   usePositions,
   useSummaryData,
   useSummaryLoading,
@@ -35,6 +36,8 @@ import { NewsInsights } from '@/components/widget/news-insights';
 import { PersonalizedStrategyCTA2 } from '@/components/ai-wealth/personalized-strategy-cta-2';
 import { DepositDialog } from '@/components/payment/deposit-dialog';
 import { WithdrawalDialog } from '@/components/payment/withdrawal-dialog';
+import { isTradingDemo } from '@/lib/demo-mode';
+import { resolveDemoInvestorKey } from '@/lib/demo/trading-store';
 
 export default function Invest() {
   const router = useRouter();
@@ -43,12 +46,13 @@ export default function Invest() {
 
   // Account Store
   const accountBalance = useAccountBalance();
+  const portfolioValue = usePortfolioValue();
   const portfolioId = usePortfolioId();
   const positions = usePositions();
   const summaryData = useSummaryData();
   const chartData = useChartData();
   const summaryLoading = useSummaryLoading();
-  const { fetchAccount, fetchPositions, fetchSummary, fetchChartData } = useAccountStore();
+  const { fetchAccount, fetchPositions, fetchOrders, fetchSummary, fetchChartData } = useAccountStore();
   const isAiWealth = user?.investmentChoice === 'AI-WEALTH';
 
   // Account & Portfolio State
@@ -92,23 +96,35 @@ export default function Invest() {
   }, []);
 
   const loadAccountData = useCallback(
-    async (userAccountId: string) => {
-      try {
-        const account = await fetchAccount(userAccountId);
-        const gate: string[] = ['onboarding', 'under_review', 'awaiting_documents', 'declined'];
-        if (account?.status && gate.includes(account.status)) {
-          return;
-        }
+    async (opts: { wealthAccountId?: string; tradingAccountId: string }) => {
+      const { wealthAccountId, tradingAccountId } = opts;
+      const positionsAccountId = isTradingDemo() ? tradingAccountId : (wealthAccountId ?? tradingAccountId);
 
-        const currentPortfolioId = useAccountStore.getState().portfolioId;
-        const portfolioTasks = [
-          fetchPositions(userAccountId).catch(() => {}),
-          fetchSummary(userAccountId, currentPortfolioId).catch(() => {}),
-          fetchChartData(userAccountId, currentPortfolioId).catch(() => {}),
+      try {
+        const portfolioTasks: Promise<unknown>[] = [
+          fetchPositions(positionsAccountId).catch(() => {}),
+          fetchOrders(positionsAccountId, { limit: 5 }).catch(() => {}),
         ];
 
-        if (isAiWealth) {
-          portfolioTasks.push(loadWidgetData(userAccountId).catch(() => {}));
+        if (wealthAccountId) {
+          const account = await fetchAccount(wealthAccountId);
+          const gate: string[] = ['onboarding', 'under_review', 'awaiting_documents', 'declined'];
+          if (account?.status && gate.includes(account.status)) {
+            return;
+          }
+
+          const currentPortfolioId = useAccountStore.getState().portfolioId;
+          portfolioTasks.push(
+            fetchSummary(wealthAccountId, currentPortfolioId).catch(() => {}),
+            fetchChartData(wealthAccountId, currentPortfolioId).catch(() => {})
+          );
+
+          if (isAiWealth) {
+            portfolioTasks.push(loadWidgetData(wealthAccountId).catch(() => {}));
+          } else {
+            setInsightsLoading(false);
+            setGoalsLoading(false);
+          }
         } else {
           setInsightsLoading(false);
           setGoalsLoading(false);
@@ -116,7 +132,7 @@ export default function Invest() {
 
         await Promise.all(portfolioTasks);
       } catch (err: any) {
-        if (err?.status === 404) {
+        if (wealthAccountId && err?.status === 404) {
           clearExternalAccountId();
           router.push('/onboarding');
           return;
@@ -124,20 +140,34 @@ export default function Invest() {
         toast.error(err?.message || 'Failed to load portfolio');
       }
     },
-    [clearExternalAccountId, fetchAccount, fetchChartData, fetchPositions, fetchSummary, isAiWealth, loadWidgetData, router]
+    [clearExternalAccountId, fetchAccount, fetchChartData, fetchOrders, fetchPositions, fetchSummary, isAiWealth, loadWidgetData, router]
   );
 
   useEffect(() => {
-    const userAccountId = user?.externalAccountId;
-    if (!userAccountId) return;
+    const tradingAccountId = resolveDemoInvestorKey(user?.externalAccountId ?? user?.email ?? 'local-demo');
+    const wealthAccountId = user?.externalAccountId;
 
-    setAccountId(userAccountId);
-    loadAccountData(userAccountId);
-  }, [loadAccountData, router, user?.externalAccountId]);
+    if (!wealthAccountId && !isTradingDemo()) return;
+
+    setAccountId(wealthAccountId ?? tradingAccountId);
+    void loadAccountData({ wealthAccountId, tradingAccountId });
+  }, [loadAccountData, user?.externalAccountId, user?.email]);
+
+  useEffect(() => {
+    if (!isTradingDemo()) return;
+    const tradingAccountId = resolveDemoInvestorKey(user?.externalAccountId ?? user?.email ?? 'local-demo');
+    const onUpdate = () => {
+      void fetchPositions(tradingAccountId, { force: true });
+      void fetchOrders(tradingAccountId, { limit: 5 });
+    };
+    window.addEventListener('demo-trading-updated', onUpdate);
+    return () => window.removeEventListener('demo-trading-updated', onUpdate);
+  }, [fetchOrders, fetchPositions, user?.externalAccountId, user?.email]);
 
   const handleRangeChange = (range: '1W' | '1M' | '3M' | '1Y' | 'All') => {
-    if (accountId && portfolioId) {
-      fetchChartData(accountId, portfolioId, range).catch((error) => {
+    const wealthAccountId = user?.externalAccountId ?? accountId;
+    if (wealthAccountId && portfolioId) {
+      fetchChartData(wealthAccountId, portfolioId, range).catch((error) => {
         console.error('Failed to update performance range', error);
       });
     }
@@ -146,7 +176,10 @@ export default function Invest() {
   const insightsList = widgetInsights?.insights || [];
   const portfolioGains = useMemo(() => InvestmentService.calculatePortfolioTotals(positions), [positions]);
 
-  if (!accountId) {
+  const resolvedAccountId =
+    accountId ?? (isTradingDemo() ? resolveDemoInvestorKey(user?.externalAccountId ?? user?.email ?? 'local-demo') : undefined);
+
+  if (!resolvedAccountId) {
     return (
       <div className="max-w-5xl mx-auto">
         <OnboardingLandingPage />
@@ -157,13 +190,13 @@ export default function Invest() {
   const dashboardProps = {
     insightsList,
     insightsLoading,
-    totalPortfolioValue: accountBalance,
+    totalPortfolioValue: portfolioValue,
     chartData,
     portfolioGains,
     summaryData,
     summaryLoading,
     handleRangeChange,
-    accountId,
+    accountId: resolvedAccountId,
     portfolioId,
     financialGoals,
     goalsLoading,

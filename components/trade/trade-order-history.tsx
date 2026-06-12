@@ -4,45 +4,7 @@ import Link from 'next/link';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useOrders, useAccountStore } from '@/store/account.store';
-import type { ExternalOrderStatus } from '@/lib/bluum-api.types';
-
-function OrderStatusBadge({ status }: { status: ExternalOrderStatus | string }) {
-  const cfg: Record<string, { label: string; classes: string; dot: string }> = {
-    filled: { label: 'Filled', classes: 'text-[#30D158]', dot: 'bg-[#30D158]' },
-    partial: { label: 'Partial', classes: 'text-blue-400', dot: 'bg-blue-400' },
-    open: { label: 'Open', classes: 'text-sky-400', dot: 'bg-sky-400' },
-    pending: { label: 'Pending', classes: 'text-amber-400', dot: 'bg-amber-400' },
-    cancelled: { label: 'Cancelled', classes: 'text-[#9DB9AB]', dot: 'bg-[#9DB9AB]/40' },
-    failed: { label: 'Failed', classes: 'text-red-400', dot: 'bg-red-400' },
-  };
-
-  const { label, classes, dot } = cfg[status] ?? {
-    label: status.replace(/_/g, ' '),
-    classes: 'text-[#9DB9AB]',
-    dot: 'bg-[#9DB9AB]/40',
-  };
-
-  return (
-    <span className={cn('inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide uppercase', classes)}>
-      <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', dot)} />
-      {label}
-    </span>
-  );
-}
-
-function formatOrderDate(created?: number | null) {
-  if (!created) return '—';
-  try {
-    return new Date(created * 1000).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  } catch {
-    return '—';
-  }
-}
+import { OrderStatusBadge, formatOrderDate } from '@/components/trade/order-display';
 
 interface TradeOrderHistoryProps {
   onRefresh?: () => void;
@@ -58,14 +20,14 @@ export function TradeOrderHistory({ onRefresh, isRefreshing }: TradeOrderHistory
       <div className="flex shrink-0 items-center justify-between border-b border-[#1E3D2F] px-5 py-4">
         <div>
           <h2 className="text-sm font-semibold text-white">Order History</h2>
-          <p className="text-[11px] text-[#9DB9AB] mt-0.5 tracking-wide">Recent orders across all assets</p>
+          <p className="mt-0.5 text-[11px] tracking-wide text-[#9DB9AB]">Recent orders across all assets</p>
         </div>
         {onRefresh && (
           <button
             type="button"
             onClick={onRefresh}
             disabled={isRefreshing || isLoading}
-            className="flex items-center gap-1.5 text-[11px] font-semibold text-[#9DB9AB] hover:text-white border border-[#1F4536] rounded-lg px-2.5 py-1.5 hover:bg-[#1F4536]/40 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg border border-[#1F4536] px-2.5 py-1.5 text-[11px] font-semibold text-[#9DB9AB] transition-colors hover:bg-[#1F4536]/40 hover:text-white disabled:opacity-50"
           >
             <RefreshCw className={cn('h-3 w-3', (isRefreshing || isLoading) && 'animate-spin')} />
             Refresh
@@ -81,27 +43,27 @@ export function TradeOrderHistory({ onRefresh, isRefreshing }: TradeOrderHistory
         ) : orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <p className="text-sm font-semibold text-white">No orders yet</p>
-            <p className="text-xs text-[#9DB9AB] mt-1">Place a trade to see your order history here.</p>
+            <p className="mt-1 text-xs text-[#9DB9AB]">Place a trade to see your order history here.</p>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-[#0F2A20]">
               <tr className="border-b border-[#1E3D2F] text-[10px] uppercase tracking-wider text-[#9DB9AB]">
-                <th className="text-left px-5 py-3 font-semibold">Symbol</th>
-                <th className="text-left px-3 py-3 font-semibold">Side</th>
-                <th className="text-left px-3 py-3 font-semibold">Type</th>
-                <th className="text-right px-3 py-3 font-semibold">Qty</th>
-                <th className="text-right px-3 py-3 font-semibold">Status</th>
-                <th className="text-right px-5 py-3 font-semibold">Date</th>
+                <th className="px-5 py-3 text-left font-semibold">Symbol</th>
+                <th className="px-3 py-3 text-left font-semibold">Side</th>
+                <th className="px-3 py-3 text-left font-semibold">Type</th>
+                <th className="px-3 py-3 text-right font-semibold">Qty</th>
+                <th className="px-3 py-3 text-right font-semibold">Status</th>
+                <th className="px-5 py-3 text-right font-semibold">Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#1E3D2F]/60">
               {orders.map((order) => (
-                <tr key={order.id} className="hover:bg-[#07120F]/50 transition-colors">
+                <tr key={order.id} className="transition-colors hover:bg-[#07120F]/50">
                   <td className="px-5 py-3">
                     <Link
                       href={`/assets/${order.symbol.toLowerCase()}`}
-                      className="font-mono font-bold text-white hover:text-[#57B75C] transition-colors"
+                      className="font-mono font-bold text-white transition-colors hover:text-[#57B75C]"
                     >
                       {order.symbol}
                     </Link>
@@ -114,7 +76,7 @@ export function TradeOrderHistory({ onRefresh, isRefreshing }: TradeOrderHistory
                   <td className="px-3 py-3 text-right">
                     <OrderStatusBadge status={order.status} />
                   </td>
-                  <td className="px-5 py-3 text-right text-[#9DB9AB] text-xs tabular-nums">
+                  <td className="px-5 py-3 text-right text-xs tabular-nums text-[#9DB9AB]">
                     {formatOrderDate(order.created)}
                   </td>
                 </tr>

@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { PortfolioPerformanceChart } from '@/components/invest/portfolio-performance-chart';
-import { InvestmentService, type Position } from '@/services/investment.service';
 import { AccountService } from '@/services/account.service';
 import { WidgetService, type PerformanceDataPoint } from '@/services/widget.service';
 import { useUser } from '@/store/user.store';
+import { useAccountStore } from '@/store/account.store';
+import { isTradingDemo } from '@/lib/demo-mode';
+import { resolveDemoInvestorKey } from '@/lib/demo/trading-store';
 import { FundingOptionsWidget } from '@/components/dashboard/funding-options-widget';
 import { ActionsList } from '@/components/dashboard/actions-list';
 import { AccountsWidget } from '@/components/dashboard/accounts-widget';
@@ -14,21 +16,16 @@ import { MoneyMovementWidget } from '@/components/dashboard/money-movement-widge
 import { TransactionDatatable } from '@/components/dashboard/transaction-datatable';
 
 export default function Invest() {
-  const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [accountId, setAccountId] = useState<string | null>(null);
-  const [accountBalance, setAccountBalance] = useState(0);
-  const [portfolioGains, setPortfolioGains] = useState({ totalGain: 0, totalGainPercent: 0 });
   const [portfolioId, setPortfolioId] = useState<string | null>(null);
   const [summaryData, setSummaryData] = useState<any | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [chartData, setChartData] = useState<PerformanceDataPoint[]>([]);
-  const [chartLoading, setChartLoading] = useState(false);
-  const [chartError, setChartError] = useState<string | null>(null);
-  const [hasAccountId, setHasAccountId] = useState(false);
-  const [showAIOnboarding, setShowAIOnboarding] = useState(false);
   const user = useUser();
+  const fetchPositions = useAccountStore((s) => s.fetchPositions);
+  const fetchAccount = useAccountStore((s) => s.fetchAccount);
 
   const loadSummaryData = async (userAccountId: string, detectedPortfolioId: string) => {
     setSummaryLoading(true);
@@ -45,16 +42,11 @@ export default function Invest() {
   };
 
   const loadChartData = async (userAccountId: string, detectedPortfolioId: string, range: '1W' | '1M' | '3M' | '1Y' | 'All' = '1M') => {
-    setChartLoading(true);
-    setChartError(null);
     try {
       const data = await WidgetService.getPortfolioPerformanceData(range, userAccountId, detectedPortfolioId);
       setChartData(data);
     } catch (error: any) {
       console.error('Failed to load performance data', error);
-      setChartError(error?.message || 'Unable to load chart data');
-    } finally {
-      setChartLoading(false);
     }
   };
 
@@ -64,45 +56,33 @@ export default function Invest() {
     }
   };
 
-  const loadPortfolio = async (userAccountId: string) => {
+  const loadPortfolio = async (wealthAccountId: string) => {
     try {
       setLoading(true);
+      setAccountId(wealthAccountId);
 
-      setAccountId(userAccountId);
+      const tradingAccountId = resolveDemoInvestorKey(wealthAccountId ?? user?.email ?? 'local-demo');
+      const positionsAccountId = isTradingDemo() ? tradingAccountId : wealthAccountId;
+
       let account;
       try {
-        account = await AccountService.getAccount(userAccountId);
+        account = await AccountService.getAccount(wealthAccountId);
       } catch (err) {
         toast.error('Error fetching account. Please try again later.');
         setLoading(false);
         return;
       }
 
-      const balanceValue = account?.balance ? parseFloat(account.balance) : 0;
-      setAccountBalance(balanceValue);
       const accountData = account as any;
       const detectedPortfolioId = accountData?.portfolios?.find((p: any) => p.status === 'active')?.id || 'ptf_demo_main';
       setPortfolioId(detectedPortfolioId);
 
-      if (detectedPortfolioId) {
-        await Promise.all([loadSummaryData(userAccountId, detectedPortfolioId), loadChartData(userAccountId, detectedPortfolioId)]);
-      } else {
-        setSummaryData(null);
-        setSummaryError(null);
-        setChartData([]);
-        setChartError(null);
-      }
-
-      // Fetch positions
-      const positionsData = await InvestmentService.getPositions(userAccountId);
-      setPositions(positionsData);
-
-      // Calculate portfolio gains
-      const totals = InvestmentService.calculatePortfolioTotals(positionsData);
-      setPortfolioGains({
-        totalGain: totals.totalGain,
-        totalGainPercent: totals.totalGainPercent,
-      });
+      await Promise.all([
+        fetchAccount(wealthAccountId, { silent: true }),
+        loadSummaryData(wealthAccountId, detectedPortfolioId),
+        loadChartData(wealthAccountId, detectedPortfolioId),
+        fetchPositions(positionsAccountId, { force: true }),
+      ]);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load portfolio';
       toast.error(errorMessage);
@@ -112,18 +92,30 @@ export default function Invest() {
   };
 
   useEffect(() => {
-    const userAccountId = user?.externalAccountId;
-
-    if (userAccountId) {
-      setHasAccountId(true);
-      setAccountId(userAccountId);
-      loadPortfolio(userAccountId);
-    } else {
-      setHasAccountId(false);
+    const wealthAccountId = user?.externalAccountId;
+    if (!wealthAccountId && !isTradingDemo()) {
       setLoading(false);
+      return;
+    }
+    if (wealthAccountId) {
+      void loadPortfolio(wealthAccountId);
+    } else {
+      const tradingAccountId = resolveDemoInvestorKey(user?.email ?? 'local-demo');
+      setAccountId(tradingAccountId);
+      void fetchPositions(tradingAccountId, { force: true }).finally(() => setLoading(false));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.externalAccountId]);
+  }, [user?.externalAccountId, user?.email]);
+
+  useEffect(() => {
+    if (!isTradingDemo()) return;
+    const tradingAccountId = resolveDemoInvestorKey(user?.externalAccountId ?? user?.email ?? 'local-demo');
+    const onUpdate = () => {
+      void fetchPositions(tradingAccountId, { force: true });
+    };
+    window.addEventListener('demo-trading-updated', onUpdate);
+    return () => window.removeEventListener('demo-trading-updated', onUpdate);
+  }, [fetchPositions, user?.externalAccountId, user?.email]);
 
   return (
     <div className="space-y-6 my-4">

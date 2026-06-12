@@ -9,12 +9,15 @@ import { TradePositionsPanel } from '@/components/trade/trade-positions-panel';
 import { TradeOrderHistory } from '@/components/trade/trade-order-history';
 import { useUser } from '@/store/user.store';
 import { useAccountStore } from '@/store/account.store';
+import { isTradingDemo } from '@/lib/demo-mode';
+import { resolveDemoInvestorKey } from '@/lib/demo/trading-store';
 
 function TradePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const user = useUser();
-  const accountId = user?.externalAccountId;
+  const investorKey = resolveDemoInvestorKey(user?.externalAccountId ?? user?.email ?? 'local-demo');
+  const accountId = isTradingDemo() ? investorKey : (user?.externalAccountId ?? null);
 
   const fetchPositions = useAccountStore((s) => s.fetchPositions);
   const fetchOrders = useAccountStore((s) => s.fetchOrders);

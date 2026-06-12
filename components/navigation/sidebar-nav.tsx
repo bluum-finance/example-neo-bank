@@ -11,10 +11,12 @@ import {
   DashboardIcon,
   TransactionsIcon,
 } from '@/components/icons/nav-icons';
+import { useBankAccounts } from '@/lib/hooks/use-bank-accounts';
 
 export function SidebarNav() {
   const pathname = usePathname();
   const user = useUser();
+  const accounts = useBankAccounts();
 
   const getInitials = (name: string) => {
     return name
@@ -46,22 +48,8 @@ export function SidebarNav() {
     },
   ];
 
-  const accounts = [
-    {
-      id: '3168',
-      label: 'Checking ••3168',
-      balance: '$0.00',
-    },
-    {
-      id: '2651',
-      label: 'Savings ••2651',
-      balance: '$0.00',
-    },
-  ];
-
   const isInvestActive = pathname === '/invest';
 
-  // slice email address if it's longer than 20 characters
   const slicedEmail = user?.email
     ? user.email.slice(0, 20) + '...'
     : 'johndoe@bluuminvest.com';
@@ -164,7 +152,7 @@ export function SidebarNav() {
                         isActive ? 'text-[#30D158]' : 'text-[#8DA69B]',
                       )}
                     >
-                      {account.balance}
+                      {account.balanceFormatted}
                     </div>
                   </Link>
                 );

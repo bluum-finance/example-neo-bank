@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 import { useCurrency } from '@/lib/hooks/use-currency';
 import { marketDisplayLabel } from '@/lib/market';
 import type { Order, Wallet } from '@/lib/bluum-api.types';
+import { getWalletLabel } from '@/lib/wallet-display';
+import { formatOrderReference } from '@/lib/order-id';
 
 type Side = 'buy' | 'sell';
 type OrderType = 'limit' | 'market';
@@ -29,8 +31,8 @@ interface ReviewOrderDialogProps {
   limitPrice: string;
   estimatedTotal: number | null;
   wallets: Wallet[];
-  selectedWalletCurrency: string;
-  onSelectWalletCurrency: (currency: string) => void;
+  selectedWalletId: string;
+  onSelectWalletId: (id: string) => void;
   placedOrder?: Order | null;
 }
 
@@ -57,14 +59,14 @@ export function ReviewOrderDialog({
   limitPrice,
   estimatedTotal,
   wallets,
-  selectedWalletCurrency,
-  onSelectWalletCurrency,
+  selectedWalletId,
+  onSelectWalletId,
   placedOrder,
 }: ReviewOrderDialogProps) {
   const { displayAmount, displayAmountInUSD, convertToCurrency } = useCurrency();
   const isBuy = side === 'buy';
 
-  const selectedWallet = wallets.find((w) => w.currency === selectedWalletCurrency) ?? null;
+  const selectedWallet = wallets.find((w) => w.id === selectedWalletId) ?? null;
   const walletBalance = selectedWallet ? parseFloat(selectedWallet.balance) : null;
   const walletCurrency = selectedWallet?.currency;
 
@@ -120,7 +122,9 @@ export function ReviewOrderDialog({
               <p className="text-[#9DB9AB] text-sm mt-1">
                 {side} {parseFloat(shares).toLocaleString()} {asset?.symbol} · {orderType}
               </p>
-              {placedOrder?.id && <p className="text-[#6B7280] text-xs font-mono mt-2">{placedOrder.id}</p>}
+              {placedOrder?.id && (
+                <p className="text-[#6B7280] text-xs font-mono mt-2">Ref {formatOrderReference(placedOrder.id)}</p>
+              )}
             </div>
             <button
               type="button"
@@ -163,26 +167,29 @@ export function ReviewOrderDialog({
                   <WalletIcon className="w-3 h-3" />
                   {isBuy ? 'Pay from' : 'Receive into'}
                 </span>
-                <div className="grid grid-cols-1 gap-1.5">
+                <div className="grid grid-cols-1 gap-2">
                   {wallets.map((w) => {
-                    const active = w.currency === selectedWalletCurrency;
+                    const active = w.id === selectedWalletId;
                     return (
                       <button
                         key={w.id}
                         type="button"
-                        onClick={() => onSelectWalletCurrency(w.currency)}
+                        onClick={() => onSelectWalletId(w.id)}
                         className={cn(
-                          'flex items-center justify-between gap-3 rounded-xl px-3.5 py-2.5 border transition-all text-left',
+                          'flex items-center justify-between gap-4 rounded-xl px-3 py-4 border transition-all text-left',
                           active ? 'border-[#57B75C]/50' : 'border-[#1F4536] bg-[#07120F] hover:border-[#57B75C]/30'
                         )}
                         style={active ? { background: accentBg, borderColor: accentBorder } : undefined}
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-[#1E3D2F] text-[#A1BEAD]">{w.currency}</span>
-                          <span className="text-[11px] font-mono text-[#9DB9AB] tabular-nums">
+                          <span className="text-xs font-bold px-2 py-1 rounded-full bg-muted text-muted-foreground truncate max-w-[140px]">
+                            {getWalletLabel(w)}
+                          </span>
+                          <span className="text-sm font-mono text-[#9DB9AB] tabular-nums">
                             {displayAmount(parseFloat(w.balance), w.currency)}
                           </span>
                         </div>
+
                         {active && (
                           <span className="flex items-center justify-center h-5 w-5 rounded-full shrink-0" style={{ background: accentColor }}>
                             <Check className="w-3 h-3 text-white" />

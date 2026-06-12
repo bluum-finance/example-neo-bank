@@ -98,3 +98,5 @@ Defined in `.env`, configured in `lib/config.ts`:
 - `BLUUM_API_BASE_URL` — Bluum backend base URL
 - `BLUUM_API_KEY` / `BLUUM_SECRET_KEY` — server-side only credentials
 - `NEXT_PUBLIC_DEMO_INVESTOR_ACCOUNT_ID` — safe to expose to client
+- `NEXT_PUBLIC_ASSET_DATA_SOURCE` — `api` \| `demo` (default: `demo`)
+- `NEXT_PUBLIC_TRADING_DATA_SOURCE` — `api` \| `demo` (default: `demo`)

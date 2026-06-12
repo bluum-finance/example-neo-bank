@@ -1,116 +1,95 @@
 'use client';
 
-import React from 'react';
-import { ArrowUpRight, History } from 'lucide-react';
+import { useCallback, useEffect } from 'react';
+import { ArrowUpRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import type { Position } from '@/lib/bluum-api.types';
-import { useAccountStore } from '@/store/account.store';
-import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
+import { useAccountStore, useOrders, useOrdersLoading } from '@/store/account.store';
+import { useUser } from '@/store/user.store';
+import { isTradingDemo } from '@/lib/demo-mode';
+import { resolveDemoInvestorKey } from '@/lib/demo/trading-store';
+import { OrderStatusBadge, formatOrderDate } from '@/components/trade/order-display';
 
-function parseDecimal(value?: string | null): number {
-  return parseFloat(value || '0') || 0;
-}
-
-const FALLBACK_POSITIONS: Position[] = [
-  {
-    id: 'pos_msft',
-    investor_id: 'demo',
-    symbol: 'MSFT',
-    currency: 'USD',
-    quantity: '10',
-    average_cost_basis: '375.00',
-    current_price: '380.25',
-    market_value: '3802.50',
-    unrealized_pl: '52.50',
-    unrealized_pl_percent: '1.40',
-  },
-  {
-    id: 'pos_aapl',
-    investor_id: 'demo',
-    symbol: 'AAPL',
-    currency: 'USD',
-    quantity: '15',
-    average_cost_basis: '165.00',
-    current_price: '175.50',
-    market_value: '2632.50',
-    unrealized_pl: '157.50',
-    unrealized_pl_percent: '6.36',
-  },
-  {
-    id: 'pos_nvda',
-    investor_id: 'demo',
-    symbol: 'NVDA',
-    currency: 'USD',
-    quantity: '5',
-    average_cost_basis: '480.00',
-    current_price: '501.12',
-    market_value: '2505.60',
-    unrealized_pl: '105.60',
-    unrealized_pl_percent: '4.42',
-  },
-];
+const MAX_RECENT_TRADES = 5;
 
 export function RecentTrades() {
-  const positions = useAccountStore((state) => state.positions);
-  const isPositionsLoading = useAccountStore((state) => state.isPositionsLoading);
-  const { displayAmount } = useCurrency();
+  const user = useUser();
+  const accountRecord = useAccountStore((state) => state.account);
+  const fetchOrders = useAccountStore((state) => state.fetchOrders);
+  const orders = useOrders();
+  const isLoading = useOrdersLoading();
 
-  const displayPositions = positions.length > 0 ? positions : FALLBACK_POSITIONS;
-  const loading = isPositionsLoading;
+  const investorKey = resolveDemoInvestorKey(user?.externalAccountId ?? user?.email ?? 'local-demo');
+  const accountId = isTradingDemo() ? investorKey : (accountRecord?.id ?? user?.externalAccountId ?? investorKey);
+
+  const loadOrders = useCallback(() => {
+    if (!accountId) return;
+    void fetchOrders(accountId, { limit: MAX_RECENT_TRADES });
+  }, [accountId, fetchOrders]);
+
+  useEffect(() => {
+    if (!isTradingDemo()) return;
+    const onDemoUpdate = () => loadOrders();
+    window.addEventListener('demo-trading-updated', onDemoUpdate);
+    return () => window.removeEventListener('demo-trading-updated', onDemoUpdate);
+  }, [loadOrders]);
+
+  const recentOrders = orders.slice(0, MAX_RECENT_TRADES);
 
   return (
-    <section className="flex flex-1 flex-col w-full rounded-xl bg-[#0f2a20] border border-[#1e3d2f] p-6 text-left font-inter text-white">
-      {/* Header Section */}
-      <header className="flex items-center justify-between pb-6">
-        <div className="flex items-center gap-2">
-          <History className="w-4 h-4 text-[#30d158]" />
-          <h2 className="text-base font-normal leading-6">Recent Trades</h2>
+    <div className="flex flex-col overflow-hidden rounded-xl border border-[#1E3D2F] bg-[#0F2A20]">
+      <div className="flex mb-2 shrink-0 items-center justify-between border-[#1E3D2F] px-5 py-4">
+        <div>
+          <h2 className="text-sm font-semibold text-white">Recent Trades</h2>
         </div>
-        <Link href="/trade" className="flex items-center gap-1 text-xs font-normal text-[#30d158] hover:opacity-80 transition-opacity">
-          View All
-          <ArrowUpRight className="w-3 h-3" />
+        <Link
+          href="/trade"
+          className="flex items-center gap-1 text-[11px] font-semibold text-[#9DB9AB] transition-colors hover:text-white"
+        >
+          View all
+          <ArrowUpRight className="h-3 w-3" />
         </Link>
-      </header>
+      </div>
 
-      {/* Trades Table */}
-      <div className="w-full overflow-hidden">
-        <table className="w-full text-left text-xs">
-          <thead>
-            <tr className="border-b border-[#2a4d3c] text-[#a1bead]">
-              <th className="pb-2 font-medium">Asset</th>
-              <th className="pb-2 font-medium">Shares</th>
-              <th className="pb-2 text-right font-medium">Price</th>
-              <th className="pb-2 text-right font-medium">Value</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-transparent font-inter">
-            {loading ? (
-              <tr>
-                <td colSpan={4} className="py-8 text-center text-sm text-[#a1bead]">Loading positions...</td>
-              </tr>
-            ) : (
-              displayPositions.map((position, index) => (
-                <tr key={`${position.symbol}-${index}`} className="group transition-colors hover:bg-white/5">
-                  <td className="py-3 font-normal text-white sm:text-sm">
-                    <Link href={`/assets/${position.symbol.toLowerCase()}`} className="hover:text-[#30d158] transition-colors">
-                      {position.symbol}
+      <div className="min-h-0 flex-1 overflow-x-auto">
+        {isLoading && recentOrders.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-[#57B75C]" />
+          </div>
+        ) : recentOrders.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <p className="text-sm font-semibold text-white">No orders yet</p>
+            <p className="mt-1 text-xs text-[#9DB9AB]">Place a trade to see your order history here.</p>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <tbody className="divide-y divide-[#1E3D2F]/60">
+              {recentOrders.map((order) => (
+                <tr key={order.id} className="transition-colors hover:bg-[#07120F]/50">
+                  <td className="px-5 py-4">
+                    <Link
+                      href={`/assets/${order.symbol.toLowerCase()}`}
+                      className="font-mono font-bold text-white transition-colors hover:text-[#57B75C]"
+                    >
+                      {order.symbol}
                     </Link>
                   </td>
-                  <td className="py-3 font-normal text-white/90 tabular-nums sm:text-sm">
-                    {parseDecimal(position.quantity)}
+                  <td className="px-3 py-3 capitalize text-[#A1BEAD]">{order.side}</td>
+                  <td className="px-3 py-3 capitalize text-[#A1BEAD]">{order.type}</td>
+                  <td className="px-3 py-3 text-right font-mono tabular-nums text-white">
+                    {order.quantity ? parseFloat(order.quantity).toLocaleString() : '—'}
                   </td>
-                  <td className="py-3 text-right text-white/90 tabular-nums sm:text-sm">
-                    {displayAmount(parseDecimal(position.current_price), position.currency as CurrencyCode)}
+                  <td className="px-3 py-3 text-right">
+                    <OrderStatusBadge status={order.status} />
                   </td>
-                  <td className="py-3 text-right text-white/90 tabular-nums sm:text-sm">
-                    {displayAmount(parseDecimal(position.market_value), position.currency as CurrencyCode)}
+                  <td className="px-5 py-3 text-right text-xs tabular-nums text-[#9DB9AB]">
+                    {formatOrderDate(order.created)}
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
-    </section>
+    </div>
   );
 }

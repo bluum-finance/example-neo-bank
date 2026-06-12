@@ -1,39 +1,43 @@
 'use client';
 
 import { use } from 'react';
-import {
-  ArrowLeft,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Plus,
-  MoreHorizontal,
-  ChevronRight,
-  Copy,
-  Eye,
-  Info,
-  ChevronDown,
-} from 'lucide-react';
+import { Plus, MoreHorizontal, Copy, Eye, Info, ChevronRight, ChevronDown } from 'lucide-react';
+import { notFound } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { useRouter } from 'next/navigation';
-import { transactions } from '@/data/transaction';
 import { TransactionDatatable } from '@/components/dashboard/transaction-datatable';
+import { getBankAccountById, formatBankBalance } from '@/lib/demo/bank-accounts';
+import { getTransactionsForAccount } from '@/data/transaction';
+import { useBankAccounts } from '@/lib/hooks/use-bank-accounts';
+
+function formatBalanceParts(amount: number) {
+  const formatted = formatBankBalance(amount);
+  const dot = formatted.lastIndexOf('.');
+  if (dot === -1) return { whole: formatted, cents: '.00' };
+  return { whole: formatted.slice(0, dot), cents: formatted.slice(dot) };
+}
 
 export default function AccountDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
+  const bankAccounts = useBankAccounts();
+  const meta = getBankAccountById(id);
+  if (!meta) notFound();
+
+  const live = bankAccounts.find((a) => a.id === id);
+  const account = { ...meta, balance: live?.balance ?? meta.defaultBalance };
+
+  const { whole, cents } = formatBalanceParts(account.balance);
+  const accountTransactions = getTransactionsForAccount(id);
 
   return (
     <div className="py-6 space-y-8">
-      {/* Header */}
       <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-medium text-white">Checking •• 3168</h1>
+        <h1 className="text-2xl font-medium text-white">
+          {account.type} {account.mask}
+        </h1>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Balance Card */}
         <Card className="bg-[#0F2A20] border-[#1E3D2F]">
           <CardContent className="flex flex-col justify-between h-full">
             <div className="space-y-8">
@@ -44,8 +48,8 @@ export default function AccountDetailPage({ params }: { params: Promise<{ id: st
                     <Info className="h-3.5 w-3.5 text-[#A1BEAD]" />
                   </div>
                   <div className="flex items-end">
-                    <span className="text-4xl text-white font-medium leading-none">$0</span>
-                    <span className="text-2xl text-[#B0B8BD] leading-none mb-0.5">.00</span>
+                    <span className="text-4xl text-white font-medium leading-none">{whole}</span>
+                    <span className="text-2xl text-[#B0B8BD] leading-none mb-0.5">{cents}</span>
                   </div>
                 </div>
 
@@ -66,11 +70,11 @@ export default function AccountDetailPage({ params }: { params: Promise<{ id: st
               <div className="flex gap-12">
                 <div>
                   <p className="text-xs text-[#A1BEAD] mb-1">Type</p>
-                  <p className="text-sm text-white font-medium">Checking</p>
+                  <p className="text-sm text-white font-medium">{account.type}</p>
                 </div>
                 <div>
                   <p className="text-xs text-[#A1BEAD] mb-1">Current</p>
-                  <p className="text-sm text-white font-medium">$0.00</p>
+                  <p className="text-sm text-white font-medium">{formatBankBalance(account.balance)}</p>
                 </div>
               </div>
             </div>
@@ -84,14 +88,13 @@ export default function AccountDetailPage({ params }: { params: Promise<{ id: st
           </CardContent>
         </Card>
 
-        {/* Account details */}
         <Card className="bg-[#0F2A20] border-[#1E3D2F]">
           <CardContent className="space-y-8">
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <p className="text-sm text-[#A1BEAD]">Routing number</p>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-white tracking-wider">121145433</span>
+                  <span className="text-sm text-white tracking-wider">{account.routingNumber}</span>
                   <button className="text-[#30D158] hover:text-[#28B34B] transition-colors">
                     <Copy className="h-4 w-4" />
                   </button>
@@ -104,7 +107,7 @@ export default function AccountDetailPage({ params }: { params: Promise<{ id: st
                   <Eye className="h-4 w-4 text-[#A1BEAD]" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-white tracking-wider">•••••••••3168</span>
+                  <span className="text-sm text-white tracking-wider">•••••••••{account.id}</span>
                   <button className="text-[#30D158] hover:text-[#28B34B] transition-colors">
                     <Copy className="h-4 w-4" />
                   </button>
@@ -118,22 +121,19 @@ export default function AccountDetailPage({ params }: { params: Promise<{ id: st
                 </div>
                 <div className="text-right space-y-1">
                   <div className="flex items-center justify-end gap-2">
-                    <span className="text-sm text-white font-medium">Column N.A.</span>
+                    <span className="text-sm text-white font-medium">{account.bankName}</span>
                     <button className="text-[#30D158] hover:text-[#28B34B] transition-colors">
                       <Copy className="h-4 w-4" />
                     </button>
                   </div>
-                  <div className="flex items-center justify-end gap-2">
-                    <span className="text-sm text-[#A1BEAD]">1 Letterman Drive</span>
-                    <button className="text-[#30D158] hover:text-[#28B34B] transition-colors">
-                      <Copy className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <p className="text-sm text-[#A1BEAD] leading-relaxed">
-                    Building A, Suite A4-700
-                    <br />
-                    San Francisco, CA 94129
-                  </p>
+                  {account.bankAddress.map((line) => (
+                    <div key={line} className="flex items-center justify-end gap-2">
+                      <span className="text-sm text-[#A1BEAD]">{line}</span>
+                      <button className="text-[#30D158] hover:text-[#28B34B] transition-colors">
+                        <Copy className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -148,9 +148,13 @@ export default function AccountDetailPage({ params }: { params: Promise<{ id: st
         </Card>
       </div>
 
-      {/* Transactions */}
       <div className="mt-2">
-        <TransactionDatatable title="Transactions" showViewAll={false} />
+        <TransactionDatatable
+          title="Transactions"
+          showViewAll={false}
+          transactions={accountTransactions}
+          accountLabel={account.label}
+        />
       </div>
     </div>
   );

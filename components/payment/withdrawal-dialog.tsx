@@ -20,6 +20,7 @@ import {
   getAvailableWithdrawalMethods,
   WITHDRAWAL_METHOD_SELECT_LABELS,
 } from '@/lib/funding';
+import { getWalletLabel } from '@/lib/wallet-display';
 import type { ExternalWithdrawalResponse, AlpacaWithdrawalDetails } from '@/lib/bluum-api.types';
 
 interface WithdrawalDialogProps {
@@ -48,12 +49,24 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
 
   const wallets = useWallets();
   const fetchWallets = useFetchWallets();
+  const [selectedWalletId, setSelectedWalletId] = useState('');
 
   useEffect(() => {
     void fetchWallets(accountId);
   }, [accountId, fetchWallets]);
 
-  const activeWallet = wallets.find((w) => w.currency === currency && w.status === 'active') ?? null;
+  useEffect(() => {
+    if (wallets.length === 0) return;
+    if (wallets.some((w) => w.id === selectedWalletId)) return;
+    const byCurrency = wallets.find((w) => w.currency === currency && w.status === 'active');
+    setSelectedWalletId((byCurrency ?? wallets.find((w) => w.status === 'active') ?? wallets[0]).id);
+  }, [wallets, selectedWalletId, currency]);
+
+  const activeWallet =
+    wallets.find((w) => w.id === selectedWalletId && w.status === 'active') ??
+    wallets.find((w) => w.currency === currency && w.status === 'active') ??
+    null;
+  const showWalletPicker = wallets.length >= 2;
   const walletAvailable = activeWallet ? parseFloat(activeWallet.available_balance) : availableBalance;
   const availableWithdrawalMethods = getAvailableWithdrawalMethods(currency);
 
@@ -233,6 +246,31 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
           <div className="w-full py-4 flex flex-col gap-6">
             {step === 1 && (
             <>
+            {showWalletPicker && (
+              <div className="flex flex-col gap-2">
+                <Label className="text-[#E2E8F0] text-sm font-medium leading-5">From wallet</Label>
+                <div className="grid grid-cols-1 gap-2">
+                  {wallets.filter((w) => w.status === 'active').map((w) => (
+                    <button
+                      key={w.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedWalletId(w.id);
+                        setCurrency(w.currency as SupportedCurrency);
+                      }}
+                      className={cn(
+                        'w-full px-4 py-2.5 text-sm text-left rounded-lg border transition-colors',
+                        selectedWalletId === w.id
+                          ? 'border-[#57B75C]/50 bg-[#57B75C]/10 text-[#30D158]'
+                          : 'border-[#1F4536] bg-[#07120F] text-white hover:border-[#57B75C]/30'
+                      )}
+                    >
+                      {getWalletLabel(w)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-start">
                 <Label className="text-[#E2E8F0] text-sm font-medium leading-5">Amount to withdraw</Label>

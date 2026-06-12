@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Activity, Star, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import { assetDetailHref } from '@/lib/market';
 import { InvestmentService, type AssetQuote } from '@/services/investment.service';
 import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 import { useUserStore } from '@/store/user.store';
+import { isAssetDemo } from '@/lib/demo-mode';
 import { toast } from 'sonner';
 
 const DEFAULT_WATCHLIST_SYMBOLS = ['AAPL', 'TSLA', 'NVDA', 'META', 'MSFT'];
@@ -21,18 +23,19 @@ const FALLBACK_DATA = [
 interface WatchlistItemProps {
   name: string;
   symbol: string;
+  market?: string;
   price: string;
   change: string;
   isPositive: boolean;
   onRemove?: (symbol: string) => void;
 }
 
-function WatchlistItem({ name, symbol, price, change, isPositive, onRemove }: WatchlistItemProps) {
+function WatchlistItem({ name, symbol, market, price, change, isPositive, onRemove }: WatchlistItemProps) {
   const Icon = isPositive ? TrendingUp : TrendingDown;
 
   return (
     <div className="group flex items-center justify-between rounded-lg p-3 transition-colors hover:bg-white/5 active:bg-white/10 cursor-pointer">
-      <Link href={`/assets/${symbol.toLowerCase()}`} className="flex items-center justify-between flex-1">
+      <Link href={assetDetailHref(symbol, market)} className="flex items-center justify-between flex-1">
         <div className="flex flex-col gap-0.5">
           <h3 className="text-sm font-normal text-white leading-tight">{name}</h3>
           <p className="text-xs font-light text-[#A1BEAD] uppercase tracking-wide">{symbol}</p>
@@ -68,8 +71,10 @@ export function Watchlist() {
         const data = await InvestmentService.getAssetQuotes(symbolsToFetch);
         setQuotes(data);
       } catch (err) {
-        console.error('Failed to fetch watchlist quotes, using fallback', err);
-        setQuotes(FALLBACK_DATA.filter((f) => symbolsToFetch.includes(f.symbol)));
+        console.error('Failed to fetch watchlist quotes', err);
+        if (!isAssetDemo()) {
+          setQuotes(FALLBACK_DATA.filter((f) => symbolsToFetch.includes(f.symbol)));
+        }
       } finally {
         setLoading(false);
       }
@@ -92,9 +97,10 @@ export function Watchlist() {
     return '—';
   };
 
-  const items: WatchlistItemProps[] = (quotes.length > 0 ? quotes : FALLBACK_DATA).map((q) => ({
+  const items: WatchlistItemProps[] = (quotes.length > 0 ? quotes : isAssetDemo() ? [] : FALLBACK_DATA).map((q) => ({
     name: q.name || q.symbol || '',
     symbol: q.symbol ?? '',
+    market: 'market' in q ? q.market : undefined,
     price: formatPrice(q),
     change: formatChange(q),
     isPositive: (q.changePercent ?? 0) >= 0,

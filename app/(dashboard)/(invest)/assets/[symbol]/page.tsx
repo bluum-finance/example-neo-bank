@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, TrendingUp, TrendingDown, Loader2, DollarSign, BarChart3, Star } from 'lucide-react';
+import { useState, useEffect, Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { ArrowLeft, TrendingUp, TrendingDown, Loader2, BarChart3, Star, Coins } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,17 +13,20 @@ import { toast } from 'sonner';
 import TradingViewChart from '@/components/invest/trading-view-chart';
 import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 import { useUserStore } from '@/store/user.store';
+import { getMarketByMic, marketDisplayLabel } from '@/lib/market';
+import { isKnownCurrency } from '@/lib/currency';
 
-export default function AssetDetailsPage() {
+function AssetDetailsContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const symbol = (params.symbol as string)?.toUpperCase();
+  const marketHint = searchParams.get('market') ?? undefined;
 
   const [asset, setAsset] = useState<MarketDataAsset | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load asset details
   useEffect(() => {
     const loadAsset = async () => {
       if (!symbol) return;
@@ -32,10 +35,10 @@ export default function AssetDetailsPage() {
         setLoading(true);
         setError(null);
 
-        const assetData = await InvestmentService.getAssetBySymbol(symbol);
+        const assetData = await InvestmentService.getAssetBySymbol(symbol, marketHint ? { market: marketHint } : undefined);
         setAsset(assetData);
-      } catch (err: any) {
-        const errorMessage = err.message || 'Failed to load asset';
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load asset';
         setError(errorMessage);
         toast.error(errorMessage);
       } finally {
@@ -43,14 +46,17 @@ export default function AssetDetailsPage() {
       }
     };
 
-    loadAsset();
-  }, [symbol]);
+    void loadAsset();
+  }, [symbol, marketHint]);
 
   const currentPrice = asset?.price;
   const priceChange = asset?.change ?? 0;
   const priceChangePercent = asset?.changePercent ?? 0;
   const isPositive = priceChange >= 0;
-  const { displayAmount } = useCurrency();
+  const assetCurrency = asset?.currency && isKnownCurrency(asset.currency) ? (asset.currency as CurrencyCode) : 'USD';
+  const { displayAmount, displayAmountInUSD } = useCurrency();
+
+  const usdPriceHint = currentPrice != null ? displayAmountInUSD(currentPrice, assetCurrency) : null;
 
   const watchlistSymbols = useUserStore((state) => state.user?.watchlistSymbols);
   const addToWatchlist = useUserStore((state) => state.addToWatchlist);
@@ -104,6 +110,7 @@ export default function AssetDetailsPage() {
   const displaySymbol = asset.symbol ?? symbol;
   const displayName = asset.name ?? asset.display_name ?? displaySymbol;
   const assetClass = asset.class ?? asset.asset_class;
+  const marketEntry = asset.market ? getMarketByMic(asset.market) : undefined;
 
   return (
     <div className="space-y-6">
@@ -113,7 +120,17 @@ export default function AssetDetailsPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">{displaySymbol}</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-3xl font-bold">{displaySymbol}</h1>
+            {asset.market && (
+              <Badge variant="outline" className="text-xs font-normal">
+                {marketDisplayLabel(asset.market)}
+              </Badge>
+            )}
+            <Badge variant="secondary" className="text-xs font-normal">
+              {assetCurrency}
+            </Badge>
+          </div>
           <p className="text-muted-foreground mt-1">{displayName}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -146,11 +163,12 @@ export default function AssetDetailsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Current Price</p>
-                <p className="text-2xl font-bold mt-1">
-                  {currentPrice != null ? displayAmount(currentPrice, asset.currency as CurrencyCode) : 'N/A'}
+                <p className="text-2xl font-bold mt-1 tabular-nums">
+                  {currentPrice != null ? displayAmount(currentPrice, assetCurrency) : 'N/A'}
                 </p>
+                {usdPriceHint && <p className="text-xs text-muted-foreground mt-0.5">≈ {usdPriceHint}</p>}
               </div>
-              <DollarSign className="h-5 w-5 text-muted-foreground" />
+              <Coins className="h-5 w-5 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -162,9 +180,9 @@ export default function AssetDetailsPage() {
                 <p className="text-sm text-muted-foreground">Change</p>
                 <div className="flex items-center gap-2 mt-1">
                   {isPositive ? <TrendingUp className="h-4 w-4 text-green-600" /> : <TrendingDown className="h-4 w-4 text-red-600" />}
-                  <p className={`text-2xl font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                  <p className={`text-2xl font-bold tabular-nums ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
                     {priceChange >= 0 ? '+' : '-'}
-                    {displayAmount(Math.abs(priceChange), asset.currency as CurrencyCode)}
+                    {displayAmount(Math.abs(priceChange), assetCurrency)}
                   </p>
                 </div>
               </div>
@@ -191,8 +209,8 @@ export default function AssetDetailsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Previous Close</p>
-                <p className="text-2xl font-bold mt-1">
-                  {asset.previousClose != null ? displayAmount(asset.previousClose, asset.currency as CurrencyCode) : 'N/A'}
+                <p className="text-2xl font-bold mt-1 tabular-nums">
+                  {asset.previousClose != null ? displayAmount(asset.previousClose, assetCurrency) : 'N/A'}
                 </p>
               </div>
             </div>
@@ -221,6 +239,29 @@ export default function AssetDetailsPage() {
               <span className="text-muted-foreground">Asset Class</span>
               <Badge variant="outline">{assetClass || 'N/A'}</Badge>
             </div>
+            <Separator />
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Currency</span>
+              <span className="font-medium">{assetCurrency}</span>
+            </div>
+            {asset.market && (
+              <>
+                <Separator />
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Market</span>
+                  <span className="font-medium text-right">{marketDisplayLabel(asset.market)}</span>
+                </div>
+              </>
+            )}
+            {marketEntry && (
+              <>
+                <Separator />
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Country</span>
+                  <span className="font-medium">{marketEntry.country}</span>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -233,7 +274,7 @@ export default function AssetDetailsPage() {
               <>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Bid Price</span>
-                  <span className="font-medium">{displayAmount(asset.bidPrice, asset.currency as CurrencyCode)}</span>
+                  <span className="font-medium tabular-nums">{displayAmount(asset.bidPrice, assetCurrency)}</span>
                 </div>
                 <Separator />
               </>
@@ -242,7 +283,7 @@ export default function AssetDetailsPage() {
               <>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Ask Price</span>
-                  <span className="font-medium">{displayAmount(asset.askPrice, asset.currency as CurrencyCode)}</span>
+                  <span className="font-medium tabular-nums">{displayAmount(asset.askPrice, assetCurrency)}</span>
                 </div>
                 {asset.bidPrice != null && <Separator />}
               </>
@@ -250,7 +291,7 @@ export default function AssetDetailsPage() {
             {asset.bidPrice != null && asset.askPrice != null && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Spread</span>
-                <span className="font-medium">{displayAmount(asset.askPrice - asset.bidPrice, asset.currency as CurrencyCode)}</span>
+                <span className="font-medium tabular-nums">{displayAmount(asset.askPrice - asset.bidPrice, assetCurrency)}</span>
               </div>
             )}
             {!asset.bidPrice && !asset.askPrice && (
@@ -276,5 +317,19 @@ export default function AssetDetailsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function AssetDetailsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <AssetDetailsContent />
+    </Suspense>
   );
 }

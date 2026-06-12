@@ -241,6 +241,8 @@ export interface OrderRequest {
   commission?: string;
   commission_type?: 'notional' | 'qty' | 'bps';
   wallet_currency?: string;
+  /** Demo trading: debit/credit by bank wallet id (e.g. bank-3168). Ignored by live API. */
+  wallet_id?: string;
 }
 
 export interface Order extends BluumResourceEnvelope<{

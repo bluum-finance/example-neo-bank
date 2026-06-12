@@ -11,7 +11,9 @@ import { useAccountStore } from '@/store/account.store';
 import { useWallets, useFetchWallets } from '@/store/wallet.store';
 import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 import { cn } from '@/lib/utils';
-import { MARKET_OPTIONS, marketDisplayLabel } from '@/lib/market';
+import { MARKET_OPTIONS, marketDisplayLabel, assetDetailHref } from '@/lib/market';
+import { isTradingDemo } from '@/lib/demo-mode';
+import { resolveDemoInvestorKey } from '@/lib/demo/trading-store';
 import { ReviewOrderDialog } from '@/components/trade/review-order-dialog';
 
 type Side = 'buy' | 'sell';
@@ -41,7 +43,8 @@ export interface QuickTradeProps {
 
 export function QuickTrade({ initialSymbol, initialMarket, initialSide, onOrderPlaced }: QuickTradeProps) {
   const user = useUser();
-  const accountId = user?.externalAccountId;
+  const investorKey = resolveDemoInvestorKey(user?.externalAccountId ?? user?.email ?? 'local-demo');
+  const accountId = isTradingDemo() ? investorKey : (user?.externalAccountId ?? null);
   const allWallets = useWallets();
   const fetchWallets = useFetchWallets();
   const { displayAmount, displayAmountInUSD } = useCurrency();
@@ -59,7 +62,7 @@ export function QuickTrade({ initialSymbol, initialMarket, initialSide, onOrderP
   const [placing, setPlacing] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
-  const [walletCurrency, setWalletCurrency] = useState('USD');
+  const [selectedWalletId, setSelectedWalletId] = useState('');
 
   useEffect(() => {
     if (!accountId) return;
@@ -73,10 +76,11 @@ export function QuickTrade({ initialSymbol, initialMarket, initialSide, onOrderP
 
   useEffect(() => {
     if (eligibleWallets.length === 0) return;
-    if (eligibleWallets.some((w) => w.currency === walletCurrency)) return;
-    const usd = eligibleWallets.find((w) => w.currency === 'USD');
-    setWalletCurrency((usd ?? eligibleWallets[0]).currency);
-  }, [eligibleWallets, walletCurrency]);
+    if (eligibleWallets.some((w) => w.id === selectedWalletId)) return;
+    setSelectedWalletId(eligibleWallets[0].id);
+  }, [eligibleWallets, selectedWalletId]);
+
+  const selectedWallet = eligibleWallets.find((w) => w.id === selectedWalletId) ?? null;
 
   const effectivePrice =
     orderType === 'limit' && limitPrice
@@ -163,17 +167,21 @@ export function QuickTrade({ initialSymbol, initialMarket, initialSide, onOrderP
         type: orderType,
         time_in_force: 'day',
         quantity: parseFloat(shares).toFixed(4),
-        wallet_currency: walletCurrency,
+        wallet_id: selectedWallet?.id,
+        wallet_currency: selectedWallet?.currency,
       };
       if (orderType === 'limit') {
         orderData.limit_price = parseFloat(limitPrice).toFixed(2);
       }
-      const result = await InvestmentService.placeOrder(accountId, orderData);
+      const result = await InvestmentService.placeOrder(accountId, orderData, { fillPrice: asset.price });
       setPlacedOrder(result);
 
-      const { fetchAccount, fetchPositions } = useAccountStore.getState();
-      fetchAccount(accountId, { force: true, silent: true }).catch(() => null);
+      const { fetchAccount, fetchPositions, fetchOrders } = useAccountStore.getState();
+      if (!isTradingDemo()) {
+        fetchAccount(accountId, { force: true, silent: true }).catch(() => null);
+      }
       fetchPositions(accountId, { force: true }).catch(() => null);
+      fetchOrders(accountId).catch(() => null);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Failed to place order.');
       setShowReview(false);
@@ -303,7 +311,7 @@ export function QuickTrade({ initialSymbol, initialMarket, initialSide, onOrderP
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <Link
-                    href={`/assets/${quote.symbol.toLowerCase()}`}
+                    href={assetDetailHref(quote.symbol, asset.market)}
                     className="font-bold text-sm font-mono hover:text-[#57B75C] transition-colors flex items-center gap-1 text-white"
                   >
                     {quote.symbol} <ArrowUpRight className="h-3.5 w-3.5 text-[#9DB9AB]" />
@@ -423,8 +431,8 @@ export function QuickTrade({ initialSymbol, initialMarket, initialSide, onOrderP
         limitPrice={limitPrice}
         estimatedTotal={estimatedTotal}
         wallets={eligibleWallets}
-        selectedWalletCurrency={walletCurrency}
-        onSelectWalletCurrency={setWalletCurrency}
+        selectedWalletId={selectedWalletId}
+        onSelectWalletId={setSelectedWalletId}
         placedOrder={placedOrder}
       />
     </div>

@@ -1,26 +1,18 @@
 'use client';
 
+import Link from 'next/link';
 import { Plus, MoreVertical, CreditCard, PiggyBank } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { useBankAccounts } from '@/lib/hooks/use-bank-accounts';
 
-const accounts = [
-  {
-    id: 'checking',
-    label: 'Checking',
-    mask: '••3168',
-    balance: '$0.00',
-    icon: CreditCard,
-  },
-  {
-    id: 'savings',
-    label: 'Savings',
-    mask: '••2651',
-    balance: '$0.00',
-    icon: PiggyBank,
-  },
-];
+const ICONS = {
+  Checking: CreditCard,
+  Savings: PiggyBank,
+} as const;
 
 export function AccountsWidget() {
+  const accounts = useBankAccounts();
+
   return (
     <Card className="p-6 bg-[#0F2A20] rounded-lg border border-[#1E3D2F]">
       <div className="flex flex-col h-full justify-between">
@@ -38,19 +30,23 @@ export function AccountsWidget() {
 
         <div className="flex flex-col gap-4">
           {accounts.map((account) => {
-            const Icon = account.icon;
+            const Icon = ICONS[account.type];
             return (
-              <div key={account.id} className="flex items-center justify-between">
+              <Link
+                key={account.id}
+                href={`/accounts/${account.id}`}
+                className="flex items-center justify-between hover:opacity-90 transition-opacity"
+              >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-[#124031] rounded-full border border-[#1A3A2C] flex items-center justify-center">
                     <Icon className="w-4 h-4 text-[#30D158]" />
                   </div>
                   <div className="text-white text-sm font-light">
-                    {account.label} {account.mask}
+                    {account.type} {account.mask}
                   </div>
                 </div>
-                <div className="text-white text-sm font-normal">{account.balance}</div>
-              </div>
+                <div className="text-white text-sm font-normal">{account.balanceFormatted}</div>
+              </Link>
             );
           })}
         </div>

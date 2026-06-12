@@ -49,3 +49,10 @@ export const MARKET_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: 'All Markets' },
   ...MARKET_CATALOG.map((m) => ({ value: m.mic, label: marketOptionLabel(m) })),
 ];
+
+/** Link to asset detail page, preserving market context when known. */
+export function assetDetailHref(symbol: string, market?: string | null): string {
+  const base = `/assets/${symbol.toLowerCase()}`;
+  if (market) return `${base}?market=${encodeURIComponent(market)}`;
+  return base;
+}

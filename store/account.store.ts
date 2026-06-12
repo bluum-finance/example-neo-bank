@@ -3,6 +3,8 @@ import type { ExternalAccountStatus } from '@/lib/bluum-api.types';
 import { AccountService, type Account } from '@/services/account.service';
 import { InvestmentService, type Order, type Position } from '@/services/investment.service';
 import { WidgetService, type PerformanceDataPoint } from '@/services/widget.service';
+import { calculatePortfolioValue } from '@/lib/portfolio-value';
+import { isTradingDemo } from '@/lib/demo-mode';
 import { useUserStore } from '@/store/user.store';
 
 /** Investor not yet active — show compliance / verification overlay */
@@ -98,7 +100,7 @@ export const useAccountStore = create<AccountState>()((set, get) => ({
 
         set({
           account,
-          accountBalance: balanceValue,
+          accountBalance: isTradingDemo() ? 0 : balanceValue,
           portfolioId,
           isLoading: false,
           onboardingGateStatus: deriveOnboardingGateStatus(account.status as ExternalAccountStatus),
@@ -211,15 +213,6 @@ export const useAccountStore = create<AccountState>()((set, get) => ({
     }),
 }));
 
-// Helper function to calculate portfolio value
-const calculatePortfolioValue = (accountBalance: number, positions: Position[]): number => {
-  const positionsValue = positions.reduce(
-    (sum, position) => sum + (parseFloat(position.market_value || '0') || 0),
-    0
-  );
-  return accountBalance + positionsValue;
-};
-
 // Selector hooks
 export const useAccount = () => useAccountStore((state) => state.account);
 export const useAccountBalance = () => useAccountStore((state) => state.accountBalance);
@@ -232,5 +225,6 @@ export const useSummaryData = () => useAccountStore((state) => state.summaryData
 export const useChartData = () => useAccountStore((state) => state.chartData);
 export const useSummaryLoading = () => useAccountStore((state) => state.isSummaryLoading);
 export const useChartLoading = () => useAccountStore((state) => state.isChartLoading);
-export const usePortfolioValue = () => useAccountStore((state) => calculatePortfolioValue(state.accountBalance, state.positions));
+export const usePortfolioValue = () =>
+  useAccountStore((state) => calculatePortfolioValue(state.accountBalance, state.positions));
 export const useOnboardingGateStatus = () => useAccountStore((state) => state.onboardingGateStatus);

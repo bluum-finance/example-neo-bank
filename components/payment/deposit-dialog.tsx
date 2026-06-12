@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { ArrowRight, ArrowLeftRight, Wallet, Loader2, X, Info, ChevronDown, Building2, Plus, CheckCircle2, Trash2, Ban } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { ArrowRight, ArrowLeftRight, Wallet as WalletIcon, Loader2, X, Info, ChevronDown, Building2, Plus, CheckCircle2, Trash2, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,11 +24,13 @@ import {
 } from '@/lib/funding';
 import { useCurrency } from '@/lib/hooks/use-currency';
 import { cn } from '@/lib/utils';
+import { getWalletLabel } from '@/lib/wallet-display';
 import type {
   DepositMethod,
   ExternalDepositResponse,
   AlpacaAchDetails,
   AlpacaWireDetails,
+  Wallet,
 } from '@/lib/bluum-api.types';
 
 interface DepositDialogProps {
@@ -40,26 +42,25 @@ interface DepositDialogProps {
 type DepositStep = 'selection' | 'instructions' | 'success';
 
 const METHOD_ICONS: Record<DepositMethod, React.ComponentType<{ className?: string }>> = {
-  manual_bank_transfer: Wallet,
+  manual_bank_transfer: WalletIcon,
   ach: AccountsIcon,
   wire: ArrowLeftRight,
 };
 
-function defaultCurrencyFromWallets(walletCurrencies: string[]): string {
-  if (walletCurrencies.length === 0) return 'USD';
-  if (walletCurrencies.includes('USD')) return 'USD';
-  return walletCurrencies[0];
+function defaultWalletFromList(wallets: Wallet[]): string {
+  if (wallets.length === 0) return '';
+  const usd = wallets.find((w) => w.currency === 'USD');
+  return (usd ?? wallets[0]).id;
 }
 
 export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogProps) {
   const wallets = useWallets();
   const fetchWallets = useFetchWallets();
   const { displayAmount } = useCurrency();
-  const walletCurrencies = useMemo(() => wallets.map((w) => w.currency), [wallets]);
 
   const [step, setStep] = useState<DepositStep>('selection');
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('USD');
+  const [selectedWalletId, setSelectedWalletId] = useState('');
   const [showCurrencyMenu, setShowCurrencyMenu] = useState(false);
   const [depositOptionId, setDepositOptionId] = useState('digital_wallet');
   const [depositMethod, setDepositMethod] = useState<DepositMethod>('manual_bank_transfer');
@@ -70,10 +71,12 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [selectedFundingSourceId, setSelectedFundingSourceId] = useState<string | null>(null);
 
+  const selectedWallet = wallets.find((w) => w.id === selectedWalletId) ?? null;
+  const currency = selectedWallet?.currency ?? 'USD';
   const depositOptions = getDepositMethodOptions(currency);
   const enabledDepositOptions = getEnabledDepositMethodOptions(currency);
   const isDigitalWallet = depositOptionId === 'digital_wallet';
-  const showCurrencyPicker = walletCurrencies.length >= 2;
+  const showWalletPicker = wallets.length >= 2;
 
   const selectDepositOption = (option: DepositMethodOption) => {
     if (option.disabled) return;
@@ -83,8 +86,9 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
   const prevMountRef = useRef(false);
 
   const resetForm = useCallback(() => {
-    const initialCurrency = defaultCurrencyFromWallets(walletCurrencies);
-    setCurrency(initialCurrency);
+    const initialWalletId = defaultWalletFromList(wallets);
+    setSelectedWalletId(initialWalletId);
+    const initialCurrency = wallets.find((w) => w.id === initialWalletId)?.currency ?? 'USD';
     const defaultOption = defaultDepositOptionForCurrency(initialCurrency);
     setDepositOptionId(defaultOption.id);
     setDepositMethod(defaultOption.method);
@@ -94,20 +98,19 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
     setProcessing(false);
     setSelectedFundingSourceId(null);
     setFundingSources([]);
-  }, [walletCurrencies]);
+  }, [wallets]);
 
   useEffect(() => {
-    if (!prevMountRef.current) {
-      prevMountRef.current = true;
-      void fetchWallets(accountId);
-      resetForm();
-    }
-  }, [accountId, fetchWallets, resetForm]);
+    if (wallets.length === 0) return;
+    if (wallets.some((w) => w.id === selectedWalletId)) return;
+    setSelectedWalletId(defaultWalletFromList(wallets));
+  }, [wallets, selectedWalletId]);
 
   useEffect(() => {
-    if (step !== 'selection' || walletCurrencies.length === 0) return;
-    setCurrency((prev) => (walletCurrencies.includes(prev) ? prev : defaultCurrencyFromWallets(walletCurrencies)));
-  }, [step, walletCurrencies]);
+    if (step !== 'selection' || wallets.length === 0) return;
+    const wallet = wallets.find((w) => w.id === selectedWalletId);
+    if (!wallet) setSelectedWalletId(defaultWalletFromList(wallets));
+  }, [step, wallets, selectedWalletId]);
 
   useEffect(() => {
     const enabled = getEnabledDepositMethodOptions(currency);
@@ -117,6 +120,14 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
       setDepositMethod(defaultOption.method);
     }
   }, [currency, depositOptionId]);
+
+  useEffect(() => {
+    if (!prevMountRef.current) {
+      prevMountRef.current = true;
+      void fetchWallets(accountId);
+      resetForm();
+    }
+  }, [accountId, fetchWallets, resetForm]);
 
   useEffect(() => {
     if (depositMethod === 'ach') {
@@ -404,7 +415,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
 
           {step === 'selection' && enabledDepositOptions.length > 0 && (
             <div className="flex flex-col gap-6">
-              {showCurrencyPicker && (
+              {showWalletPicker && (
                 <div className="flex flex-col gap-2">
                   <Label className="text-[#E2E8F0] text-sm">Target wallet</Label>
                   <div className="relative">
@@ -413,28 +424,28 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
                       onClick={() => setShowCurrencyMenu((v) => !v)}
                       className="w-full flex items-center justify-between h-11 px-4 bg-[#07120F] border border-[#1F4536] rounded-lg text-white text-sm"
                     >
-                      {currency} wallet
+                      {selectedWallet ? getWalletLabel(selectedWallet) : `${currency} wallet`}
                       <ChevronDown className="h-4 w-4 text-[#9DB9AB]" />
                     </button>
                     {showCurrencyMenu && (
                       <div className="absolute z-10 mt-1 w-full bg-[#0F2A20] border border-[#1F4536] rounded-lg overflow-hidden">
-                        {walletCurrencies.map((c) => (
+                        {wallets.map((w) => (
                           <button
-                            key={c}
+                            key={w.id}
                             type="button"
                             onClick={() => {
-                              setCurrency(c);
+                              setSelectedWalletId(w.id);
                               setShowCurrencyMenu(false);
-                              const opt = defaultDepositOptionForCurrency(c);
+                              const opt = defaultDepositOptionForCurrency(w.currency);
                               setDepositOptionId(opt.id);
                               setDepositMethod(opt.method);
                             }}
                             className={cn(
                               'w-full px-4 py-2 text-sm text-left hover:bg-[#1F4536]',
-                              currency === c ? 'text-[#30D158]' : 'text-white'
+                              selectedWalletId === w.id ? 'text-[#30D158]' : 'text-white'
                             )}
                           >
-                            {c} wallet
+                            {getWalletLabel(w)}
                           </button>
                         ))}
                       </div>
