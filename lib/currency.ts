@@ -34,3 +34,17 @@ export function resolveRate(code: string, rates: Record<string, number>): number
   const rate = rates[code] ?? (isKnownCurrency(code) ? FALLBACK_RATES[code] : undefined);
   return rate != null && Number.isFinite(rate) && rate > 0 ? rate : undefined;
 }
+
+/** Convert amount between currencies using USD-relative rates. */
+export function convertAmount(
+  amount: number,
+  from: string,
+  to: string = 'USD',
+  rates: Record<string, number> = FALLBACK_RATES
+): number | null {
+  if (from === to) return amount;
+  const fromRate = resolveRate(from, rates);
+  const toRate = resolveRate(to, rates);
+  if (fromRate == null || toRate == null) return null;
+  return (amount / fromRate) * toRate;
+}

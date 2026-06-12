@@ -39,8 +39,8 @@ const ASSET_SEEDS: AssetSeed[] = [
   { symbol: 'DANGCEM', name: 'Dangote Cement Plc', price: 1180.0, change: 25.0, changePercent: 2.16, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
   { symbol: 'GTCO', name: 'Guaranty Trust Holding Company Plc', price: 136.0, change: 4.85, changePercent: 3.7, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
   { symbol: 'ZENITHBANK', name: 'Zenith Bank Plc', price: 129.0, change: -1.09, changePercent: -0.84, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
-  { symbol: 'AIRTELAFRI', name: 'Airtel Africa Plc', price: 3021.3, change: 0, changePercent: 0, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
-  { symbol: 'BUACEMENT', name: 'BUA Cement Plc', price: 378.0, change: 8.5, changePercent: 2.3, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
+  { symbol: 'AIRTELAFRI', name: 'Airtel Africa Plc', price: 3655.7, change: 12.5, changePercent: 0.34, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
+  { symbol: 'BUACEMENT', name: 'BUA Cement Plc', price: 414.0, change: 10.9, changePercent: 2.71, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
   { symbol: 'BUAFOODS', name: 'BUA Foods PLC', price: 967.0, change: 0, changePercent: 0, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
   { symbol: 'SEPLAT', name: 'Seplat Energy Plc', price: 11495.0, change: 125.0, changePercent: 1.1, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
   { symbol: 'UBA', name: 'United Bank for Africa Plc', price: 43.3, change: 0.2, changePercent: 0.46, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
@@ -131,4 +131,25 @@ export function getDemoAssetPrice(symbol: string, market?: string): number | nul
 
 export function getAllDemoAssets(): MarketDataAsset[] {
   return [...CATALOG.values()].map((a) => ({ ...a }));
+}
+
+/** Default watchlist when the user has no saved symbols. */
+export const DEFAULT_WATCHLIST_SYMBOLS = ['AAPL', 'TSLA', 'NVDA', 'META', 'MSFT'] as const;
+
+const MARKET_MOVER_GAINER_SYMBOLS = ['AMD', 'AVGO', 'DIS', 'MTNN', 'AMZN'] as const;
+const MARKET_MOVER_LOSER_SYMBOLS = ['MSFT', 'V', 'NFLX', 'ACCESSCORP', 'COST'] as const;
+
+export function getDemoMarketMoverSymbols(): string[] {
+  return [...MARKET_MOVER_GAINER_SYMBOLS, ...MARKET_MOVER_LOSER_SYMBOLS];
+}
+
+export function getDemoMarketMovers(): { gainers: MarketDataAsset[]; losers: MarketDataAsset[] } {
+  return {
+    gainers: getDemoAssetsBatch([...MARKET_MOVER_GAINER_SYMBOLS]),
+    losers: getDemoAssetsBatch([...MARKET_MOVER_LOSER_SYMBOLS]),
+  };
+}
+
+export function getDemoWatchlistQuotes(symbols: readonly string[]): MarketDataAsset[] {
+  return getDemoAssetsBatch([...symbols]);
 }

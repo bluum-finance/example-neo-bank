@@ -4,7 +4,7 @@ import {
   bankAccountIdFromWalletId,
   walletIdForBankAccount,
 } from '@/lib/demo/bank-accounts';
-import { getDemoAssetPrice } from '@/lib/demo/assets';
+import { getDemoAssetBySymbol, getDemoAssetPrice } from '@/lib/demo/assets';
 import { isAssetDemo } from '@/lib/demo-mode';
 import { createOrderId, normalizeLegacyOrderId, seedOrderId } from '@/lib/order-id';
 
@@ -45,9 +45,21 @@ export const SEED_POSITIONS: Position[] = [
     unrealized_pl: '105.60',
     unrealized_pl_percent: '4.42',
   },
+  {
+    id: 'pos_dangcem',
+    investor_id: 'demo',
+    symbol: 'DANGCEM',
+    currency: 'NGN',
+    quantity: '150',
+    average_cost_basis: '1050.00',
+    current_price: '1180.00',
+    market_value: '177000.00',
+    unrealized_pl: '19500.00',
+    unrealized_pl_percent: '12.38',
+  },
 ];
 
-const SEED_ORDER_OFFSETS_DAYS = [14, 10, 5];
+const SEED_ORDER_OFFSETS_DAYS = [14, 10, 5, 3];
 
 function buildSeedOrders(investorId: string): Order[] {
   const now = Date.now();
@@ -204,13 +216,23 @@ function resolveFillPrice(symbol: string, orderData: OrderRequest, fallbackPrice
   return fallbackPrice ?? 0;
 }
 
+function resolveAssetCurrency(symbol: string): string {
+  if (!isAssetDemo()) return 'USD';
+  try {
+    return getDemoAssetBySymbol(symbol).currency ?? 'USD';
+  } catch {
+    return 'USD';
+  }
+}
+
 function updatePosition(
   positions: Position[],
   investorId: string,
   symbol: string,
   side: 'buy' | 'sell',
   qty: number,
-  fillPrice: number
+  fillPrice: number,
+  currency: string
 ): Position[] {
   const upper = symbol.toUpperCase();
   const idx = positions.findIndex((p) => p.symbol.toUpperCase() === upper);
@@ -251,7 +273,7 @@ function updatePosition(
     id: existing?.id ?? `pos_${upper.toLowerCase()}_${Date.now()}`,
     investor_id: investorId,
     symbol: upper,
-    currency: 'USD',
+    currency,
     quantity: newQty.toFixed(4),
     average_cost_basis: avgCost.toFixed(2),
     current_price: fillPrice.toFixed(2),
@@ -288,6 +310,8 @@ export function placeDemoOrder(
   const fillPrice = resolveFillPrice(symbol, orderData, options?.fillPrice);
   if (fillPrice <= 0) throw new Error('Unable to determine fill price for this order.');
 
+  const assetCurrency = resolveAssetCurrency(symbol);
+
   const total = qty * fillPrice;
   const walletId = resolveWalletId(investorId, orderData);
 
@@ -317,7 +341,7 @@ export function placeDemoOrder(
     metadata: {},
     investor_id: investorId,
     symbol,
-    currency: 'USD',
+    currency: assetCurrency,
     quantity: qty.toFixed(4),
     side: orderData.side,
     type: orderData.type,
@@ -337,7 +361,15 @@ export function placeDemoOrder(
     newBalances[walletId] = balance + total;
   }
 
-  const newPositions = updatePosition(state.positions, investorId, symbol, orderData.side, qty, fillPrice);
+  const newPositions = updatePosition(
+    state.positions,
+    investorId,
+    symbol,
+    orderData.side,
+    qty,
+    fillPrice,
+    assetCurrency
+  );
 
   writeState(investorId, {
     orders: [...state.orders, order],

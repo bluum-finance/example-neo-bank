@@ -2,12 +2,14 @@ const SEED_ORDER_IDS: Record<string, string> = {
   MSFT: 'ord_7f2a91bc4e038d51',
   AAPL: 'ord_3c8b72ef1a905426',
   NVDA: 'ord_9d41e6a0f2873b1c',
+  DANGCEM: 'ord_5e8c14d2b7094a3f',
 };
 
 const LEGACY_SEED_MAP: Record<string, string> = {
   ord_seed_msft: SEED_ORDER_IDS.MSFT!,
   ord_seed_aapl: SEED_ORDER_IDS.AAPL!,
   ord_seed_nvda: SEED_ORDER_IDS.NVDA!,
+  ord_seed_dangcem: SEED_ORDER_IDS.DANGCEM!,
 };
 
 function stableHexFromString(input: string): string {

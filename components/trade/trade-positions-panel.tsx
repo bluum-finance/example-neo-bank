@@ -1,30 +1,65 @@
 'use client';
 
+import { useMemo } from 'react';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useCurrency } from '@/lib/hooks/use-currency';
+import { isKnownCurrency } from '@/lib/currency';
+import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
+import { assetDetailHref } from '@/lib/market';
+import { getDemoAssetBySymbol } from '@/lib/demo/assets';
+import { isAssetDemo } from '@/lib/demo-mode';
 import { usePositions, useAccountStore } from '@/store/account.store';
 
 function parseDecimal(value?: string | null): number {
   return parseFloat(value || '0') || 0;
 }
 
+function resolvePositionCurrency(code?: string | null): CurrencyCode {
+  return code && isKnownCurrency(code) ? code : 'USD';
+}
+
+function resolveAssetMarket(symbol: string): string | undefined {
+  if (!isAssetDemo()) return undefined;
+  try {
+    return getDemoAssetBySymbol(symbol).market;
+  } catch {
+    return undefined;
+  }
+}
+
 export function TradePositionsPanel() {
   const positions = usePositions();
   const isLoading = useAccountStore((s) => s.isPositionsLoading);
-  const { displayAmount } = useCurrency();
+  const { displayAmount, convertToCurrency } = useCurrency();
 
   const displayPositions = positions.slice(0, 8);
-  const totalValue = displayPositions.reduce((sum, p) => sum + parseDecimal(p.market_value), 0);
 
-  const positionsWithMeta = displayPositions.map((p) => {
-    const value = parseDecimal(p.market_value);
-    const pct = totalValue > 0 ? Math.round((value / totalValue) * 100) : 0;
-    const unrealizedPL = parseDecimal(p.unrealized_pl);
-    const unrealizedPct = parseDecimal(p.unrealized_pl_percent);
-    return { ...p, value, pct, unrealizedPL, unrealizedPct };
-  });
+  const { positionsWithMeta, totalValueUsd, hasMultipleCurrencies } = useMemo(() => {
+    const rows = displayPositions.map((p) => {
+      const value = parseDecimal(p.market_value);
+      const currency = resolvePositionCurrency(p.currency);
+      const valueUsd = convertToCurrency(value, currency, 'USD') ?? (currency === 'USD' ? value : 0);
+      const unrealizedPL = parseDecimal(p.unrealized_pl);
+      const unrealizedPct = parseDecimal(p.unrealized_pl_percent);
+      const market = resolveAssetMarket(p.symbol);
+      return { ...p, value, currency, valueUsd, unrealizedPL, unrealizedPct, market };
+    });
+
+    const totalUsd = rows.reduce((sum, p) => sum + p.valueUsd, 0);
+    const currencies = new Set(rows.map((p) => p.currency));
+
+    const withMeta = rows.map((p) => ({
+      ...p,
+      pct: totalUsd > 0 ? Math.round((p.valueUsd / totalUsd) * 100) : 0,
+    }));
+
+    return {
+      positionsWithMeta: withMeta,
+      totalValueUsd: totalUsd,
+      hasMultipleCurrencies: currencies.size > 1,
+    };
+  }, [displayPositions, convertToCurrency]);
 
   return (
     <div className="rounded-xl border border-[#1E3D2F] bg-[#0F2A20] overflow-hidden h-full">
@@ -60,7 +95,7 @@ export function TradePositionsPanel() {
                       </div>
                       <div className="min-w-0">
                         <Link
-                          href={`/assets/${p.symbol.toLowerCase()}`}
+                          href={assetDetailHref(p.symbol, p.market)}
                           className="font-mono font-bold text-sm leading-tight hover:text-[#57B75C] text-white block"
                         >
                           {p.symbol}
@@ -73,9 +108,13 @@ export function TradePositionsPanel() {
                         {displayAmount(p.value, p.currency)}
                       </p>
                       <p className={cn('text-[10px] font-semibold tabular-nums', isGain ? 'text-[#30D158]' : 'text-red-400')}>
-                        {isGain ? '+' : ''}{displayAmount(p.unrealizedPL, p.currency)}
+                        {isGain ? '+' : ''}
+                        {displayAmount(p.unrealizedPL, p.currency)}
                         {p.unrealizedPct !== 0 && (
-                          <span className="ml-1 opacity-70">({isGain ? '+' : ''}{p.unrealizedPct.toFixed(2)}%)</span>
+                          <span className="ml-1 opacity-70">
+                            ({isGain ? '+' : ''}
+                            {p.unrealizedPct.toFixed(2)}%)
+                          </span>
                         )}
                       </p>
                     </div>
@@ -83,10 +122,17 @@ export function TradePositionsPanel() {
                 );
               })}
             </ul>
-            {totalValue > 0 && (
-              <div className="mt-4 pt-3 border-t border-[#1E3D2F]/60 flex items-center justify-between">
-                <span className="text-[11px] text-[#9DB9AB] font-medium uppercase tracking-wider">Total Value</span>
-                <span className="font-mono font-bold text-sm tabular-nums text-white">{displayAmount(totalValue)}</span>
+            {totalValueUsd > 0 && (
+              <div className="mt-4 pt-3 border-t border-[#1E3D2F]/60 flex items-center justify-between gap-3">
+                <div className="flex flex-col">
+                  <span className="text-[11px] text-[#9DB9AB] font-medium uppercase tracking-wider">Total Value</span>
+                  {hasMultipleCurrencies && (
+                    <span className="text-[10px] text-[#6B7280] mt-0.5">Converted to USD</span>
+                  )}
+                </div>
+                <span className="font-mono font-bold text-sm tabular-nums text-white">
+                  {displayAmount(totalValueUsd, 'USD')}
+                </span>
               </div>
             )}
           </>

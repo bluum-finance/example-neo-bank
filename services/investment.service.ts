@@ -8,6 +8,8 @@ import type {
 import { getDemoAssetBySymbol, getDemoAssetsBatch } from '@/lib/demo/assets';
 import { getDemoOrders, getDemoPositions, placeDemoOrder } from '@/lib/demo/trading-store';
 import { isAssetDemo, isTradingDemo } from '@/lib/demo-mode';
+import { convertAmount } from '@/lib/currency';
+import { sumPositionsMarketValue } from '@/lib/portfolio-value';
 import { unwrapList, unwrapResource } from '@/lib/utils';
 
 export type { MarketDataAsset as AssetQuote, Order, Position } from '@/lib/bluum-api.types';
@@ -131,12 +133,17 @@ export class InvestmentService {
     totalGain: number;
     totalGainPercent: number;
   } {
-    const balance = positions.reduce((sum, pos) => sum + parseDecimal(pos.market_value), 0);
-    const totalGain = positions.reduce((sum, pos) => sum + parseDecimal(pos.unrealized_pl), 0);
-    const totalCost = positions.reduce(
-      (sum, pos) => sum + parseDecimal(pos.average_cost_basis) * parseDecimal(pos.quantity),
-      0
-    );
+    const balance = sumPositionsMarketValue(positions);
+    const totalGain = positions.reduce((sum, pos) => {
+      const pl = parseDecimal(pos.unrealized_pl);
+      const from = pos.currency || 'USD';
+      return sum + (convertAmount(pl, from, 'USD') ?? (from === 'USD' ? pl : 0));
+    }, 0);
+    const totalCost = positions.reduce((sum, pos) => {
+      const cost = parseDecimal(pos.average_cost_basis) * parseDecimal(pos.quantity);
+      const from = pos.currency || 'USD';
+      return sum + (convertAmount(cost, from, 'USD') ?? (from === 'USD' ? cost : 0));
+    }, 0);
     const totalGainPercent = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
 
     return { balance, totalGain, totalGainPercent };

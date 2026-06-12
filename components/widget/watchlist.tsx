@@ -9,16 +9,10 @@ import { InvestmentService, type AssetQuote } from '@/services/investment.servic
 import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 import { useUserStore } from '@/store/user.store';
 import { isAssetDemo } from '@/lib/demo-mode';
+import { DEFAULT_WATCHLIST_SYMBOLS, getDemoWatchlistQuotes } from '@/lib/demo/assets';
 import { toast } from 'sonner';
 
-const DEFAULT_WATCHLIST_SYMBOLS = ['AAPL', 'TSLA', 'NVDA', 'META', 'MSFT'];
-const FALLBACK_DATA = [
-  { name: 'Apple Inc.', symbol: 'AAPL', price: 176.35, change: 2.12, changePercent: 1.2 },
-  { name: 'Tesla, Inc.', symbol: 'TSLA', price: 250.65, change: -2.01, changePercent: -0.8 },
-  { name: 'Nvidia Corp.', symbol: 'NVDA', price: 501.12, change: 17.04, changePercent: 3.5 },
-  { name: 'Meta Platforms', symbol: 'META', price: 312.45, change: 13.12, changePercent: 4.2 },
-  { name: 'Microsoft Corp.', symbol: 'MSFT', price: 380.25, change: 5.32, changePercent: 1.4 },
-];
+const WATCHLIST_FALLBACK = getDemoWatchlistQuotes(DEFAULT_WATCHLIST_SYMBOLS);
 
 interface WatchlistItemProps {
   name: string;
@@ -65,16 +59,19 @@ export function Watchlist() {
 
   useEffect(() => {
     const fetchQuotes = async () => {
-      const symbolsToFetch = watchlistSymbols && watchlistSymbols.length > 0 ? watchlistSymbols : DEFAULT_WATCHLIST_SYMBOLS;
+      const symbolsToFetch =
+        watchlistSymbols && watchlistSymbols.length > 0 ? watchlistSymbols : [...DEFAULT_WATCHLIST_SYMBOLS];
       try {
         setLoading(true);
         const data = await InvestmentService.getAssetQuotes(symbolsToFetch);
         setQuotes(data);
       } catch (err) {
         console.error('Failed to fetch watchlist quotes', err);
-        if (!isAssetDemo()) {
-          setQuotes(FALLBACK_DATA.filter((f) => symbolsToFetch.includes(f.symbol)));
-        }
+        setQuotes(
+          isAssetDemo()
+            ? getDemoWatchlistQuotes(symbolsToFetch)
+            : WATCHLIST_FALLBACK.filter((f) => f.symbol != null && symbolsToFetch.includes(f.symbol))
+        );
       } finally {
         setLoading(false);
       }
@@ -97,10 +94,12 @@ export function Watchlist() {
     return '—';
   };
 
-  const items: WatchlistItemProps[] = (quotes.length > 0 ? quotes : isAssetDemo() ? [] : FALLBACK_DATA).map((q) => ({
+  const items: WatchlistItemProps[] = (
+    quotes.length > 0 ? quotes : isAssetDemo() ? getDemoWatchlistQuotes([...DEFAULT_WATCHLIST_SYMBOLS]) : WATCHLIST_FALLBACK
+  ).map((q) => ({
     name: q.name || q.symbol || '',
     symbol: q.symbol ?? '',
-    market: 'market' in q ? q.market : undefined,
+    market: q.market,
     price: formatPrice(q),
     change: formatChange(q),
     isPositive: (q.changePercent ?? 0) >= 0,
