@@ -39,12 +39,30 @@ export class InvestmentService {
     return unwrapResource<MarketDataAsset>(raw);
   }
 
-  static async getAssetQuotes(symbols: string[]): Promise<MarketDataAsset[]> {
+  /** `GET /v1/assets/batch` — comma-separated symbols (max 20 per request), optional market hint. */
+  static async getAssetsBatch(symbols: string[], params?: { market?: string }): Promise<MarketDataAsset[]> {
+    const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))].slice(0, 20);
+    if (unique.length === 0) return [];
+
+    const qs = new URLSearchParams({ symbols: unique.join(',') });
+    if (params?.market) qs.set('market', params.market);
+
+    const response = await fetch(`/api/bluum/assets/batch?${qs.toString()}`);
+    const raw = await handleResponse<unknown>(response);
+    return unwrapList<unknown>(raw).map((item) => unwrapResource<MarketDataAsset>(item));
+  }
+
+  static async getAssetQuotes(symbols: string[], params?: { market?: string }): Promise<MarketDataAsset[]> {
     const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))];
-    const results = await Promise.allSettled(unique.map((symbol) => this.getAssetBySymbol(symbol)));
-    return results
-      .filter((r): r is PromiseFulfilledResult<MarketDataAsset> => r.status === 'fulfilled')
-      .map((r) => r.value);
+    if (unique.length === 0) return [];
+
+    const quotes: MarketDataAsset[] = [];
+    for (let i = 0; i < unique.length; i += 20) {
+      const chunk = unique.slice(i, i + 20);
+      const batch = await this.getAssetsBatch(chunk, params);
+      quotes.push(...batch);
+    }
+    return quotes;
   }
 
   static async getOrders(

@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError, type AxiosRequestConfig } from 'axios';
-import type { AssetClass, OrderListStatus } from './bluum-api.types';
+import type { AssetClass, MarketDataAsset, OrderListStatus } from './bluum-api.types';
 import { config } from './config';
 import { unwrapList, unwrapResource } from './utils';
 
@@ -101,12 +101,31 @@ class BluumApiClient {
     return unwrapResource(response.data);
   }
 
-  async getAssetQuotes(symbols: string[]) {
+  /** `GET /assets/batch` — comma-separated symbols (max 20), optional market hint. */
+  async getAssetsBatch(symbols: string[], params?: { market?: string }): Promise<MarketDataAsset[]> {
+    const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))].slice(0, 20);
+    if (unique.length === 0) return [];
+
+    const response = await this.client.get('/assets/batch', {
+      params: {
+        symbols: unique.join(','),
+        ...(params?.market ? { market: params.market } : {}),
+      },
+    });
+    return unwrapList<unknown>(response.data).map((item) => unwrapResource<MarketDataAsset>(item));
+  }
+
+  async getAssetQuotes(symbols: string[], params?: { market?: string }) {
     const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))];
-    const results = await Promise.allSettled(unique.map((symbol) => this.getAssetBySymbol(symbol)));
-    return results
-      .filter((r): r is PromiseFulfilledResult<Awaited<ReturnType<BluumApiClient['getAssetBySymbol']>>> => r.status === 'fulfilled')
-      .map((r) => r.value);
+    if (unique.length === 0) return [];
+
+    const batches: MarketDataAsset[] = [];
+    for (let i = 0; i < unique.length; i += 20) {
+      const chunk = unique.slice(i, i + 20);
+      const items = await this.getAssetsBatch(chunk, params);
+      batches.push(...items);
+    }
+    return batches;
   }
 
   async getChartData(params: {
