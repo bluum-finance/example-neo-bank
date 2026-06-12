@@ -4,7 +4,7 @@ import type {
   OrderRequest,
   Position,
 } from '@/lib/bluum-api.types';
-import { unwrapList } from '@/lib/utils';
+import { unwrapList, unwrapResource } from '@/lib/utils';
 
 export type { MarketDataAsset as AssetQuote, Order, Position } from '@/lib/bluum-api.types';
 
@@ -33,21 +33,17 @@ export class InvestmentService {
 
   static async getAssetBySymbol(symbol: string, params?: { market?: string }): Promise<MarketDataAsset> {
     const qs = params?.market ? `?market=${encodeURIComponent(params.market)}` : '';
-    const response = await fetch(`/api/bluum/market-data/assets/${encodeURIComponent(symbol)}${qs}`);
-    return handleResponse<MarketDataAsset>(response);
+    const response = await fetch(`/api/bluum/assets/${encodeURIComponent(symbol)}${qs}`);
+    const raw = await handleResponse<unknown>(response);
+    return unwrapResource<MarketDataAsset>(raw);
   }
 
   static async getAssetQuotes(symbols: string[]): Promise<MarketDataAsset[]> {
-    const response = await fetch(`/api/bluum/market-data/assets?symbols=${encodeURIComponent(symbols.join(','))}`);
-    const raw = await handleResponse<unknown>(response);
-    const bySymbol = new Map<string, MarketDataAsset>();
-    for (const row of unwrapList<MarketDataAsset>(raw)) {
-      const key = row.symbol?.toUpperCase();
-      if (key && !bySymbol.has(key)) {
-        bySymbol.set(key, row);
-      }
-    }
-    return Array.from(bySymbol.values());
+    const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))];
+    const results = await Promise.allSettled(unique.map((symbol) => this.getAssetBySymbol(symbol)));
+    return results
+      .filter((r): r is PromiseFulfilledResult<MarketDataAsset> => r.status === 'fulfilled')
+      .map((r) => r.value);
   }
 
   static async placeOrder(accountId: string, orderData: OrderRequest): Promise<Order> {

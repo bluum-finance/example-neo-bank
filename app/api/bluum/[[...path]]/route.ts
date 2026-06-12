@@ -7,7 +7,6 @@ const ALLOWED_ROOTS = new Set([
   'documents',
   'banks',
   'markets',
-  'market-data',
   'webhooks',
 ]);
 

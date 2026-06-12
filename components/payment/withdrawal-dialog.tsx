@@ -12,6 +12,8 @@ import { PlaidLink } from '@/components/payment/plaid/plaid-link';
 import { ManualBankLink } from '@/components/payment/manual-bank-link';
 import { FundingSourceService, type FundingSource } from '@/services/funding-source.service';
 import { TransferService } from '@/services/transfer.service';
+import { WalletService } from '@/services/wallet.service';
+import type { Wallet } from '@/lib/bluum-api.types';
 import { toast } from 'sonner';
 import { useAccountStore } from '@/store/account.store';
 import type { ExternalWithdrawalResponse, AlpacaWithdrawalDetails } from '@/lib/bluum-api.types';
@@ -39,6 +41,20 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
   const [selectedFundingSourceId, setSelectedFundingSourceId] = useState<string | null>(null);
   const [fundingSources, setFundingSources] = useState<FundingSource[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
+
+  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [loadingWallets, setLoadingWallets] = useState(true);
+
+  useEffect(() => {
+    setLoadingWallets(true);
+    WalletService.getWallets(accountId)
+      .then(setWallets)
+      .catch(() => setWallets([]))
+      .finally(() => setLoadingWallets(false));
+  }, [accountId]);
+
+  const activeWallet = wallets.find((w) => w.currency === currency && w.status === 'active') ?? null;
+  const walletAvailable = activeWallet ? parseFloat(activeWallet.available_balance) : availableBalance;
 
   useEffect(() => {
     if (withdrawalMethod !== 'ach') return;
@@ -122,7 +138,7 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
       toast.error('Please enter a valid amount');
       return false;
     }
-    if (parseFloat(amount) > availableBalance) {
+    if (parseFloat(amount) > walletAvailable) {
       toast.error('Insufficient balance');
       return false;
     }
@@ -215,7 +231,7 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                 <Label className="text-[#E2E8F0] text-sm font-medium leading-5">Amount to withdraw</Label>
                 <span className="text-[#30D158] text-xs leading-4">
                   Available: {currency === 'NGN' ? '₦' : '$'}
-                  {availableBalance.toLocaleString('en-US', {
+                  {walletAvailable.toLocaleString('en-US', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })} {currency}
@@ -248,7 +264,13 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                         <button
                           key={c}
                           type="button"
-                          onClick={() => { setCurrency(c); setShowCurrencyMenu(false); }}
+                          onClick={() => {
+                              setCurrency(c);
+                              setShowCurrencyMenu(false);
+                              if (c === 'NGN' && withdrawalMethod !== 'wire') {
+                                setWithdrawalMethod('wire');
+                              }
+                            }}
                           className={cn(
                             'w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[#1F4536]',
                             currency === c ? 'text-[#30D158] font-medium' : 'text-white',
@@ -269,9 +291,9 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                     value={withdrawalMethod}
                     onChange={(e) => setWithdrawalMethod(e.target.value as WithdrawalMethod)}
                     className="h-11 bg-[#07120F] border-[#1F4536] text-white focus-visible:ring-0 focus-visible:border-[#57B75C] rounded-lg"
-                    disabled={processing}
+                    disabled={processing || currency === 'NGN'}
                   >
-                    <option value="ach">ACH transfer</option>
+                    {currency !== 'NGN' && <option value="ach">ACH transfer</option>}
                     <option value="wire">Wire transfer</option>
                   </Select>
                   <p className="text-xs text-[#9DB9AB]">

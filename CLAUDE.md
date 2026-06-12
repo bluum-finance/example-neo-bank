@@ -30,7 +30,7 @@ All data flows through three layers — never call the Bluum backend directly fr
 
 1. **`lib/bluum-api.ts`** — Server-only Bluum API client (Basic Auth with `BLUUM_API_KEY:BLUUM_SECRET_KEY`). Only used inside `app/api/` route handlers.
 2. **`app/api/`** — Next.js routes that bridge client ↔ Bluum:
-   - **Dynamic Bluum proxy** — `app/api/bluum/[[...path]]/route.ts` forwards to `BLUUM_API_BASE_URL` (`/v1/...`). Only these first path segments are allowed: `investors`, `assets`, `documents`, `banks`, `markets`, `market-data`, `webhooks`. Forwards method, query string, JSON body, and `Idempotency-Key` when present.
+   - **Dynamic Bluum proxy** — `app/api/bluum/[[...path]]/route.ts` forwards to `BLUUM_API_BASE_URL` (`/v1/...`). Only these first path segments are allowed: `investors`, `assets`, `documents`, `banks`, `markets`, `webhooks`. Forwards method, query string, JSON body, and `Idempotency-Key` when present.
    - **Do not** add one-off Next routes whose only job is to re-proxy a Bluum path (e.g. `/api/accounts/.../transactions`). Client services should call `/api/bluum/...` so everything goes through this single proxy.
    - **Other** routes: `wealth/`, `widget/`, `currency/`, `health/`. (An `investment/` API tree may still exist under `app/api/` but **`services/` do not call it**; Bluum `/v1` traffic from the app goes through `/api/bluum/...` only.)
 3. **`services/*.service.ts`** — Client-side services that call Next API routes via `fetch()`. All API access from components **must** go through services.

@@ -11,10 +11,24 @@ function isBluumList(body: unknown): body is { object: 'list'; data: unknown[] }
   );
 }
 
+/** Unwrap Bluum `{ data: resource }` envelope or pass through. */
+export function unwrapResource<T>(body: unknown): T {
+  if (body !== null && typeof body === 'object' && 'data' in body) {
+    const inner = (body as { data: unknown }).data;
+    if (inner !== null && typeof inner === 'object' && !Array.isArray(inner)) {
+      return inner as T;
+    }
+  }
+  return body as T;
+}
+
 /** Unwrap Bluum/Stripe-style `{ object: 'list', data: [...] }` or pass through arrays. */
 export function unwrapList<T>(body: unknown, fallback: T[] = []): T[] {
   if (isBluumList(body)) return body.data as T[];
   if (Array.isArray(body)) return body as T[];
+  if (body !== null && typeof body === 'object' && 'data' in body && Array.isArray((body as { data: unknown }).data)) {
+    return (body as { data: T[] }).data;
+  }
   return fallback;
 }
 

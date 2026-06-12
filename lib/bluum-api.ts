@@ -1,9 +1,9 @@
 import axios, { AxiosInstance, AxiosError, type AxiosRequestConfig } from 'axios';
 import type { AssetClass, OrderListStatus } from './bluum-api.types';
 import { config } from './config';
-import { unwrapList } from './utils';
+import { unwrapList, unwrapResource } from './utils';
 
-export { unwrapList } from './utils';
+export { unwrapList, unwrapResource } from './utils';
 
 /**
  * Bluum API Client
@@ -98,14 +98,15 @@ class BluumApiClient {
     const response = await this.client.get(`/assets/${symbol}`, {
       params: params?.market ? { market: params.market } : undefined,
     });
-    return response.data;
+    return unwrapResource(response.data);
   }
 
   async getAssetQuotes(symbols: string[]) {
-    const response = await this.client.get('/market-data/assets', {
-      params: { symbols: symbols.join(',') },
-    });
-    return response.data;
+    const unique = [...new Set(symbols.map((s) => s.trim().toUpperCase()).filter(Boolean))];
+    const results = await Promise.allSettled(unique.map((symbol) => this.getAssetBySymbol(symbol)));
+    return results
+      .filter((r): r is PromiseFulfilledResult<Awaited<ReturnType<BluumApiClient['getAssetBySymbol']>>> => r.status === 'fulfilled')
+      .map((r) => r.value);
   }
 
   async getChartData(params: {

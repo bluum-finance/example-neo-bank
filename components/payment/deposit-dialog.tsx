@@ -45,11 +45,15 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [selectedFundingSourceId, setSelectedFundingSourceId] = useState<string | null>(null);
 
-  const DEPOSIT_METHODS = [
+  const ALL_DEPOSIT_METHODS = [
     { id: 'manual_bank_transfer', label: 'Digital Wallet', icon: Wallet },
     { id: 'ach', label: 'ACH Transfer', icon: AccountsIcon },
     { id: 'wire', label: 'Wire Transfer', icon: ArrowLeftRight },
   ] as const;
+
+  const DEPOSIT_METHODS = currency === 'NGN'
+    ? ALL_DEPOSIT_METHODS.filter((m) => m.id === 'manual_bank_transfer')
+    : ALL_DEPOSIT_METHODS;
 
   const METHOD_LABELS: Record<DepositMethod, string> = {
     ach: 'ACH Transfer',
@@ -498,7 +502,13 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
                             <button
                               key={c}
                               type="button"
-                              onClick={() => { setCurrency(c); setShowCurrencyMenu(false); }}
+                              onClick={() => {
+                                setCurrency(c);
+                                setShowCurrencyMenu(false);
+                                if (c === 'NGN' && depositMethod !== 'manual_bank_transfer') {
+                                  setDepositMethod('manual_bank_transfer');
+                                }
+                              }}
                               className={cn(
                                 'w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors hover:bg-[#1F4536]',
                                 currency === c ? 'text-[#30D158] font-medium' : 'text-white',

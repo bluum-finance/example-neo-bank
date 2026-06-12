@@ -187,7 +187,7 @@ export interface Asset {
   fractionable?: boolean;
 }
 
-/** Asset profile from market-data endpoints (includes optional quote fields per OpenAPI). */
+/** Asset profile from `GET /assets/{symbol}` (includes optional quote fields per OpenAPI). */
 export interface MarketDataAsset extends Asset {
   price?: number;
   change?: number;
@@ -421,6 +421,18 @@ export type AlpacaWireDetails = WireMethodDetails & {
   providerName?: string;
   fundingDetails?: WireFundingDetail[];
 };
+
+/** Wallet resource from `/v1/investors/{id}/wallets` list. */
+export interface Wallet extends BluumResourceEnvelope<{
+  currency: string;
+  balance: string;
+  available_balance: string;
+  reserved_balance: string;
+  cash_withdrawable: string;
+  buying_power: string;
+  equity: string;
+  status: 'active' | 'suspended' | 'closed';
+}> {}
 
 /** @deprecated Use WithdrawalMethodDetails. */
 export type AlpacaWithdrawalDetails = AchMethodDetails & {

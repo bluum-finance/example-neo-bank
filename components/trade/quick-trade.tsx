@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ChevronDown, ArrowRight, Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
-import type { OrderRequest } from '@/lib/bluum-api.types';
+import type { OrderRequest, Wallet } from '@/lib/bluum-api.types';
 import { InvestmentService } from '@/services/investment.service';
+import { WalletService } from '@/services/wallet.service';
 import { useUser } from '@/store/user.store';
 import { useAccountStore } from '@/store/account.store';
 import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 import { cn } from '@/lib/utils';
+import { MARKET_OPTIONS, marketDisplayLabel } from '@/lib/market';
 import { OrderReviewModal } from '@/components/trade/order-review-modal';
 import { OrderSuccessModal } from '@/components/trade/order-success-modal';
 
@@ -17,17 +20,6 @@ type OrderType = 'limit' | 'market' | 'stop';
 type AssetType = 'Stocks' | 'ETFs' | 'Crypto';
 
 const ASSET_TYPES: AssetType[] = ['Stocks', 'ETFs', 'Crypto'];
-
-/** Venue hints for `GET /assets/{symbol}?market=` — aligns with Bluum external API (MIC / venue codes). */
-const MARKET_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'All' },
-  { value: 'XNAS', label: 'NASDAQ (XNAS)' },
-  { value: 'XNYS', label: 'NYSE (XNYS)' },
-  { value: 'BATS', label: 'BATS' },
-  { value: 'ARCA', label: 'NYSE Arca (ARCA)' },
-  { value: 'OTC', label: 'OTC' },
-  { value: 'XNSA', label: 'NYSE American (XNSA)' },
-];
 
 const DEFAULT_MARKET_BY_TYPE: Record<AssetType, string> = {
   Stocks: '',
@@ -45,6 +37,7 @@ interface AssetInfo {
 }
 
 export function QuickTrade() {
+  const searchParams = useSearchParams();
   const user = useUser();
   const accountId = user?.externalAccountId;
   const { displayAmount, displayAmountInUSD, currencies } = useCurrency();
@@ -65,6 +58,22 @@ export function QuickTrade() {
   const [showReview, setShowReview] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [orderId, setOrderId] = useState('—');
+
+  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [walletCurrency, setWalletCurrency] = useState<string>('USD');
+
+  useEffect(() => {
+    if (!accountId) return;
+    WalletService.getWallets(accountId)
+      .then((ws) => {
+        setWallets(ws.filter((w) => w.status === 'active'));
+        // default to USD wallet if present, otherwise first wallet
+        const usd = ws.find((w) => w.currency === 'USD' && w.status === 'active');
+        if (usd) setWalletCurrency('USD');
+        else if (ws.length > 0) setWalletCurrency(ws[0].currency);
+      })
+      .catch(() => setWallets([]));
+  }, [accountId]);
 
   const effectivePrice = orderType === 'limit' && limitPrice ? parseFloat(limitPrice) : (asset?.price ?? null);
   const estimatedTotal = effectivePrice && shares ? parseFloat(shares) * effectivePrice : null;
@@ -98,6 +107,23 @@ export function QuickTrade() {
     },
     [orderType, market]
   );
+
+  const symbolFromUrl = searchParams.get('symbol');
+  const sideFromUrl = searchParams.get('side');
+  const marketFromUrl = searchParams.get('market');
+
+  useEffect(() => {
+    const sym = symbolFromUrl?.trim().toUpperCase();
+    if (!sym) return;
+
+    const mkt = marketFromUrl?.trim() ?? '';
+    if (sideFromUrl === 'buy' || sideFromUrl === 'sell') {
+      setSide(sideFromUrl);
+    }
+    if (mkt) setMarket(mkt);
+    setSymbolInput(sym);
+    void handleLookup(sym, { market: mkt || undefined });
+  }, [symbolFromUrl, sideFromUrl, marketFromUrl, handleLookup]);
 
   const handleSideChange = (next: Side) => {
     setSide(next);
@@ -139,10 +165,12 @@ export function QuickTrade() {
     try {
       const orderData: OrderRequest = {
         symbol: asset.symbol,
+        ...(asset.market ? { market: asset.market } : {}),
         side,
         type: orderType === 'stop' ? 'stop' : orderType,
         time_in_force: 'day',
         quantity: parseFloat(shares).toFixed(4),
+        wallet_currency: walletCurrency,
       };
       if (orderType === 'limit') {
         orderData.limit_price = parseFloat(limitPrice).toFixed(2);
@@ -315,7 +343,9 @@ export function QuickTrade() {
                   {asset?.name ?? (lookingUp ? 'Looking up…' : 'Enter a symbol and/or market')}
 
                   {asset?.market ? (
-                    <span className="text-[10px] font-manrope text-[#6B7280] uppercase tracking-wide">{asset.market}</span>
+                    <span className="text-[10px] font-manrope text-[#6B7280] uppercase tracking-wide">
+                      {marketDisplayLabel(asset.market)}
+                    </span>
                   ) : null}
                 </span>
 
@@ -412,7 +442,37 @@ export function QuickTrade() {
       </div>
 
       {/* Footer */}
-      <footer className="flex items-center justify-between pt-6 border-t border-[#1E3D2F]">
+      <footer className="flex flex-col gap-4 pt-6 border-t border-[#1E3D2F]">
+        {/* Wallet currency row — only shown when investor has multiple wallets */}
+        {wallets.length > 1 && (
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-manrope text-[#A1BEAD] shrink-0">Fund from wallet</span>
+            <div className="flex gap-2 flex-wrap">
+              {wallets.map((w) => {
+                const sym = w.currency === 'NGN' ? '₦' : w.currency === 'GBP' ? '£' : w.currency === 'EUR' ? '€' : '$';
+                const isActive = walletCurrency === w.currency;
+                return (
+                  <button
+                    key={w.id}
+                    type="button"
+                    onClick={() => setWalletCurrency(w.currency)}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all border',
+                      isActive
+                        ? 'bg-[#57B75C]/10 border-[#57B75C] text-[#57B75C]'
+                        : 'bg-[#0E231F] border-[#1E3D2F] text-[#A1BEAD] hover:border-[#30D158]/50 hover:text-white',
+                    )}
+                  >
+                    <span className="font-semibold">{w.currency}</span>
+                    <span className="opacity-70">{sym}{parseFloat(w.buying_power).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
           <span className="text-xs font-manrope text-[#A1BEAD]">Estimated Total</span>
           <span className="text-xl font-bold font-manrope text-white">
@@ -441,6 +501,7 @@ export function QuickTrade() {
             </>
           )}
         </button>
+        </div>
       </footer>
 
       {/* Order Review Modal */}
