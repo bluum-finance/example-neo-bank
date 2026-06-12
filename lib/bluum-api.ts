@@ -60,12 +60,6 @@ class BluumApiClient {
     return { status: response.status, data: response.data };
   }
 
-  /** POST /investors/:investorId/compliance/restart */
-  async restartComplianceWorkflow(investorId: string) {
-    const response = await this.client.post(`/investors/${investorId}/compliance/restart`);
-    return response.data;
-  }
-
   async createAccount(data: unknown) {
     const response = await this.client.post('/investors', data);
     return response.data;

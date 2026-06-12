@@ -1,15 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { Clock3, ShieldX, RefreshCw, Loader2, ExternalLink } from 'lucide-react';
-import { toast } from 'sonner';
+import { Clock3, ShieldX, RefreshCw } from 'lucide-react';
 
-import { appendParamToUrl, getInvestRedirectUri } from '@/lib/utils';
-import { AccountService } from '@/services/account.service';
 import { useUser } from '@/store/user.store';
 import { useAccountStore, type OnboardingGateStatus } from '@/store/account.store';
-import type { ComplianceInitiationResponse } from '@/lib/bluum-api.types';
 
 /** Route group `(invest)` + integration surfaces — not home/transactions/cards. */
 const INVEST_PAGE_PREFIXES = ['/invest', '/auto-invest', '/financial-plan', '/trade', '/assets', '/chat'] as const;
@@ -18,50 +14,8 @@ function isInvestRelatedPage(pathname: string): boolean {
   return INVEST_PAGE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
-function pickVerificationUrl(data: ComplianceInitiationResponse): string | undefined {
-  const checks = data.complianceChecks ?? data.compliance_checks ?? [];
-  for (const check of checks) {
-    const raw = (check.verificationUrl ?? check.verification_url)?.trim();
-    if (raw) return raw;
-  }
-  return undefined;
-}
-
-export function OnboardingStatusGate({
-  status,
-  accountId,
-  onAccountRefresh,
-}: {
-  status: OnboardingGateStatus;
-  accountId: string;
-  onAccountRefresh: () => Promise<void>;
-}) {
+export function OnboardingStatusGate({ status }: { status: OnboardingGateStatus }) {
   const isRejected = status === 'declined';
-  const [restarting, setRestarting] = useState(false);
-
-  const handleRestartCompliance = async () => {
-    setRestarting(true);
-    try {
-      const data = await AccountService.restartComplianceWorkflow(accountId);
-      const url = pickVerificationUrl(data);
-      if (url) {
-        const target = appendParamToUrl(url, 'redirect-uri', getInvestRedirectUri());
-        toast.success('Retry verification to complete onboarding.');
-        await onAccountRefresh();
-        window.location.assign(target);
-      } else {
-        toast.message('Verification workflow updated', {
-          description: 'Use Refresh to check your account status.',
-        });
-        await onAccountRefresh();
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Could not start verification';
-      toast.error(message);
-    } finally {
-      setRestarting(false);
-    }
-  };
 
   return (
     <div
@@ -97,35 +51,20 @@ export function OnboardingStatusGate({
                 : "We're verifying your information. You account will be active once your information is verified."}
             </p>
 
-            <div className="my-5 h-px bg-[#1E3D2F]" />
+            {!isRejected && (
+              <>
+                <div className="my-5 h-px bg-[#1E3D2F]" />
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-              {!isRejected && (
                 <button
                   type="button"
                   onClick={() => window.location.reload()}
-                  className={`inline-flex items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-medium transition-colors active:scale-95 ${
-                    isRejected
-                      ? 'border border-[#2A4D3C] bg-transparent text-white hover:bg-[#1A3A2C]'
-                      : 'bg-[#57B75C] text-white hover:bg-[#4ca651]'
-                  }`}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#57B75C] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4ca651] active:scale-95"
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
                   Refresh
                 </button>
-              )}
-
-              <button
-                type="button"
-                disabled={restarting}
-                onClick={() => void handleRestartCompliance()}
-                className={`inline-flex items-center justify-center gap-2 rounded-full bg-[#57B75C] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[#4ca651] active:scale-95 disabled:pointer-events-none disabled:opacity-60
-                   ${!isRejected ? 'bg-transparent border border-[#2A4D3C] text-white hover:bg-[#1A3A2C]' : 'bg-[#57B75C] text-white hover:bg-[#4ca651]'}`}
-              >
-                {restarting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="h-3.5 w-3.5" />}
-                Retry verification
-              </button>
-            </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -142,7 +81,6 @@ export function DashboardOnboardingGate() {
   const user = useUser();
   const onboardingGateStatus = useAccountStore((s) => s.onboardingGateStatus);
   const setOnboardingGateStatus = useAccountStore((s) => s.setOnboardingGateStatus);
-  const fetchAccount = useAccountStore((s) => s.fetchAccount);
 
   const externalAccountId = user?.externalAccountId;
   const onInvestIntegration = isInvestRelatedPage(pathname);
@@ -153,13 +91,5 @@ export function DashboardOnboardingGate() {
 
   if (!onboardingGateStatus || !externalAccountId || !onInvestIntegration) return null;
 
-  return (
-    <OnboardingStatusGate
-      status={onboardingGateStatus}
-      accountId={externalAccountId}
-      onAccountRefresh={async () => {
-        await fetchAccount(externalAccountId);
-      }}
-    />
-  );
+  return <OnboardingStatusGate status={onboardingGateStatus} />;
 }

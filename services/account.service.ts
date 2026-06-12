@@ -1,4 +1,4 @@
-import type { Account as BluumInvestorAccount, ComplianceInitiationResponse } from '@/lib/bluum-api.types';
+import type { Account as BluumInvestorAccount } from '@/lib/bluum-api.types';
 import { apiClient } from '@/lib/api-client';
 
 /** Investor resource from GET `/api/bluum/investors/:id` (Bluum `/v1/investors` envelope). */
