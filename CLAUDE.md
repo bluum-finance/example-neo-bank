@@ -90,6 +90,26 @@ Always use `cn()` from `@/lib/utils` for conditional Tailwind classes. Prefer se
 - **Don't** call `app/api/` endpoints directly from components — always use a service class.
 - **Don't** add Next routes that only re-wrap Bluum `/v1` paths — use `/api/bluum/...` from services instead.
 - **Don't** use `lib/bluum-api.ts` in client components or pages — server-side only.
+- **Don't** expose internal demo implementation in user-facing copy, toasts, or UI (no `demo`/`seed` in visible order ids or error messages). Use `lib/order-id.ts` (`createOrderId`, `formatOrderReference`) for simulated orders.
+
+## Demo vs API data sources
+
+Asset quotes and trading (positions, orders, wallets) use **independent** toggles (`lib/demo-mode.ts`). Both default to **`demo`** unless env is explicitly `api`.
+
+| Toggle | Env var | When `demo` |
+|--------|---------|-------------|
+| Asset data | `NEXT_PUBLIC_ASSET_DATA_SOURCE` | `InvestmentService` asset/quote methods use `lib/demo/assets.ts` |
+| Trading data | `NEXT_PUBLIC_TRADING_DATA_SOURCE` | Positions, orders, wallets use `lib/demo/trading-store.ts` (localStorage) |
+
+**Not gated by trading demo:** wealth/widget APIs — account, summary, chart, IPS, insights, goals (`WidgetService`, `AccountService`, transfers). The invest page uses `wealthAccountId` (`externalAccountId`) for those and `tradingAccountId` (`resolveDemoInvestorKey(...)`) for positions/orders only.
+
+**Trading demo specifics:**
+- Simulated state in `localStorage` (`bluum-demo-trading:{investorKey}`); writes dispatch `demo-trading-updated`.
+- Bank wallets: Checking `3168`, Savings `2651` (`lib/demo/bank-accounts.ts`); deposits/withdrawals and order placement debit/credit by `wallet_id`.
+- Seed holdings: MSFT, AAPL, NVDA + matching filled buy orders. Portfolio total (`usePortfolioValue`) = sum of position `market_value` only (cash lives in bank wallets).
+- Components that must stay in sync listen for `demo-trading-updated` and refetch (e.g. invest page positions/orders, `RecentTrades`, `useBankAccounts`).
+
+**Recent Trades** (`components/widget/recent-trades.tsx`) shows **orders** (not positions), via `fetchOrders` + shared `order-display` helpers.
 
 ## Environment Variables
 
