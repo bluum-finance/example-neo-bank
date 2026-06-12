@@ -7,53 +7,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import type { MarketDataAsset } from '@/lib/bluum-api.types';
 import { InvestmentService } from '@/services/investment.service';
 import { toast } from 'sonner';
 import TradingViewChart from '@/components/invest/trading-view-chart';
 import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 import { useUserStore } from '@/store/user.store';
 
-interface Asset {
-  id: string;
-  symbol: string;
-  name: string;
-  class: string;
-  status: string;
-  tradable: boolean;
-  marginable?: boolean;
-  shortable?: boolean;
-  currency?: string;
-  current_price?: number;
-  price?: number;
-  change?: number;
-  changePercent?: number;
-  previousClose?: number;
-  bidPrice?: number;
-  askPrice?: number;
-}
-
-interface ChartBar {
-  timestamp: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-}
-
-interface ChartData {
-  symbol: string;
-  bars: ChartBar[];
-}
-
-type Timeframe = '1Day' | '1Week' | '1Month';
-
 export default function AssetDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const symbol = (params.symbol as string)?.toUpperCase();
 
-  const [asset, setAsset] = useState<Asset | null>(null);
+  const [asset, setAsset] = useState<MarketDataAsset | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,24 +33,7 @@ export default function AssetDetailsPage() {
         setError(null);
 
         const assetData = await InvestmentService.getAssetBySymbol(symbol);
-        setAsset({
-          id: assetData.id || symbol,
-          symbol: assetData.symbol || symbol,
-          name: assetData.name || assetData.display_name || symbol,
-          class: assetData.class || assetData.asset_class || '',
-          status: assetData.status || 'active',
-          tradable: assetData.tradable !== false,
-          marginable: assetData.marginable,
-          shortable: assetData.shortable,
-          currency: assetData.currency,
-          current_price: assetData.current_price || assetData.price,
-          price: assetData.price || assetData.current_price,
-          change: assetData.change,
-          changePercent: assetData.changePercent,
-          previousClose: assetData.previousClose,
-          bidPrice: assetData.bidPrice,
-          askPrice: assetData.askPrice,
-        });
+        setAsset(assetData);
       } catch (err: any) {
         const errorMessage = err.message || 'Failed to load asset';
         setError(errorMessage);
@@ -97,7 +46,7 @@ export default function AssetDetailsPage() {
     loadAsset();
   }, [symbol]);
 
-  const currentPrice = asset?.current_price || asset?.price;
+  const currentPrice = asset?.price;
   const priceChange = asset?.change ?? 0;
   const priceChangePercent = asset?.changePercent ?? 0;
   const isPositive = priceChange >= 0;
@@ -152,6 +101,10 @@ export default function AssetDetailsPage() {
     );
   }
 
+  const displaySymbol = asset.symbol ?? symbol;
+  const displayName = asset.name ?? asset.display_name ?? displaySymbol;
+  const assetClass = asset.class ?? asset.asset_class;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -160,8 +113,8 @@ export default function AssetDetailsPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">{asset.symbol}</h1>
-          <p className="text-muted-foreground mt-1">{asset.name}</p>
+          <h1 className="text-3xl font-bold">{displaySymbol}</h1>
+          <p className="text-muted-foreground mt-1">{displayName}</p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -173,7 +126,7 @@ export default function AssetDetailsPage() {
           >
             <Star className="h-4 w-4" fill={isInWatchlist ? 'currentColor' : 'none'} />
           </Button>
-          <Button onClick={() => router.push(`/trade?side=buy&symbol=${asset.symbol}`)}>
+          <Button onClick={() => router.push(`/trade?side=buy&symbol=${displaySymbol}`)}>
             <TrendingUp className="h-4 w-4 mr-2" />
             Trade Asset
           </Button>
@@ -250,17 +203,17 @@ export default function AssetDetailsPage() {
           <CardContent className="space-y-4">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Symbol</span>
-              <span className="font-medium">{asset.symbol}</span>
+              <span className="font-medium">{displaySymbol}</span>
             </div>
             <Separator />
             <div className="flex justify-between">
               <span className="text-muted-foreground">Name</span>
-              <span className="font-medium text-right">{asset.name}</span>
+              <span className="font-medium text-right">{displayName}</span>
             </div>
             <Separator />
             <div className="flex justify-between">
               <span className="text-muted-foreground">Asset Class</span>
-              <Badge variant="outline">{asset.class || 'N/A'}</Badge>
+              <Badge variant="outline">{assetClass || 'N/A'}</Badge>
             </div>
           </CardContent>
         </Card>

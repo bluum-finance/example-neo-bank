@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
       params.portfolio_id = portfolioId;
     }
 
-    const data = await bluumApi.getAutoInvestSchedules(accountId, params);
-    return NextResponse.json(data);
+    const schedules = await bluumApi.getAutoInvestSchedules(accountId, params);
+    return NextResponse.json(schedules);
   } catch (error: any) {
     return NextResponse.json(
       {

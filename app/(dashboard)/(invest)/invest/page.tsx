@@ -14,7 +14,7 @@ import { WelcomeInsightsCard } from '@/components/invest/welcome-insights-card';
 import { MarketMoversOverview } from '@/components/widget/market-movers-overview';
 
 import { InvestmentService } from '@/services/investment.service';
-import { WidgetService, type Insight, type Recommendation, type PerformanceDataPoint, FinancialGoal } from '@/services/widget.service';
+import { WidgetService, type WealthInsight, type Recommendation, type PerformanceDataPoint, FinancialGoal } from '@/services/widget.service';
 import { useUser, useUserStore } from '@/store/user.store';
 import {
   useAccountBalance,
@@ -61,7 +61,7 @@ export default function Invest() {
   // Data States
   const [financialGoals, setFinancialGoals] = useState<FinancialGoal[]>([]);
   const [investmentPolicy, setInvestmentPolicy] = useState<any>(null);
-  const [widgetInsights, setWidgetInsights] = useState<{ insights: Insight[]; recommendations: Recommendation[] } | undefined>(undefined);
+  const [widgetInsights, setWidgetInsights] = useState<{ insights: WealthInsight[]; recommendations: Recommendation[] } | undefined>(undefined);
 
   const loadWidgetData = useCallback(async (userAccountId: string) => {
     setInsightsLoading(true);
@@ -192,7 +192,7 @@ const SelfDirectedDashboard = ({
   goalsLoading,
   investmentPolicy,
 }: {
-  insightsList: Insight[];
+  insightsList: WealthInsight[];
   insightsLoading: boolean;
   totalPortfolioValue: number;
   chartData: PerformanceDataPoint[];
@@ -308,7 +308,7 @@ const AiWealthDashboard = ({
   goalsLoading,
   investmentPolicy,
 }: {
-  insightsList: Insight[];
+  insightsList: WealthInsight[];
   insightsLoading: boolean;
   totalPortfolioValue: number;
   chartData: PerformanceDataPoint[];

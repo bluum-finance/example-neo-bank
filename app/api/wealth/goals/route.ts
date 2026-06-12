@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     }
 
     const goals = await bluumApi.getGoals(accountId, params);
-    return NextResponse.json({ goals, total_count: goals.length });
+    return NextResponse.json(goals);
   } catch (error: any) {
     return NextResponse.json(
       {

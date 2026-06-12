@@ -9,10 +9,13 @@ export type ExternalAccountStatus =
   | 'declined'
   | 'setup_failed';
 
-/** Matches `ExternalOrderStatus` on Bluum `/v1` order resources. */
-export type ExternalOrderStatus = 'pending' | 'filled' | 'partial' | 'cancelled' | 'failed';
+/** Bluum-native order status on order resources. */
+export type ExternalOrderStatus = 'open' | 'pending' | 'filled' | 'partial' | 'cancelled' | 'failed';
 
-/** Matches `ExternalTransferStatus` where surfaced on wallet movements. */
+/** Order list query `status` filter (GET /investors/{id}/orders). */
+export type OrderListStatus = ExternalOrderStatus;
+
+/** Matches transfer statuses surfaced on wallet movements. */
 export type ExternalTransferStatus = 'pending' | 'processing' | 'completed' | 'cancelled' | 'failed';
 
 export type SignedAgreementType = 'investor_agreement' | 'margin_disclosure_acknowledged' | 'w8ben_certification';
@@ -24,6 +27,19 @@ export type BluumFundingSourceEnum =
   | 'business_income'
   | 'savings'
   | 'family';
+
+export type AssetClass =
+  | 'equity'
+  | 'etf'
+  | 'bond'
+  | 'bill'
+  | 'note'
+  | 'mutual_fund'
+  | 'derivative'
+  | 'cryptocurrency'
+  | 'commodity'
+  | 'real_estate'
+  | 'cash';
 
 export type FlatInvestorAddress = {
   street: string[];
@@ -130,23 +146,13 @@ export type BluumResourceEnvelope<TFields extends object> = TFields & {
 };
 
 export interface ComplianceCheckItem {
-  checkType?: string;
+  workflow_id?: string;
   check_type?: string;
   status: string;
-  provider?: string;
-  verificationUrl?: string;
-  verification_url?: string;
-  verificationToken?: string;
-  verification_token?: string;
-}
-
-/** Restart workflow + create investor compliance payloads (camelCase from API). */
-export interface ComplianceInitiationResponse {
-  workflowId?: string;
-  workflow_id?: string;
-  status?: string;
-  complianceChecks?: ComplianceCheckItem[];
-  compliance_checks?: ComplianceCheckItem[];
+  provider?: string | null;
+  external_id?: string | null;
+  verification_url?: string | null;
+  verification_token?: string | null;
 }
 
 /** GET /investors/:id envelope (subset used by demo). */
@@ -165,7 +171,10 @@ export interface Asset {
   id?: string;
   object?: string;
   livemode?: boolean;
-  class?: 'us_equity' | 'crypto' | 'us_option';
+  class?: AssetClass;
+  /** @deprecated Use `class` + `country`. Still accepted by Bluum for backwards compatibility. */
+  asset_class?: string;
+  country?: string | null;
   market?: string;
   symbol?: string;
   name?: string;
@@ -176,6 +185,20 @@ export interface Asset {
   shortable?: boolean;
   easy_to_borrow?: boolean;
   fractionable?: boolean;
+}
+
+/** Asset profile from market-data endpoints (includes optional quote fields per OpenAPI). */
+export interface MarketDataAsset extends Asset {
+  price?: number;
+  change?: number;
+  changePercent?: number;
+  previousClose?: number;
+  bidPrice?: number;
+  askPrice?: number;
+  price_timestamp?: string | null;
+  last_synced_at?: string | null;
+  market_name?: string;
+  display_name?: string;
 }
 
 /** Position resource from `/v1/investors/:id/positions` list. */
@@ -202,7 +225,9 @@ export interface OrderRequest {
   market?: string;
   isin?: string;
   figi?: string;
-  qty?: string;
+  class?: AssetClass | string;
+  country?: string;
+  quantity?: string;
   notional?: string;
   side: 'buy' | 'sell';
   type: 'market' | 'limit' | 'stop' | 'stop_limit' | 'trailing_stop';
@@ -215,6 +240,7 @@ export interface OrderRequest {
   client_order_id?: string;
   commission?: string;
   commission_type?: 'notional' | 'qty' | 'bps';
+  wallet_currency?: string;
 }
 
 export interface Order extends BluumResourceEnvelope<{
@@ -260,67 +286,32 @@ export interface Transaction extends BluumResourceEnvelope<{
   failure_reason?: string | null;
 }> {}
 
-export interface FiatFundingDetails {
-  funding_type: 'fiat';
-  fiat_currency: 'USD';
-  bank_account_id: string;
-  method: 'ach' | 'wire';
-}
-
-export interface CryptoFundingDetails {
-  funding_type: 'crypto';
-  crypto_asset: 'BTC' | 'ETH' | 'USDC' | 'USDT';
-  wallet_address: string;
-  network: 'Bitcoin' | 'Ethereum' | 'Polygon';
-}
-
-export interface FundRequest {
-  amount: string;
-  funding_details: FiatFundingDetails | CryptoFundingDetails;
-  description?: string;
-  external_reference_id?: string;
-}
-
-export interface WithdrawalRequest {
-  /** Bluum investor id (same as historical `account_id` in demo routes). */
-  account_id: string;
-  amount: string;
-  funding_details: FiatFundingDetails | CryptoFundingDetails;
-  description?: string;
-  external_reference_id?: string;
-}
-
 export type DepositMethod = 'ach' | 'manual_bank_transfer' | 'wire';
 export type WithdrawalMethod = 'ach' | 'wire';
 
 export interface ManualBankDetails {
-  bankName?: string;
-  bankAddress?: string;
-  accountName?: string;
-  accountNumber?: string;
-  accountKind?: string;
-  routingNumber?: string;
-  swiftCode?: string;
-  beneficiaryAddress?: string;
+  bank_name?: string;
+  bank_address?: string | null;
+  account_name?: string;
+  account_number?: string;
+  routing_number?: string;
+  swift_code?: string | null;
   instructions?: string;
 }
 
 export interface ManualBankTransferDetails {
-  referenceCode?: string;
-  bankDetails?: ManualBankDetails;
-  expiresAt?: string;
+  reference_code?: string;
+  bank_details?: ManualBankDetails;
+  expires_at?: string;
 }
 
-export interface AlpacaAchDetails {
-  providerName?: string;
-  provider?: string;
-  method?: 'ach';
-  transferId?: string;
-  alpacaStatus?: string;
-  externalDepositId?: string;
+export interface AchMethodDetails {
+  provider_name?: string;
+  transfer_id?: string;
+  alpaca_status?: string;
 }
 
-export interface AlpacaWireFundingDetail {
+export interface WireFundingDetail {
   payment_type?: string;
   currency?: string;
   account_number?: string;
@@ -328,18 +319,21 @@ export interface AlpacaWireFundingDetail {
   bank_name?: string;
 }
 
-export interface AlpacaWireDetails {
-  providerName?: string;
-  provider?: string;
-  method?: 'wire';
-  fundingDetails?: AlpacaWireFundingDetail[];
+export interface WireMethodDetails {
+  provider_name?: string;
+  funding_details?: WireFundingDetail[];
 }
 
-export type DepositMethodDetails = AlpacaAchDetails | AlpacaWireDetails | ManualBankTransferDetails | Record<string, unknown>;
+export type DepositMethodDetails =
+  | AchMethodDetails
+  | WireMethodDetails
+  | ManualBankTransferDetails
+  | Record<string, unknown>;
 
 export interface ExternalDepositResponse extends BluumResourceEnvelope<{
   investor_id?: string;
   wallet_id?: string;
+  funding_source_id?: string | null;
   method?: DepositMethod;
   status?: string;
   amount?: string;
@@ -352,9 +346,26 @@ export interface ExternalDepositResponse extends BluumResourceEnvelope<{
   expires_at?: string | null;
   failure_reason?: string | null;
 }> {
+  /** @deprecated Prefer envelope `id`. */
   deposit_id?: string;
 }
 
+/** Bluum API funding source (snake_case envelope). */
+export interface BluumFundingSource extends BluumResourceEnvelope<{
+  type: 'plaid' | 'manual';
+  status: 'active' | 'disconnected' | 'error';
+  bank_name: string | null;
+  mask: string | null;
+  provider_id?: string;
+  account_name?: string;
+  account_type?: string;
+  account_subtype?: string;
+  currency?: string | null;
+  country?: string | null;
+  updated_at?: string;
+}> {}
+
+/** UI-normalized funding source (camelCase). */
 export interface FundingSource {
   id: string;
   type: 'plaid' | 'manual';
@@ -376,19 +387,12 @@ export interface NigerianBank {
   code: string;
 }
 
-export interface AlpacaWithdrawalDetails {
-  providerName?: string;
-  provider?: string;
-  method?: 'ach' | 'wire';
-  transferId?: string;
-  alpacaStatus?: string;
-}
-
-export type WithdrawalMethodDetails = AlpacaWithdrawalDetails | Record<string, unknown>;
+export interface WithdrawalMethodDetails extends AchMethodDetails, Record<string, unknown> {}
 
 export interface ExternalWithdrawalResponse extends BluumResourceEnvelope<{
   investor_id?: string;
   wallet_id?: string;
+  funding_source_id?: string | null;
   method?: WithdrawalMethod;
   status?: string;
   amount?: string;
@@ -401,5 +405,41 @@ export interface ExternalWithdrawalResponse extends BluumResourceEnvelope<{
   completed_at?: string | null;
   failure_reason?: string | null;
 }> {
+  /** @deprecated Prefer envelope `id`. */
   withdrawal_id?: string;
 }
+
+/** @deprecated Use AchMethodDetails / snake_case fields from API. */
+export type AlpacaAchDetails = AchMethodDetails & {
+  providerName?: string;
+  transferId?: string;
+  alpacaStatus?: string;
+};
+
+/** @deprecated Use WireMethodDetails. */
+export type AlpacaWireDetails = WireMethodDetails & {
+  providerName?: string;
+  fundingDetails?: WireFundingDetail[];
+};
+
+/** @deprecated Use WithdrawalMethodDetails. */
+export type AlpacaWithdrawalDetails = AchMethodDetails & {
+  providerName?: string;
+  transferId?: string;
+  alpacaStatus?: string;
+};
+
+/** @deprecated Use ManualBankTransferDetails with snake_case fields. */
+export type LegacyManualBankTransferDetails = ManualBankTransferDetails & {
+  referenceCode?: string;
+  bankDetails?: ManualBankDetails & {
+    bankName?: string;
+    bankAddress?: string;
+    accountName?: string;
+    accountNumber?: string;
+    routingNumber?: string;
+    swiftCode?: string;
+    instructions?: string;
+  };
+  expiresAt?: string;
+};

@@ -146,7 +146,7 @@ export default function AutoInvestPage() {
       };
 
       const updatedSchedule = await AutoInvestService.updateSchedule(accountId, autoInvestId, updateData);
-      setSchedules((prev) => prev.map((s) => (s.auto_invest_id === autoInvestId ? updatedSchedule : s)));
+      setSchedules((prev) => prev.map((s) => (s.id === autoInvestId ? updatedSchedule : s)));
       setIsModalOpen(false);
       setEditingSchedule(null);
       toast.success('Schedule updated successfully');
@@ -171,7 +171,7 @@ export default function AutoInvestPage() {
     try {
       setError(null);
       await AutoInvestService.deleteSchedule(accountId, autoInvestId);
-      setSchedules((prev) => prev.filter((s) => s.auto_invest_id !== autoInvestId));
+      setSchedules((prev) => prev.filter((s) => s.id !== autoInvestId));
       toast.success('Schedule deleted successfully');
     } catch (error: any) {
       console.error('Failed to delete schedule:', error);
@@ -199,7 +199,7 @@ export default function AutoInvestPage() {
       setLoadingAction({ id: autoInvestId, type: 'pause' });
       setError(null);
       const updatedSchedule = await AutoInvestService.pauseSchedule(accountId, autoInvestId);
-      setSchedules((prev) => prev.map((s) => (s.auto_invest_id === autoInvestId ? updatedSchedule : s)));
+      setSchedules((prev) => prev.map((s) => (s.id === autoInvestId ? updatedSchedule : s)));
       toast.success('Schedule paused successfully');
     } catch (error: any) {
       console.error('Failed to pause schedule:', error);
@@ -230,7 +230,7 @@ export default function AutoInvestPage() {
       setLoadingAction({ id: autoInvestId, type: 'resume' });
       setError(null);
       const updatedSchedule = await AutoInvestService.resumeSchedule(accountId, autoInvestId);
-      setSchedules((prev) => prev.map((s) => (s.auto_invest_id === autoInvestId ? updatedSchedule : s)));
+      setSchedules((prev) => prev.map((s) => (s.id === autoInvestId ? updatedSchedule : s)));
       toast.success('Schedule resumed successfully');
     } catch (error: any) {
       console.error('Failed to resume schedule:', error);
@@ -244,7 +244,7 @@ export default function AutoInvestPage() {
 
   const handleEditSchedule = (schedule: AutoInvestSchedule) => {
     setEditingSchedule(schedule);
-    editingScheduleIdRef.current = schedule.auto_invest_id;
+    editingScheduleIdRef.current = schedule.id;
     setIsModalOpen(true);
   };
 
@@ -346,7 +346,7 @@ export default function AutoInvestPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {schedules.map((schedule) => (
-            <Card key={schedule.auto_invest_id} className="hover:shadow-md transition-shadow">
+            <Card key={schedule.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -375,9 +375,9 @@ export default function AutoInvestPage() {
                     <span className="text-muted-foreground">Allocation:</span>
                     <span className="text-foreground capitalize">{schedule.allocation_rule.replace('_', ' ')}</span>
                   </div>
-                  {schedule.next_execution_date && (
+                  {schedule.next_execution && (
                     <div className="text-xs text-muted-foreground">
-                      Next execution: {new Date(schedule.next_execution_date).toLocaleDateString()}
+                      Next execution: {new Date(schedule.next_execution).toLocaleDateString()}
                     </div>
                   )}
                 </div>
@@ -387,11 +387,11 @@ export default function AutoInvestPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handlePauseSchedule(schedule.auto_invest_id)}
+                      onClick={() => handlePauseSchedule(schedule.id)}
                       className="flex-1"
-                      disabled={!accountId || loadingAction?.id === schedule.auto_invest_id}
+                      disabled={!accountId || loadingAction?.id === schedule.id}
                     >
-                      {loadingAction?.id === schedule.auto_invest_id && loadingAction.type === 'pause' ? (
+                      {loadingAction?.id === schedule.id && loadingAction.type === 'pause' ? (
                         <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                       ) : (
                         <Pause className="h-3 w-3 mr-1" />
@@ -403,11 +403,11 @@ export default function AutoInvestPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleResumeSchedule(schedule.auto_invest_id)}
+                      onClick={() => handleResumeSchedule(schedule.id)}
                       className="flex-1"
-                      disabled={!accountId || loadingAction?.id === schedule.auto_invest_id}
+                      disabled={!accountId || loadingAction?.id === schedule.id}
                     >
-                      {loadingAction?.id === schedule.auto_invest_id && loadingAction.type === 'resume' ? (
+                      {loadingAction?.id === schedule.id && loadingAction.type === 'resume' ? (
                         <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                       ) : (
                         <Play className="h-3 w-3 mr-1" />
@@ -422,7 +422,7 @@ export default function AutoInvestPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDeleteSchedule(schedule.auto_invest_id)}
+                    onClick={() => handleDeleteSchedule(schedule.id)}
                     className="text-destructive hover:text-destructive"
                     disabled={!accountId}
                   >
@@ -451,7 +451,7 @@ export default function AutoInvestPage() {
         onSubmit={
           editingSchedule
             ? async (data: CreateScheduleData) => {
-                const scheduleIdToUpdate = editingScheduleIdRef.current || editingSchedule?.auto_invest_id;
+                const scheduleIdToUpdate = editingScheduleIdRef.current || editingSchedule?.id;
                 if (!scheduleIdToUpdate) {
                   toast.error('Schedule ID not found');
                   return;

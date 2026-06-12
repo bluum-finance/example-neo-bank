@@ -230,8 +230,8 @@ export function GoalModal({
         monthly_contribution: monthlyContribution || undefined,
       };
 
-      if (goal?.goal_id) {
-        await WidgetService.updateFinancialGoal(accountId, goal.goal_id, payload);
+      if (goal?.id) {
+        await WidgetService.updateFinancialGoal(accountId, goal.id, payload);
         toast.success('Goal updated successfully');
       } else {
         await WidgetService.createFinancialGoal(accountId, payload);
@@ -344,8 +344,8 @@ export function LifeEventModal({
         estimated_cost: estimatedCost,
       };
 
-      if (event?.event_id) {
-        await LifeEventService.updateLifeEvent(accountId, event.event_id, payload);
+      if (event?.id) {
+        await LifeEventService.updateLifeEvent(accountId, event.id, payload);
         toast.success('Life event updated successfully');
       } else {
         await LifeEventService.createLifeEvent(accountId, payload);
@@ -447,8 +447,8 @@ export function ExternalAccountModal({
         is_asset: isAsset,
       };
 
-      if (account?.external_account_id) {
-        await ExternalAccountService.updateExternalAccount(accountId, account.external_account_id, payload);
+      if (account?.id) {
+        await ExternalAccountService.updateExternalAccount(accountId, account.id, payload);
         toast.success('External account updated successfully');
       } else {
         await ExternalAccountService.createExternalAccount(accountId, payload);

@@ -98,9 +98,9 @@ export function MarketMoversOverview() {
   }, [quotes]);
 
   const toMover = (q: AssetQuote): MarketMover => ({
-    symbol: q.symbol,
-    name: q.name || q.symbol,
-    category: q.symbol,
+    symbol: q.symbol ?? '',
+    name: q.name || q.symbol || '',
+    category: q.symbol ?? '',
     price: q.price != null ? displayAmount(q.price, q.currency as CurrencyCode) : '—',
     change: q.changePercent != null ? `${Math.abs(q.changePercent).toFixed(2)}%` : '—',
     isPositive: q.changePercent == null ? null : q.changePercent >= 0,

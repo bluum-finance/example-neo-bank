@@ -93,8 +93,8 @@ export function Watchlist() {
   };
 
   const items: WatchlistItemProps[] = (quotes.length > 0 ? quotes : FALLBACK_DATA).map((q) => ({
-    name: q.name || q.symbol,
-    symbol: q.symbol,
+    name: q.name || q.symbol || '',
+    symbol: q.symbol ?? '',
     price: formatPrice(q),
     change: formatChange(q),
     isPositive: (q.changePercent ?? 0) >= 0,

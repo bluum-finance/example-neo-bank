@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { ChevronDown, ArrowRight, Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
+import type { OrderRequest } from '@/lib/bluum-api.types';
 import { InvestmentService } from '@/services/investment.service';
 import { useUser } from '@/store/user.store';
 import { useAccountStore } from '@/store/account.store';
@@ -76,18 +77,18 @@ export function QuickTrade() {
       setAsset(null);
       try {
         const data = await InvestmentService.getAssetBySymbol(sym.trim().toUpperCase(), hint ? { market: hint } : undefined);
-        const price = data?.current_price ?? data?.price ?? data?.data?.current_price ?? data?.data?.price ?? null;
-        const currency = (data?.currency ?? 'USD').toUpperCase() as CurrencyCode;
+        const price = data.price ?? null;
+        const currency = (data.currency ?? 'USD').toUpperCase() as CurrencyCode;
         setAsset({
-          symbol: data?.symbol ?? sym.toUpperCase(),
-          name: data?.name ?? data?.display_name ?? sym.toUpperCase(),
-          price: price ? parseFloat(price) : null,
+          symbol: data.symbol ?? sym.toUpperCase(),
+          name: data.name ?? data.display_name ?? sym.toUpperCase(),
+          price: price != null ? Number(price) : null,
           currency: currency || 'USD',
-          market: data?.market ?? undefined,
+          market: data.market ?? undefined,
         });
         setLastLookupKey(`${sym.trim().toUpperCase()}|${hint}`);
-        if (orderType === 'limit' && price) {
-          setLimitPrice(parseFloat(price).toFixed(2));
+        if (orderType === 'limit' && price != null) {
+          setLimitPrice(Number(price).toFixed(2));
         }
       } catch {
         toast.error(`Asset "${sym.toUpperCase()}" not found.`);
@@ -136,18 +137,18 @@ export function QuickTrade() {
     if (!accountId || !asset) return;
     setPlacing(true);
     try {
-      const orderData: any = {
+      const orderData: OrderRequest = {
         symbol: asset.symbol,
         side,
         type: orderType === 'stop' ? 'stop' : orderType,
         time_in_force: 'day',
-        qty: parseFloat(shares).toFixed(4),
+        quantity: parseFloat(shares).toFixed(4),
       };
       if (orderType === 'limit') {
         orderData.limit_price = parseFloat(limitPrice).toFixed(2);
       }
       const result = await InvestmentService.placeOrder(accountId, orderData);
-      setOrderId(result?.id ?? result?.order_id ?? result?.data?.id ?? '—');
+      setOrderId(result.id ?? '—');
 
       // Refetch positions and account balance to reflect the trade
       const { fetchAccount, fetchPositions } = useAccountStore.getState();

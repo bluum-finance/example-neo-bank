@@ -9,6 +9,22 @@ import { useUser } from '@/store/user.store';
 
 export type AssetCategory = 'all' | 'treasury' | 'stocks' | 'bonds';
 
+function positionQuantity(pos: Position): number {
+  return parseFloat(pos.quantity || '0') || 0;
+}
+
+function positionValue(pos: Position): number {
+  return parseFloat(pos.market_value || '0') || 0;
+}
+
+function positionPrice(pos: Position): number {
+  return parseFloat(pos.current_price || '0') || 0;
+}
+
+function positionGain(pos: Position): number {
+  return parseFloat(pos.unrealized_pl || '0') || 0;
+}
+
 interface ExtendedPosition extends Position {
   assetType?: 'Money Market' | 'Ultra-Short Bond' | 'US Equity ETF' | 'Bond ETF' | 'Treasury Bill ETF' | 'Stock';
   category?: AssetCategory;
@@ -32,7 +48,7 @@ export function HoldingsWidget() {
           const positions = await InvestmentService.getPositions(accountId);
           if (positions && positions.length > 0) {
             // Transform positions to ExtendedPosition format
-            const totalValue = positions.reduce((sum, pos) => sum + (pos.value || 0), 0);
+            const totalValue = positions.reduce((sum, pos) => sum + positionValue(pos), 0);
             const extendedPositions: ExtendedPosition[] = positions.map((pos, index) => {
               // Determine category based on symbol/name
               const symbol = pos.symbol.toUpperCase();
@@ -58,8 +74,8 @@ export function HoldingsWidget() {
                 ...pos,
                 assetType,
                 category,
-                todayChange: pos.gain || 0,
-                allocation: totalValue > 0 ? ((pos.value || 0) / totalValue) * 100 : 0,
+                todayChange: positionGain(pos),
+                allocation: totalValue > 0 ? (positionValue(pos) / totalValue) * 100 : 0,
                 iconColor,
               };
             });
@@ -86,7 +102,7 @@ export function HoldingsWidget() {
   const filteredHoldings = holdings;
 
   const totalValue = useMemo(() => {
-    return filteredHoldings.reduce((sum, holding) => sum + (holding.value || 0), 0);
+    return filteredHoldings.reduce((sum, holding) => sum + positionValue(holding), 0);
   }, [filteredHoldings]);
 
   const { displayAmount } = useCurrency();
@@ -160,7 +176,7 @@ export function HoldingsWidget() {
                           {ticker}
                         </div>
                         <div>
-                          <div className="font-medium text-foreground">{holding.name}</div>
+                          <div className="font-medium text-foreground">{holding.symbol}</div>
                           <div className="text-xs text-muted-foreground">
                             {holding.symbol}
                             {holding.assetType && ` • ${getAssetTypeLabel(holding)}`}
@@ -179,15 +195,15 @@ export function HoldingsWidget() {
                     <div className="grid grid-cols-2 gap-3 text-sm text-muted-foreground">
                       <div>
                         <div className="text-xs uppercase tracking-wider text-muted-foreground">Value</div>
-                        <div className="text-foreground font-semibold">{formatCurrency(holding.value || 0, holding.currency)}</div>
+                        <div className="text-foreground font-semibold">{formatCurrency(positionValue(holding), holding.currency)}</div>
                       </div>
                       <div>
                         <div className="text-xs uppercase tracking-wider text-muted-foreground">Shares</div>
-                        <div className="text-foreground font-semibold">{formatNumber(holding.shares || 0, 2)}</div>
+                        <div className="text-foreground font-semibold">{formatNumber(positionQuantity(holding), 2)}</div>
                       </div>
                       <div>
                         <div className="text-xs uppercase tracking-wider text-muted-foreground">Price</div>
-                        <div className="text-foreground font-semibold">{formatCurrency(holding.currentPrice || 0, holding.currency)}</div>
+                        <div className="text-foreground font-semibold">{formatCurrency(positionPrice(holding), holding.currency)}</div>
                       </div>
                       <div>
                         <div className="text-xs uppercase tracking-wider text-muted-foreground">Allocation</div>
@@ -240,7 +256,7 @@ export function HoldingsWidget() {
                               {ticker}
                             </div>
                             <div>
-                              <div className="font-medium text-foreground">{holding.name}</div>
+                              <div className="font-medium text-foreground">{holding.symbol}</div>
                               <div className="text-xs text-muted-foreground">
                                 {holding.symbol}
                                 {holding.assetType && ` • ${getAssetTypeLabel(holding)}`}
@@ -251,17 +267,17 @@ export function HoldingsWidget() {
 
                         {/* VALUE */}
                         <td className="py-4 px-4 text-right">
-                          <div className="font-semibold text-foreground">{formatCurrency(holding.value || 0, holding.currency)}</div>
+                          <div className="font-semibold text-foreground">{formatCurrency(positionValue(holding), holding.currency)}</div>
                         </td>
 
                         {/* SHARES */}
                         <td className="py-4 px-4 text-right">
-                          <div className="text-foreground">{formatNumber(holding.shares || 0, 2)}</div>
+                          <div className="text-foreground">{formatNumber(positionQuantity(holding), 2)}</div>
                         </td>
 
                         {/* PRICE */}
                         <td className="py-4 px-4 text-right">
-                          <div className="text-foreground">{formatCurrency(holding.currentPrice || 0, holding.currency)}</div>
+                          <div className="text-foreground">{formatCurrency(positionPrice(holding), holding.currency)}</div>
                         </td>
 
                         {/* TODAY */}

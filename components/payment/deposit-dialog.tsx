@@ -14,7 +14,13 @@ import { PlaidLink } from './plaid/plaid-link';
 import { ManualBankLink } from './manual-bank-link';
 import { useAccountStore } from '@/store/account.store';
 import { cn } from '@/lib/utils';
-import type { ExternalDepositResponse, AlpacaAchDetails, AlpacaWireDetails, ManualBankTransferDetails } from '@/lib/bluum-api.types';
+import type {
+  ExternalDepositResponse,
+  AlpacaAchDetails,
+  AlpacaWireDetails,
+  ManualBankTransferDetails,
+  LegacyManualBankTransferDetails,
+} from '@/lib/bluum-api.types';
 
 interface DepositDialogProps {
   accountId: string;
@@ -311,9 +317,12 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
     const currencySymbol = currency === 'NGN' ? '₦' : '$';
 
     // Type-safe access to method_details based on method
-    const achDetails = responseMethod === 'ach' && methodDetails ? methodDetails as AlpacaAchDetails : null;
-    const wireDetails = responseMethod === 'wire' && methodDetails ? methodDetails as AlpacaWireDetails : null;
-    const manualDetails = responseMethod === 'manual_bank_transfer' && methodDetails ? methodDetails as ManualBankTransferDetails : null;
+    const achDetails = responseMethod === 'ach' && methodDetails ? (methodDetails as AlpacaAchDetails) : null;
+    const wireDetails = responseMethod === 'wire' && methodDetails ? (methodDetails as AlpacaWireDetails) : null;
+    const manualDetails =
+      responseMethod === 'manual_bank_transfer' && methodDetails
+        ? (methodDetails as ManualBankTransferDetails & LegacyManualBankTransferDetails)
+        : null;
 
     return (
       <div className="flex flex-col gap-4">
@@ -346,10 +355,10 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
           <div className="bg-[#07120F] border border-[#1F4536]/70 rounded-xl p-5 space-y-3">
             <h4 className="text-white font-semibold">ACH transfer details</h4>
             <div className="text-sm text-[#9DB9AB]">
-              Transfer ID: <span className="text-white">{achDetails.transferId || 'Pending assignment'}</span>
+              Transfer ID: <span className="text-white">{achDetails.transfer_id || achDetails.transferId || 'Pending assignment'}</span>
             </div>
             <div className="text-sm text-[#9DB9AB]">
-              Provider status: <span className="text-white">{achDetails.alpacaStatus || 'Pending'}</span>
+              Provider status: <span className="text-white">{achDetails.alpaca_status || achDetails.alpacaStatus || 'Pending'}</span>
             </div>
           </div>
         )}
@@ -357,9 +366,9 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
         {wireDetails && (
           <div className="bg-[#07120F] border border-[#1F4536]/70 rounded-xl p-5 space-y-3">
             <h4 className="text-white font-semibold">Wire instructions</h4>
-            {wireDetails.fundingDetails && wireDetails.fundingDetails.length > 0 ? (
+            {wireDetails.funding_details && wireDetails.funding_details.length > 0 ? (
               <div className="space-y-3 text-sm">
-                {wireDetails.fundingDetails.map((detail, index) => (
+                {wireDetails.funding_details.map((detail, index) => (
                   <div key={`${detail.account_number || 'wire'}-${index}`} className="rounded-lg border border-[#1F4536] p-3">
                     <div className="text-[#9DB9AB]">Bank</div>
                     <div className="text-white font-semibold">{detail.bank_name || 'Provided by bank'}</div>
@@ -382,33 +391,48 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
           <div className="bg-[#07120F] border border-[#1F4536]/70 rounded-xl p-5 space-y-3">
             <h4 className="text-white font-semibold">Digital wallet instructions</h4>
             <div className="text-sm text-[#9DB9AB]">
-              Reference code: <span className="text-white font-semibold">{manualDetails.referenceCode || 'Pending assignment'}</span>
+              Reference code: <span className="text-white font-semibold">{manualDetails.reference_code || manualDetails.referenceCode || 'Pending assignment'}</span>
             </div>
-            {manualDetails.bankDetails && (
+            {(manualDetails.bank_details || manualDetails.bankDetails) && (
               <div className="space-y-2 text-sm">
-                {manualDetails.bankDetails.bankName && (
-                  <div className="text-[#9DB9AB]">Bank: <span className="text-white">{manualDetails.bankDetails.bankName}</span></div>
+                {(() => {
+                  type BankRow = ManualBankTransferDetails['bank_details'] & {
+                    bankName?: string;
+                    accountName?: string;
+                    accountNumber?: string;
+                    routingNumber?: string;
+                    swiftCode?: string;
+                  };
+                  const bank = (manualDetails.bank_details ?? manualDetails.bankDetails) as BankRow | undefined;
+                  if (!bank) return null;
+                  return (
+                    <>
+                {(bank.bank_name || bank.bankName) && (
+                  <div className="text-[#9DB9AB]">Bank: <span className="text-white">{bank.bank_name || bank.bankName}</span></div>
                 )}
-                {manualDetails.bankDetails.accountName && (
-                  <div className="text-[#9DB9AB]">Account Name: <span className="text-white">{manualDetails.bankDetails.accountName}</span></div>
+                {(bank.account_name || bank.accountName) && (
+                  <div className="text-[#9DB9AB]">Account Name: <span className="text-white">{bank.account_name || bank.accountName}</span></div>
                 )}
-                {manualDetails.bankDetails.accountNumber && (
-                  <div className="text-[#9DB9AB]">Account Number: <span className="text-white">{manualDetails.bankDetails.accountNumber}</span></div>
+                {(bank.account_number || bank.accountNumber) && (
+                  <div className="text-[#9DB9AB]">Account Number: <span className="text-white">{bank.account_number || bank.accountNumber}</span></div>
                 )}
-                {manualDetails.bankDetails.routingNumber && (
-                  <div className="text-[#9DB9AB]">Routing Number: <span className="text-white">{manualDetails.bankDetails.routingNumber}</span></div>
+                {(bank.routing_number || bank.routingNumber) && (
+                  <div className="text-[#9DB9AB]">Routing Number: <span className="text-white">{bank.routing_number || bank.routingNumber}</span></div>
                 )}
-                {manualDetails.bankDetails.swiftCode && (
-                  <div className="text-[#9DB9AB]">SWIFT: <span className="text-white">{manualDetails.bankDetails.swiftCode}</span></div>
-                )}
-                {manualDetails.bankDetails.instructions && (
-                  <div className="text-[#9DB9AB]">Instructions: <span className="text-white">{manualDetails.bankDetails.instructions}</span></div>
-                )}
+                      {(bank.swift_code || bank.swiftCode) && (
+                        <div className="text-[#9DB9AB]">SWIFT: <span className="text-white">{bank.swift_code || bank.swiftCode}</span></div>
+                      )}
+                      {bank.instructions && (
+                        <div className="text-[#9DB9AB]">Instructions: <span className="text-white">{bank.instructions}</span></div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             )}
-            {manualDetails.expiresAt && (
+            {(manualDetails.expires_at || manualDetails.expiresAt) && (
               <div className="text-sm text-[#9DB9AB]">
-                Expires: <span className="text-white">{new Date(manualDetails.expiresAt).toLocaleString()}</span>
+                Expires: <span className="text-white">{new Date(String(manualDetails.expires_at || manualDetails.expiresAt)).toLocaleString()}</span>
               </div>
             )}
           </div>

@@ -15,7 +15,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 export interface ExternalAccount {
-  external_account_id: string;
+  id: string;
   account_id: string;
   name: string;
   account_type: string;
@@ -29,10 +29,6 @@ export interface ExternalAccount {
   updated_at?: string;
 }
 
-export interface ExternalAccountListResponse {
-  external_accounts: ExternalAccount[];
-  total_count: number;
-}
 
 export interface CreateExternalAccountRequest {
   name: string;
@@ -92,7 +88,7 @@ export class ExternalAccountService {
       is_asset?: boolean;
       account_type?: string;
     }
-  ): Promise<ExternalAccountListResponse> {
+  ): Promise<ExternalAccount[]> {
     const queryParams = new URLSearchParams();
     queryParams.append('account_id', accountId);
     if (filters?.status) queryParams.append('status', filters.status);
@@ -100,7 +96,7 @@ export class ExternalAccountService {
     if (filters?.account_type) queryParams.append('account_type', filters.account_type);
 
     const response = await fetch(`/api/wealth/external-accounts?${queryParams.toString()}`);
-    return handleResponse<ExternalAccountListResponse>(response);
+    return handleResponse<ExternalAccount[]>(response);
   }
 
   /**

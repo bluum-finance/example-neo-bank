@@ -25,8 +25,8 @@ export async function GET(request: NextRequest) {
       params.event_type = eventType;
     }
 
-    const response = await bluumApi.listLifeEvents(accountId, params);
-    return NextResponse.json(response);
+    const events = await bluumApi.listLifeEvents(accountId, params);
+    return NextResponse.json(events);
   } catch (error: any) {
     return NextResponse.json(
       {
@@ -55,14 +55,6 @@ export async function POST(request: NextRequest) {
 
     if (!body.event_type) {
       return NextResponse.json({ error: 'event_type is required' }, { status: 400 });
-    }
-
-    if (!body.expected_date) {
-      return NextResponse.json({ error: 'expected_date is required' }, { status: 400 });
-    }
-
-    if (!body.estimated_cost) {
-      return NextResponse.json({ error: 'estimated_cost is required' }, { status: 400 });
     }
 
     const eventData = {

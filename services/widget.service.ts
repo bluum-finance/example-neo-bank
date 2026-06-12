@@ -13,7 +13,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json();
 }
 
-export interface Insight {
+export interface DashboardInsight {
   id: string;
   type: 'success' | 'warning';
   text: string;
@@ -40,7 +40,7 @@ export interface Account {
 
 // API Response Types - match API contract exactly
 export interface FinancialGoal {
-  goal_id: string;
+  id: string;
   name: string;
   goal_type: 'retirement' | 'education' | 'emergency' | 'wealth_growth' | 'home_purchase' | 'custom';
   target_amount: string;
@@ -79,8 +79,8 @@ export interface RecentActivity {
 }
 
 // API Response Types
-export interface Insight {
-  insight_id: string;
+export interface WealthInsight {
+  id: string;
   category: 'all' | 'opportunity' | 'risk' | 'tax' | 'rebalancing';
   title: string;
   summary: string;
@@ -94,7 +94,7 @@ export interface Insight {
 }
 
 export interface Recommendation {
-  recommendation_id: string;
+  id: string;
   type: 'allocation' | 'security' | 'strategy';
   title: string;
   rationale: string;
@@ -108,7 +108,7 @@ export interface Recommendation {
 }
 
 export interface WidgetInsightsResponse {
-  insights: Insight[];
+  insights: WealthInsight[];
   recommendations: Recommendation[];
 }
 
@@ -200,10 +200,10 @@ export class WidgetService {
   /**
    * Get insights data for InsightsWidget
    */
-  static async getInsights(accountId?: string): Promise<Insight[]> {
+  static async getInsights(accountId?: string): Promise<DashboardInsight[]> {
     const queryParams = accountId ? `?account_id=${encodeURIComponent(accountId)}` : '';
     const response = await fetch(`/api/widget/insights${queryParams}`);
-    return handleResponse<Insight[]>(response);
+    return handleResponse<DashboardInsight[]>(response);
   }
 
   /**

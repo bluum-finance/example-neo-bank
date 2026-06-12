@@ -15,7 +15,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 export interface AutoInvestSchedule {
-  auto_invest_id: string;
+  id: string;
   name: string;
   portfolio_id: string;
   funding_source_id: string;
@@ -30,15 +30,10 @@ export interface AutoInvestSchedule {
   allocation_rule: 'ips_target' | 'custom';
   start_date: string;
   status: 'active' | 'paused' | 'completed' | 'cancelled';
-  next_execution_date?: string;
-  last_execution_date?: string;
+  next_execution?: string;
+  last_execution?: string;
   created_at?: string;
   updated_at?: string;
-}
-
-export interface AutoInvestSchedulesResponse {
-  schedules: AutoInvestSchedule[];
-  total_count: number;
 }
 
 export class AutoInvestService {
@@ -67,8 +62,7 @@ export class AutoInvestService {
     }
 
     const response = await fetch(`/api/wealth/auto-invest?${queryParams.toString()}`);
-    const data = await handleResponse<AutoInvestSchedulesResponse>(response);
-    return data.schedules || [];
+    return handleResponse<AutoInvestSchedule[]>(response);
   }
 
   /**

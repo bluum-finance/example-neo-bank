@@ -24,8 +24,8 @@ export async function GET(
     switch (widgetType) {
       case 'financial-goals': {
         try {
-          const response = await bluumApi.getGoals(accountId);
-          return NextResponse.json(response || []);
+          const goals = await bluumApi.getGoals(accountId);
+          return NextResponse.json(goals ?? []);
         } catch (error: any) {
           if (error.response?.status === 404) {
             return NextResponse.json([]);

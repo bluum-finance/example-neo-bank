@@ -3,14 +3,51 @@
 import React, { useEffect } from 'react';
 import { ArrowUpRight, History } from 'lucide-react';
 import Link from 'next/link';
-import { type Position } from '@/services/investment.service';
+import type { Position } from '@/lib/bluum-api.types';
 import { useAccountStore } from '@/store/account.store';
 import { useCurrency, type CurrencyCode } from '@/lib/hooks/use-currency';
 
+function parseDecimal(value?: string | null): number {
+  return parseFloat(value || '0') || 0;
+}
+
 const FALLBACK_POSITIONS: Position[] = [
-  { symbol: 'MSFT', name: 'Microsoft Corp.', currency: 'USD', shares: 10, currentPrice: 380.25, purchasePrice: 375.00, value: 3802.50, gain: 52.50, gainPercent: 1.40 },
-  { symbol: 'AAPL', name: 'Apple Inc.', currency: 'USD', shares: 15, currentPrice: 175.50, purchasePrice: 165.00, value: 2632.50, gain: 157.50, gainPercent: 6.36 },
-  { symbol: 'NVDA', name: 'Nvidia Corp.', currency: 'USD', shares: 5, currentPrice: 501.12, purchasePrice: 480.00, value: 2505.60, gain: 105.60, gainPercent: 4.42 },
+  {
+    id: 'pos_msft',
+    investor_id: 'demo',
+    symbol: 'MSFT',
+    currency: 'USD',
+    quantity: '10',
+    average_cost_basis: '375.00',
+    current_price: '380.25',
+    market_value: '3802.50',
+    unrealized_pl: '52.50',
+    unrealized_pl_percent: '1.40',
+  },
+  {
+    id: 'pos_aapl',
+    investor_id: 'demo',
+    symbol: 'AAPL',
+    currency: 'USD',
+    quantity: '15',
+    average_cost_basis: '165.00',
+    current_price: '175.50',
+    market_value: '2632.50',
+    unrealized_pl: '157.50',
+    unrealized_pl_percent: '6.36',
+  },
+  {
+    id: 'pos_nvda',
+    investor_id: 'demo',
+    symbol: 'NVDA',
+    currency: 'USD',
+    quantity: '5',
+    average_cost_basis: '480.00',
+    current_price: '501.12',
+    market_value: '2505.60',
+    unrealized_pl: '105.60',
+    unrealized_pl_percent: '4.42',
+  },
 ];
 
 export function RecentTrades() {
@@ -62,7 +99,7 @@ export function RecentTrades() {
                 <td colSpan={4} className="py-8 text-center text-sm text-[#a1bead]">Loading positions...</td>
               </tr>
             ) : (
-              positions.map((position, index) => (
+              displayPositions.map((position, index) => (
                 <tr key={`${position.symbol}-${index}`} className="group transition-colors hover:bg-white/5">
                   <td className="py-3 font-normal text-white sm:text-sm">
                     <Link href={`/assets/${position.symbol.toLowerCase()}`} className="hover:text-[#30d158] transition-colors">
@@ -70,13 +107,13 @@ export function RecentTrades() {
                     </Link>
                   </td>
                   <td className="py-3 font-normal text-white/90 tabular-nums sm:text-sm">
-                    {position.shares}
+                    {parseDecimal(position.quantity)}
                   </td>
                   <td className="py-3 text-right text-white/90 tabular-nums sm:text-sm">
-                    {displayAmount(position.currentPrice, position.currency as CurrencyCode)}
+                    {displayAmount(parseDecimal(position.current_price), position.currency as CurrencyCode)}
                   </td>
                   <td className="py-3 text-right text-white/90 tabular-nums sm:text-sm">
-                    {displayAmount(position.value, position.currency as CurrencyCode)}
+                    {displayAmount(parseDecimal(position.market_value), position.currency as CurrencyCode)}
                   </td>
                 </tr>
               ))

@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 // ─── Types & Constants ────────────────────────────────────────────────────────
 
 export interface ExternalAccount {
-  external_account_id: string;
+  id: string;
   account_id: string;
   name: string;
   account_type: string;
@@ -95,7 +95,7 @@ export function AccountCard({
         </button>
         <button
           aria-label={`Delete ${account.name}`}
-          onClick={() => onDelete?.(account.external_account_id)}
+          onClick={() => onDelete?.(account.id)}
           className="rounded-lg p-2 text-[#B0B8BD] hover:opacity-100 transition-opacity"
         >
           <Trash2 size={14} />

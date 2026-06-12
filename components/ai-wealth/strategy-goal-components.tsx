@@ -85,7 +85,7 @@ export function GoalCard({
         </button>
         <button
           aria-label={`Delete ${goal.name}`}
-          onClick={() => onDelete?.(goal.goal_id)}
+          onClick={() => onDelete?.(goal.id)}
           className="rounded-lg p-2 text-[#B0B8BD] hover:text-red-400 hover:bg-red-400/10 transition-all"
         >
           <Trash2 size={14} />

@@ -152,7 +152,10 @@ export const useAccountStore = create<AccountState>()((set) => ({
 
 // Helper function to calculate portfolio value
 const calculatePortfolioValue = (accountBalance: number, positions: Position[]): number => {
-  const positionsValue = positions.reduce((sum, position) => sum + (position.value || 0), 0);
+  const positionsValue = positions.reduce(
+    (sum, position) => sum + (parseFloat(position.market_value || '0') || 0),
+    0
+  );
   return accountBalance + positionsValue;
 };
 

@@ -102,7 +102,7 @@ export function GoalFormModal({
   };
 
   const handleDelete = async () => {
-    if (!goal?.goal_id || !onDelete) return;
+    if (!goal?.id || !onDelete) return;
     
     if (!confirm(`Are you sure you want to delete "${goal.name}"? This action cannot be undone.`)) {
       return;
@@ -110,7 +110,7 @@ export function GoalFormModal({
 
     setLoading(true);
     try {
-      await onDelete(goal.goal_id);
+      await onDelete(goal.id);
       onOpenChange(false);
     } catch (error) {
       console.error('Failed to delete goal:', error);

@@ -26,7 +26,7 @@ export type LifeEventType =
 export type LifeEventStatus = 'active' | 'completed' | 'archived';
 
 export interface LifeEvent {
-  event_id: string;
+  id: string;
   account_id: string;
   name: string;
   event_type: LifeEventType;
@@ -42,10 +42,6 @@ export interface LifeEvent {
   [key: string]: any;
 }
 
-export interface LifeEventListResponse {
-  life_events: LifeEvent[];
-  total_count: number;
-}
 
 export interface CreateLifeEventRequest {
   name: string;
@@ -97,14 +93,14 @@ export class LifeEventService {
       status?: LifeEventStatus;
       event_type?: LifeEventType;
     }
-  ): Promise<LifeEventListResponse> {
+  ): Promise<LifeEvent[]> {
     const queryParams = new URLSearchParams();
     queryParams.append('account_id', accountId);
     if (filters?.status) queryParams.append('status', filters.status);
     if (filters?.event_type) queryParams.append('event_type', filters.event_type);
 
     const response = await fetch(`/api/wealth/life-events?${queryParams.toString()}`);
-    return handleResponse<LifeEventListResponse>(response);
+    return handleResponse<LifeEvent[]>(response);
   }
 
   /**

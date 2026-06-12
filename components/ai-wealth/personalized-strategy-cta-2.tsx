@@ -111,7 +111,7 @@ export function PersonalizedStrategyCTA2() {
       setLifeEventsLoading(true);
       try {
         const response = await LifeEventService.listLifeEvents(accountId, { status: 'active' });
-        setLifeEvents(response.life_events || []);
+        setLifeEvents(response);
       } catch (error) {
         console.error('Failed to load life events:', error);
         setLifeEvents([]);
@@ -123,7 +123,7 @@ export function PersonalizedStrategyCTA2() {
       setExternalAccountsLoading(true);
       try {
         const response = await ExternalAccountService.listExternalAccounts(accountId, { status: 'active' });
-        setExternalAccounts(response.external_accounts || []);
+        setExternalAccounts(response);
       } catch (error) {
         console.error('Failed to load external accounts:', error);
         setExternalAccounts([]);
@@ -190,24 +190,24 @@ export function PersonalizedStrategyCTA2() {
     const accountId = user?.externalAccountId;
     if (!accountId) return;
     const response = await LifeEventService.listLifeEvents(accountId, { status: 'active' });
-    setLifeEvents(response.life_events || []);
+    setLifeEvents(response);
   };
 
   const handleSaveAccount = async () => {
     const accountId = user?.externalAccountId;
     if (!accountId) return;
     const response = await ExternalAccountService.listExternalAccounts(accountId, { status: 'active' });
-    setExternalAccounts(response.external_accounts || []);
+    setExternalAccounts(response);
   };
 
   const handleDeleteGoal = async (goal: FinancialGoal) => {
     const accountId = user?.externalAccountId;
     if (!accountId) return;
     if (!window.confirm(`Remove goal "${goal.name}"?`)) return;
-    setDeletingId(goal.goal_id);
+    setDeletingId(goal.id);
     try {
-      await WidgetService.deleteFinancialGoal(accountId, goal.goal_id);
-      setGoals((prev) => prev.filter((g) => g.goal_id !== goal.goal_id));
+      await WidgetService.deleteFinancialGoal(accountId, goal.id);
+      setGoals((prev) => prev.filter((g) => g.id !== goal.id));
       toast.success('Goal removed');
     } catch {
       toast.error('Could not remove goal');
@@ -220,10 +220,10 @@ export function PersonalizedStrategyCTA2() {
     const accountId = user?.externalAccountId;
     if (!accountId) return;
     if (!window.confirm(`Remove life event "${event.name}"?`)) return;
-    setDeletingId(event.event_id);
+    setDeletingId(event.id);
     try {
-      await LifeEventService.deleteLifeEvent(accountId, event.event_id);
-      setLifeEvents((prev) => prev.filter((e) => e.event_id !== event.event_id));
+      await LifeEventService.deleteLifeEvent(accountId, event.id);
+      setLifeEvents((prev) => prev.filter((e) => e.id !== event.id));
       toast.success('Life event removed');
     } catch {
       toast.error('Could not remove life event');
@@ -236,10 +236,10 @@ export function PersonalizedStrategyCTA2() {
     const accountId = user?.externalAccountId;
     if (!accountId) return;
     if (!window.confirm(`Remove "${account.name}"?`)) return;
-    setDeletingId(account.external_account_id);
+    setDeletingId(account.id);
     try {
-      await ExternalAccountService.deleteExternalAccount(accountId, account.external_account_id);
-      setExternalAccounts((prev) => prev.filter((a) => a.external_account_id !== account.external_account_id));
+      await ExternalAccountService.deleteExternalAccount(accountId, account.id);
+      setExternalAccounts((prev) => prev.filter((a) => a.id !== account.id));
       toast.success('External account removed');
     } catch {
       toast.error('Could not remove account');
@@ -357,7 +357,7 @@ export function PersonalizedStrategyCTA2() {
                     <div className="px-6 py-8 text-center text-sm text-[#8DA69B]">No goals added yet</div>
                   ) : (
                     goals.map((goal, index) => (
-                      <div key={goal.goal_id} className={`flex px-4 pr-8 ${index === 0 ? '' : 'border-t border-white/5'} items-start`}>
+                      <div key={goal.id} className={`flex px-4 pr-8 ${index === 0 ? '' : 'border-t border-white/5'} items-start`}>
                         <div className="flex flex-1 gap-4">
                           <div className="flex-1 px-4 py-[22px] min-w-0">
                             <div className="text-sm font-semibold text-white">{goal.name}</div>
@@ -389,7 +389,7 @@ export function PersonalizedStrategyCTA2() {
                             <button
                               type="button"
                               aria-label={`Delete goal ${goal.name}`}
-                              disabled={deletingId === goal.goal_id}
+                              disabled={deletingId === goal.id}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 void handleDeleteGoal(goal);
@@ -465,7 +465,7 @@ export function PersonalizedStrategyCTA2() {
                     <div className="px-6 py-8 text-center text-sm text-[#8DA69B]">No events added yet</div>
                   ) : (
                     lifeEvents.map((event, index) => (
-                      <div key={event.event_id} className={`flex px-4 pr-8 ${index === 0 ? '' : 'border-t border-white/5'} items-start`}>
+                      <div key={event.id} className={`flex px-4 pr-8 ${index === 0 ? '' : 'border-t border-white/5'} items-start`}>
                         <div className="flex flex-1 gap-4">
                           <div className="flex-1 px-4 py-[22px] min-w-0">
                             <div className="text-sm font-semibold text-white">{event.name}</div>
@@ -494,7 +494,7 @@ export function PersonalizedStrategyCTA2() {
                             <button
                               type="button"
                               aria-label={`Delete life event ${event.name}`}
-                              disabled={deletingId === event.event_id}
+                              disabled={deletingId === event.id}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 void handleDeleteEvent(event);
@@ -572,7 +572,7 @@ export function PersonalizedStrategyCTA2() {
                   ) : (
                     externalAccounts.map((account, index) => (
                       <div
-                        key={account.external_account_id}
+                        key={account.id}
                         className={`flex px-4 pr-8 ${index === 0 ? '' : 'border-t border-white/5'} items-start`}
                       >
                         <div className="flex flex-1 gap-4">
@@ -606,7 +606,7 @@ export function PersonalizedStrategyCTA2() {
                             <button
                               type="button"
                               aria-label={`Delete external account ${account.name}`}
-                              disabled={deletingId === account.external_account_id}
+                              disabled={deletingId === account.id}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 void handleDeleteExternalAccount(account);

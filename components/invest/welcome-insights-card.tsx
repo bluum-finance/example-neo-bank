@@ -5,12 +5,12 @@ import Image from 'next/image';
 import { Info, CheckCircle2, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Insight } from '@/services/widget.service';
+import type { WealthInsight } from '@/services/widget.service';
 import { useUser } from '@/store/user.store';
 import { useState } from 'react';
 
 interface WelcomeInsightsCardProps {
-  insights: Insight[];
+  insights: WealthInsight[];
   insightsLoading?: boolean;
 }
 
@@ -94,7 +94,7 @@ export function WelcomeInsightsCard({ insights, insightsLoading }: WelcomeInsigh
                       };
 
                       return (
-                        <div key={item.insight_id || index}>
+                        <div key={item.id || index}>
                           <div className="flex flex-col gap-2">
                             {/* Header with Icon and Title */}
                             <div className="flex items-center gap-2">

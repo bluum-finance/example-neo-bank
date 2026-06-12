@@ -479,11 +479,11 @@ export function WithdrawalDialog({ accountId, availableBalance, onSuccess, onCan
                     <h4 className="text-white font-semibold">Transfer details</h4>
                     <div className="text-sm text-[#9DB9AB]">
                       Transfer ID:{' '}
-                      <span className="text-white">{details.transferId || 'Pending assignment'}</span>
+                      <span className="text-white">{details.transfer_id || details.transferId || 'Pending assignment'}</span>
                     </div>
                     <div className="text-sm text-[#9DB9AB]">
                       Provider status:{' '}
-                      <span className="text-white">{details.alpacaStatus || 'Pending'}</span>
+                      <span className="text-white">{details.alpaca_status || details.alpacaStatus || 'Pending'}</span>
                     </div>
                   </div>
                   );

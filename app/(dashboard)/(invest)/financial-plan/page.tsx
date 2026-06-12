@@ -78,7 +78,7 @@ export default function FinancialPlanPage() {
     monthly_contribution?: string;
   }): Promise<void> => {
     if (!editingGoal) return;
-    await handleUpdateGoal(editingGoal.goal_id, {
+    await handleUpdateGoal(editingGoal.id, {
       name: goalData.name,
       goal_type: goalData.goal_type,
       target_amount: goalData.target_amount,
@@ -107,7 +107,7 @@ export default function FinancialPlanPage() {
         throw new Error('Account ID not found');
       }
       const updatedGoal = await WidgetService.updateFinancialGoal(accountId, goalId, goalData);
-      setFinancialGoals((prev) => prev.map((goal) => (goal.goal_id === goalId ? updatedGoal : goal)));
+      setFinancialGoals((prev) => prev.map((goal) => (goal.id === goalId ? updatedGoal : goal)));
       setIsModalOpen(false);
       setEditingGoal(null);
       return updatedGoal;
@@ -126,7 +126,7 @@ export default function FinancialPlanPage() {
         throw new Error('Account ID not found');
       }
       await WidgetService.deleteFinancialGoal(accountId, goalId);
-      setFinancialGoals((prev) => prev.filter((goal) => goal.goal_id !== goalId));
+      setFinancialGoals((prev) => prev.filter((goal) => goal.id !== goalId));
       setIsModalOpen(false);
       setEditingGoal(null);
     } catch (error: any) {

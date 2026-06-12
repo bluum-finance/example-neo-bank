@@ -99,7 +99,7 @@ export function FinancialPlan({ goals = [], onGoalClick, loading }: FinancialPla
 
           return (
             <div
-              key={goal.goal_id}
+              key={goal.id}
               className="p-4 rounded-xl flex flex-col gap-3.5 bg-white dark:bg-card border border-gray-100 dark:border-border"
               style={{
                 borderRadius: 12,

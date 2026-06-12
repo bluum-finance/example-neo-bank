@@ -114,14 +114,14 @@ export function PersonalizedStrategyPanel({
       }
 
       if (eventsResult.status === 'fulfilled') {
-        setEvents(eventsResult.value.life_events);
+        setEvents(eventsResult.value);
       } else {
         console.error('Failed to load life events', eventsResult.reason);
         toast.error('Failed to load life events');
       }
 
       if (accountsResult.status === 'fulfilled') {
-        setAccounts(accountsResult.value.external_accounts);
+        setAccounts(accountsResult.value);
       } else {
         console.error('Failed to load external accounts', accountsResult.reason);
         toast.error('Failed to load external accounts');
@@ -220,7 +220,7 @@ export function PersonalizedStrategyPanel({
   function openEditGoal(goal: FinancialGoal) {
     const displayType = Object.entries(GOAL_TYPE_MAP).find(([, v]) => v === goal.goal_type)?.[0] ?? 'Custom';
     setDraftGoal({
-      _goalId: goal.goal_id,
+      _goalId: goal.id,
       name: goal.name,
       goalType: displayType,
       targetDate: goal.target_date ? String(new Date(goal.target_date).getFullYear()) : '',
@@ -247,7 +247,7 @@ export function PersonalizedStrategyPanel({
     try {
       if (goalId) {
         const updated = await WidgetService.updateFinancialGoal(accountId, goalId, payload);
-        setGoals((prev) => prev.map((g) => (g.goal_id === goalId ? updated : g)));
+        setGoals((prev) => prev.map((g) => (g.id === goalId ? updated : g)));
         toast.success('Goal updated');
       } else {
         const created = await WidgetService.createFinancialGoal(accountId, payload);
@@ -266,7 +266,7 @@ export function PersonalizedStrategyPanel({
     if (!accountId) return;
     try {
       await WidgetService.deleteFinancialGoal(accountId, goalId);
-      setGoals((prev) => prev.filter((g) => g.goal_id !== goalId));
+      setGoals((prev) => prev.filter((g) => g.id !== goalId));
       toast.success('Goal deleted');
     } catch (err: any) {
       toast.error(err?.message ?? 'Failed to delete goal');
@@ -283,7 +283,7 @@ export function PersonalizedStrategyPanel({
 
   function openEditEvent(event: LifeEvent) {
     setDraftEvent({
-      _eventId: event.event_id,
+      _eventId: event.id,
       name: event.name,
       eventType: event.event_type,
       estimatedDate: event.expected_date ? String(new Date(event.expected_date).getFullYear()) : '',
@@ -310,7 +310,7 @@ export function PersonalizedStrategyPanel({
     try {
       if (eventId) {
         const updated = await LifeEventService.updateLifeEvent(accountId, eventId, payload);
-        setEvents((prev) => prev.map((e) => (e.event_id === eventId ? updated : e)));
+        setEvents((prev) => prev.map((e) => (e.id === eventId ? updated : e)));
         toast.success('Event updated');
       } else {
         const created = await LifeEventService.createLifeEvent(accountId, payload);
@@ -329,7 +329,7 @@ export function PersonalizedStrategyPanel({
     if (!accountId) return;
     try {
       await LifeEventService.deleteLifeEvent(accountId, eventId);
-      setEvents((prev) => prev.filter((e) => e.event_id !== eventId));
+      setEvents((prev) => prev.filter((e) => e.id !== eventId));
       toast.success('Event deleted');
     } catch (err: any) {
       toast.error(err?.message ?? 'Failed to delete event');
@@ -346,7 +346,7 @@ export function PersonalizedStrategyPanel({
 
   function openEditAccount(account: ExternalAccount) {
     setDraftAccount({
-      _accountId: account.external_account_id,
+      _accountId: account.id,
       name: account.name,
       accountType: account.account_type,
       isAsset: account.is_asset,
@@ -375,7 +375,7 @@ export function PersonalizedStrategyPanel({
     try {
       if (accountIdToUpdate) {
         const updated = await ExternalAccountService.updateExternalAccount(accountId, accountIdToUpdate, payload);
-        setAccounts((prev) => prev.map((a) => (a.external_account_id === accountIdToUpdate ? updated : a)));
+        setAccounts((prev) => prev.map((a) => (a.id === accountIdToUpdate ? updated : a)));
         toast.success('Account updated');
       } else {
         const created = await ExternalAccountService.createExternalAccount(accountId, payload);
@@ -394,7 +394,7 @@ export function PersonalizedStrategyPanel({
     if (!accountId) return;
     try {
       await ExternalAccountService.deleteExternalAccount(accountId, externalAccountId);
-      setAccounts((prev) => prev.filter((a) => a.external_account_id !== externalAccountId));
+      setAccounts((prev) => prev.filter((a) => a.id !== externalAccountId));
       toast.success('Account deleted');
     } catch (err: any) {
       toast.error(err?.message ?? 'Failed to delete account');
@@ -459,7 +459,7 @@ export function PersonalizedStrategyPanel({
                   {goalsLoading ? (
                     <Loader2 className="animate-spin text-[#8DA69B]" size={20} />
                   ) : (
-                    goals.map((goal) => <GoalCard key={goal.goal_id} goal={goal} onEdit={openEditGoal} onDelete={handleDeleteGoal} />)
+                    goals.map((goal) => <GoalCard key={goal.id} goal={goal} onEdit={openEditGoal} onDelete={handleDeleteGoal} />)
                   )}
                   {goals.length === 0 && !goalsLoading && <p className="text-sm text-[#8DA69B]/60">No goals yet.</p>}
                 </div>
@@ -487,7 +487,7 @@ export function PersonalizedStrategyPanel({
                     <Loader2 className="animate-spin text-[#8DA69B]" size={20} />
                   ) : (
                     events.map((event) => (
-                      <EventCard key={event.event_id} event={event} onEdit={openEditEvent} onDelete={handleDeleteEvent} />
+                      <EventCard key={event.id} event={event} onEdit={openEditEvent} onDelete={handleDeleteEvent} />
                     ))
                   )}
                   {events.length === 0 && !eventsLoading && <p className="text-sm text-[#8DA69B]/60">No life events yet.</p>}
@@ -516,7 +516,7 @@ export function PersonalizedStrategyPanel({
                   ) : (
                     accounts.map((account) => (
                       <AccountCard
-                        key={account.external_account_id}
+                        key={account.id}
                         account={account}
                         onEdit={openEditAccount}
                         onDelete={handleDeleteAccount}

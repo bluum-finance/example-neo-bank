@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
       params.account_type = accountType;
     }
 
-    const response = await bluumApi.listExternalAccounts(accountId, params);
-    return NextResponse.json(response);
+    const accounts = await bluumApi.listExternalAccounts(accountId, params);
+    return NextResponse.json(accounts);
   } catch (error: any) {
     return NextResponse.json(
       {

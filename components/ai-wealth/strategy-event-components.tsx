@@ -72,7 +72,7 @@ export function EventCard({
         </button>
         <button
           aria-label={`Delete ${event.name}`}
-          onClick={() => onDelete?.(event.event_id)}
+          onClick={() => onDelete?.(event.id)}
           className="rounded-lg p-2 text-[#B0B8BD] hover:opacity-100 transition-opacity"
         >
           <Trash2 size={14} />

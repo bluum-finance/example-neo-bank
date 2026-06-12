@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError, type AxiosRequestConfig } from 'axios';
+import type { AssetClass, OrderListStatus } from './bluum-api.types';
 import { config } from './config';
 import { unwrapList } from './utils';
 
@@ -73,14 +74,22 @@ class BluumApiClient {
   async searchAssets(params: {
     q?: string;
     status?: 'active' | 'inactive';
-    asset_class?: 'us_equity' | 'crypto' | 'us_option';
+    class?: AssetClass;
+    country?: string;
+    asset_class?: string;
     limit?: number;
   }) {
     const response = await this.client.get('/assets/search', { params });
     return unwrapList(response.data);
   }
 
-  async listAssets(params?: { status?: 'active' | 'inactive'; asset_class?: 'us_equity' | 'crypto' | 'us_option'; tradable?: boolean }) {
+  async listAssets(params?: {
+    status?: 'active' | 'inactive';
+    class?: AssetClass;
+    country?: string;
+    asset_class?: string;
+    tradable?: boolean;
+  }) {
     const response = await this.client.get('/assets', { params });
     return unwrapList(response.data);
   }
@@ -120,9 +129,10 @@ class BluumApiClient {
   async listOrders(
     investorId: string,
     params?: {
-      status?: 'accepted' | 'filled' | 'partially_filled' | 'canceled' | 'rejected';
+      status?: OrderListStatus;
       symbol?: string;
       side?: 'buy' | 'sell';
+      class?: AssetClass | string;
       limit?: number;
       offset?: number;
     }
@@ -248,7 +258,7 @@ class BluumApiClient {
     }
   ) {
     const response = await this.client.get(`/wealth/accounts/${accountId}/goals`, { params });
-    return response.data.goals || [];
+    return unwrapList(response.data);
   }
 
   async getGoal(
@@ -310,8 +320,8 @@ class BluumApiClient {
     data: {
       name: string;
       event_type: 'college' | 'wedding' | 'home_purchase' | 'retirement' | 'major_purchase' | 'career_change' | 'custom';
-      expected_date: string;
-      estimated_cost: string;
+      expected_date?: string;
+      estimated_cost?: string;
       currency?: string;
       recurring?: boolean;
       linked_goal_id?: string;
@@ -330,7 +340,7 @@ class BluumApiClient {
     }
   ) {
     const response = await this.client.get(`/wealth/accounts/${accountId}/life-events`, { params });
-    return response.data;
+    return unwrapList(response.data);
   }
 
   async getLifeEvent(accountId: string, eventId: string) {
@@ -389,7 +399,7 @@ class BluumApiClient {
     }
   ) {
     const response = await this.client.get(`/wealth/accounts/${accountId}/external-accounts`, { params });
-    return response.data;
+    return unwrapList(response.data);
   }
 
   async getExternalAccount(accountId: string, externalAccountId: string) {
@@ -512,7 +522,7 @@ class BluumApiClient {
     }
   ) {
     const response = await this.client.get(`/wealth/accounts/${accountId}/insights`, { params });
-    return response.data.insights || [];
+    return unwrapList(response.data);
   }
 
   async getRecommendations(
@@ -525,7 +535,7 @@ class BluumApiClient {
     const response = await this.client.get(`/wealth/accounts/${accountId}/recommendations`, {
       params,
     });
-    return response.data.recommendations || [];
+    return unwrapList(response.data);
   }
 
   async getPortfolioPerformance(
@@ -590,7 +600,7 @@ class BluumApiClient {
     const response = await this.client.get(`/wealth/accounts/${accountId}/auto-invest`, {
       params,
     });
-    return response.data;
+    return unwrapList(response.data);
   }
 
   async getAutoInvestSchedule(accountId: string, scheduleId: string) {
@@ -612,7 +622,7 @@ class BluumApiClient {
         day_of_week?: number;
         time: string;
       };
-      allocation_rule: 'ips_target' | 'custom';
+      allocation_rule: 'ips_target' | 'equal_weight' | 'custom';
       start_date: string;
     },
     idempotencyKey?: string
@@ -634,7 +644,7 @@ class BluumApiClient {
         day_of_week?: number;
         time: string;
       };
-      allocation_rule: 'ips_target' | 'custom';
+      allocation_rule: 'ips_target' | 'equal_weight' | 'custom';
       status: 'active' | 'paused' | 'completed' | 'cancelled';
     }>
   ) {
