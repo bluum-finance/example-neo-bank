@@ -12,7 +12,7 @@ export const DEPOSIT_METHOD_OPTIONS_BY_CURRENCY: Record<string, DepositMethodOpt
   USD: [
     { id: 'digital_wallet', method: 'manual_bank_transfer', label: 'Digital Wallet' },
     { id: 'ach', method: 'ach', label: 'ACH Transfer' },
-    { id: 'wire', method: 'wire', label: 'Wire Transfer' },
+    { id: 'wire', method: 'wire', label: 'Wire Transfer', disabled: true },
   ],
   NGN: [
     { id: 'digital_wallet', method: 'manual_bank_transfer', label: 'Digital Wallet' },
@@ -35,6 +35,10 @@ export function defaultDepositOptionForCurrency(currency: string): DepositMethod
     method: 'manual_bank_transfer',
     label: 'Digital Wallet',
   };
+}
+
+export function getDepositOptionLabel(currency: string, optionId: string): string {
+  return getDepositMethodOptions(currency).find((o) => o.id === optionId)?.label ?? 'Deposit';
 }
 
 export function getDepositMethodLabel(method: DepositMethod, currency: string): string {

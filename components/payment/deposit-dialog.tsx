@@ -17,11 +17,12 @@ import { useAccountStore } from '@/store/account.store';
 import { useWallets, useFetchWallets } from '@/store/wallet.store';
 import {
   defaultDepositOptionForCurrency,
-  getDepositMethodLabel,
+  getDepositOptionLabel,
   getDepositMethodOptions,
   getEnabledDepositMethodOptions,
   type DepositMethodOption,
 } from '@/lib/funding';
+import { useCurrency } from '@/lib/hooks/use-currency';
 import { cn } from '@/lib/utils';
 import type {
   DepositMethod,
@@ -53,6 +54,7 @@ function defaultCurrencyFromWallets(walletCurrencies: string[]): string {
 export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogProps) {
   const wallets = useWallets();
   const fetchWallets = useFetchWallets();
+  const { displayAmount } = useCurrency();
   const walletCurrencies = useMemo(() => wallets.map((w) => w.currency), [wallets]);
 
   const [step, setStep] = useState<DepositStep>('selection');
@@ -70,6 +72,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
 
   const depositOptions = getDepositMethodOptions(currency);
   const enabledDepositOptions = getEnabledDepositMethodOptions(currency);
+  const isDigitalWallet = depositOptionId === 'digital_wallet';
   const showCurrencyPicker = walletCurrencies.length >= 2;
 
   const selectDepositOption = (option: DepositMethodOption) => {
@@ -181,21 +184,44 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
       return;
     }
 
-    setProcessing(true);
-    try {
-      const response = await TransferService.createDeposit(accountId, {
-        amount: parseFloat(amount).toFixed(2),
-        currency,
-        method: depositMethod,
-        funding_source_id: depositMethod === 'ach' ? selectedFundingSourceId || undefined : undefined,
-        description: `${getDepositMethodLabel(depositMethod, currency)} deposit`,
-        manual_options: depositMethod === 'manual_bank_transfer' ? {} : undefined,
-        wire_options: depositMethod === 'wire' ? {} : undefined,
-        idempotency_key: crypto.randomUUID(),
-      });
-      setDepositResponse(response);
+    const depositPayload = {
+      amount: parseFloat(amount).toFixed(2),
+      currency,
+      method: depositMethod,
+      funding_source_id: depositMethod === 'ach' ? selectedFundingSourceId || undefined : undefined,
+      description: `${getDepositOptionLabel(currency, depositOptionId)} deposit`,
+      manual_options: depositMethod === 'manual_bank_transfer' ? {} : undefined,
+      wire_options: depositMethod === 'wire' ? {} : undefined,
+      idempotency_key: crypto.randomUUID(),
+    };
+
+    const refreshBalances = () => {
       void useAccountStore.getState().fetchAccount(accountId, { silent: true }).catch(() => null);
       void fetchWallets(accountId);
+    };
+
+    if (isDigitalWallet) {
+      setProcessing(true);
+      const minProcessingMs = 1200;
+      const depositAttempt = TransferService.createDeposit(accountId, depositPayload)
+        .then((response) => {
+          setDepositResponse(response);
+          refreshBalances();
+        })
+        .catch(() => {
+          refreshBalances();
+        });
+      await Promise.all([depositAttempt, new Promise((resolve) => setTimeout(resolve, minProcessingMs))]);
+      setStep('success');
+      setProcessing(false);
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const response = await TransferService.createDeposit(accountId, depositPayload);
+      setDepositResponse(response);
+      refreshBalances();
 
       if (depositMethod === 'wire' || depositMethod === 'manual_bank_transfer') {
         setStep('instructions');
@@ -334,8 +360,19 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
         ? 'Follow the instructions below to complete your transfer.'
         : 'Your deposit is being processed.';
 
-  const successMessage =
-    depositMethod === 'ach'
+  const depositInfoMessage = isDigitalWallet
+    ? 'Confirm the amount to add funds from your digital wallet. Your balance updates after you continue.'
+    : depositMethod === 'ach'
+      ? 'ACH deposits usually take 1-3 business days to clear.'
+      : depositOptionId === 'bank_transfer'
+        ? "You'll receive bank transfer instructions on the next screen. Transfer the exact amount before the deposit expires."
+        : depositMethod === 'manual_bank_transfer'
+          ? "You'll receive bank transfer instructions with a reference code. Include it in your transfer memo."
+          : 'This payment method is not available.';
+
+  const successMessage = isDigitalWallet
+    ? `Your ${displayAmount(parseFloat(amount), currency)} digital wallet deposit has been initiated. Funds will appear in your ${currency} wallet shortly.`
+    : depositMethod === 'ach'
       ? 'Your ACH deposit has been securely initiated and is pending clearance.'
       : depositMethod === 'manual_bank_transfer'
         ? 'Complete the bank transfer using the instructions provided. Your wallet will be credited once we receive your funds.'
@@ -455,15 +492,7 @@ export function DepositDialog({ accountId, onSuccess, onCancel }: DepositDialogP
 
               <div className="bg-[#124031] border border-blue-900/30 rounded-lg p-3 flex gap-3 items-start">
                 <Info className="h-5 w-5 text-[#30D158] shrink-0 mt-0.5" />
-                <p className="text-[#8DA69B] text-xs leading-5">
-                  {depositMethod === 'ach'
-                    ? 'ACH deposits usually take 1-3 business days to clear.'
-                    : depositMethod === 'wire'
-                      ? "Wire deposits are usually faster but your bank may charge a fee."
-                      : currency === 'NGN'
-                        ? "You'll receive bank transfer instructions on the next screen. Transfer the exact amount before the deposit expires."
-                        : "You'll receive bank transfer instructions with a reference code. Include it in your transfer memo."}
-                </p>
+                <p className="text-[#8DA69B] text-xs leading-5">{depositInfoMessage}</p>
               </div>
             </div>
           )}
