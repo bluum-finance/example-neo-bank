@@ -54,13 +54,13 @@ function MarketMoverItem({ mover }: MarketMoverItemProps) {
         </div>
 
         <div className="flex flex-col">
-          <h3 className="text-sm font-normal text-white leading-tight">{mover.name}</h3>
-          <p className="text-xs text-[#A1BEAD]">{mover.category}</p>
+          <h3 className="text-sm font-normal text-white leading-tight mb-1">{mover.symbol}</h3>
+          <p className="text-xs text-[#A1BEAD]">{mover.name}</p>
         </div>
       </div>
 
       <div className="flex flex-col items-end tabular-nums">
-        <span className="text-sm font-normal text-white">{mover.price}</span>
+        <span className="text-sm font-normal text-white mb-0.5">{mover.price}</span>
         <div className={cn('flex items-center gap-1 text-xs font-normal', changeColor)}>
           {Icon && <Icon className="h-3 w-3" />}
           <span>{mover.change}</span>

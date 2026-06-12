@@ -5,7 +5,7 @@ export const MARKET_CATALOG = [
   { mic: 'BATS', common_code: 'BATS', exchange: 'BATS Global Markets', country: 'US', currency: 'USD', trading_hours: '09:30–16:00' },
   { mic: 'ARCA', common_code: 'ARCA', exchange: 'NYSE Arca', country: 'US', currency: 'USD', trading_hours: '09:30–16:00' },
   { mic: 'OTC', common_code: 'OTC', exchange: 'OTC Markets', country: 'US', currency: 'USD', trading_hours: '09:30–16:00' },
-  { mic: 'XNSA', common_code: 'NGX', exchange: 'Nigerian Stock Exchange', country: 'NG', currency: 'NGN', trading_hours: '10:00–14:30' },
+  { mic: 'XNSA', common_code: 'NGX', exchange: 'Nigerian Exchange', country: 'NG', currency: 'NGN', trading_hours: '10:00–14:30' },
   {
     mic: 'XJSE',
     common_code: 'JSE',

@@ -65,7 +65,7 @@ export function TradePositionsPanel() {
                         >
                           {p.symbol}
                         </Link>
-                        <span className="text-[10px] text-[#6B7280]">{p.pct}% allocation</span>
+                        <span className="text-[10px] text-muted-foreground">{p.pct}% allocation</span>
                       </div>
                     </div>
                     <div className="text-right shrink-0">

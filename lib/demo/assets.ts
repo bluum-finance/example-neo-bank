@@ -13,29 +13,44 @@ type AssetSeed = {
   class?: AssetClass;
 };
 
+/**
+ * Demo asset catalog — symbols, venues, and currencies match real listings.
+ * Prices and daily moves are approximate snapshots (~Jun 2026 for US/KE; NGX May–Jun 2026).
+ */
 const ASSET_SEEDS: AssetSeed[] = [
-  // US — NASDAQ (5)
-  { symbol: 'AAPL', name: 'Apple Inc.', price: 176.35, change: 2.12, changePercent: 1.2, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
-  { symbol: 'MSFT', name: 'Microsoft Corp.', price: 380.25, change: 5.32, changePercent: 1.4, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
-  { symbol: 'NVDA', name: 'Nvidia Corp.', price: 501.12, change: 17.04, changePercent: 3.5, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
-  { symbol: 'META', name: 'Meta Platforms', price: 312.45, change: 13.12, changePercent: 4.2, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
-  { symbol: 'AMD', name: 'AMD Inc.', price: 115.2, change: 3.23, changePercent: 2.8, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
-  // US — NYSE (extras for movers / watchlist)
-  { symbol: 'TSLA', name: 'Tesla, Inc.', price: 250.65, change: -2.01, changePercent: -0.8, market: 'XNYS', currency: 'USD', country: 'US', class: 'equity' },
-  { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 142.3, change: -4.12, changePercent: -2.9, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
-  { symbol: 'NFLX', name: 'Netflix', price: 420.1, change: -5.04, changePercent: -1.2, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
-  // Nigeria — NGX (5)
-  { symbol: 'MTNN', name: 'MTN Nigeria', price: 185.0, change: 4.5, changePercent: 2.5, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
-  { symbol: 'DANGCEM', name: 'Dangote Cement', price: 285.5, change: -3.2, changePercent: -1.1, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
-  { symbol: 'GTCO', name: 'GTCO Plc', price: 42.85, change: 0.65, changePercent: 1.54, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
-  { symbol: 'ZENITHBANK', name: 'Zenith Bank', price: 38.2, change: 0.45, changePercent: 1.19, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
-  { symbol: 'AIRTELAFRI', name: 'Airtel Africa', price: 2100.0, change: 35.0, changePercent: 1.69, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
-  // Kenya — NSE (5)
-  { symbol: 'SCOM', name: 'Safaricom', price: 28.5, change: 0.35, changePercent: 1.24, market: 'XNAI', currency: 'KES', country: 'KE', class: 'equity' },
-  { symbol: 'EQTY', name: 'Equity Group Holdings', price: 52.75, change: -0.85, changePercent: -1.59, market: 'XNAI', currency: 'KES', country: 'KE', class: 'equity' },
-  { symbol: 'KCB', name: 'KCB Group', price: 48.3, change: 0.6, changePercent: 1.26, market: 'XNAI', currency: 'KES', country: 'KE', class: 'equity' },
-  { symbol: 'EABL', name: 'East African Breweries', price: 185.0, change: 2.5, changePercent: 1.37, market: 'XNAI', currency: 'KES', country: 'KE', class: 'equity' },
-  { symbol: 'BAT', name: 'BAT Kenya', price: 415.0, change: -5.0, changePercent: -1.19, market: 'XNAI', currency: 'KES', country: 'KE', class: 'equity' },
+  // US — NASDAQ / NYSE (15)
+  { symbol: 'AAPL', name: 'Apple Inc.', price: 295.34, change: 3.85, changePercent: 1.32, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
+  { symbol: 'MSFT', name: 'Microsoft Corporation', price: 390.03, change: -7.32, changePercent: -1.84, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
+  { symbol: 'NVDA', name: 'NVIDIA Corporation', price: 204.66, change: 4.32, changePercent: 2.16, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
+  { symbol: 'META', name: 'Meta Platforms, Inc.', price: 568.39, change: -2.39, changePercent: -0.42, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
+  { symbol: 'AMD', name: 'Advanced Micro Devices, Inc.', price: 488.45, change: 36.05, changePercent: 7.97, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
+  { symbol: 'TSLA', name: 'Tesla, Inc.', price: 399.15, change: 8.71, changePercent: 2.23, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
+  { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 357.77, change: 1.39, changePercent: 0.39, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
+  { symbol: 'NFLX', name: 'Netflix, Inc.', price: 81.27, change: -0.73, changePercent: -0.89, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
+  { symbol: 'AMZN', name: 'Amazon.com, Inc.', price: 241.51, change: 3.51, changePercent: 1.47, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
+  { symbol: 'AVGO', name: 'Broadcom Inc.', price: 385.57, change: 13.47, changePercent: 3.62, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
+  { symbol: 'COST', name: 'Costco Wholesale Corporation', price: 975.69, change: -7.68, changePercent: -0.78, market: 'XNAS', currency: 'USD', country: 'US', class: 'equity' },
+  { symbol: 'JPM', name: 'JPMorgan Chase & Co.', price: 313.49, change: 4.35, changePercent: 1.41, market: 'XNYS', currency: 'USD', country: 'US', class: 'equity' },
+  { symbol: 'V', name: 'Visa Inc.', price: 319.05, change: -3.91, changePercent: -1.21, market: 'XNYS', currency: 'USD', country: 'US', class: 'equity' },
+  { symbol: 'DIS', name: 'The Walt Disney Company', price: 100.34, change: 1.73, changePercent: 1.75, market: 'XNYS', currency: 'USD', country: 'US', class: 'equity' },
+  { symbol: 'WMT', name: 'Walmart Inc.', price: 120.5, change: -0.09, changePercent: -0.07, market: 'XNYS', currency: 'USD', country: 'US', class: 'equity' },
+  // Nigeria — NGX / XNSA (10)
+  { symbol: 'MTNN', name: 'MTN Nigeria Communications Plc', price: 793.0, change: 3.0, changePercent: 0.38, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
+  { symbol: 'DANGCEM', name: 'Dangote Cement Plc', price: 1180.0, change: 25.0, changePercent: 2.16, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
+  { symbol: 'GTCO', name: 'Guaranty Trust Holding Company Plc', price: 136.0, change: 4.85, changePercent: 3.7, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
+  { symbol: 'ZENITHBANK', name: 'Zenith Bank Plc', price: 129.0, change: -1.09, changePercent: -0.84, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
+  { symbol: 'AIRTELAFRI', name: 'Airtel Africa Plc', price: 3021.3, change: 0, changePercent: 0, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
+  { symbol: 'BUACEMENT', name: 'BUA Cement Plc', price: 378.0, change: 8.5, changePercent: 2.3, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
+  { symbol: 'BUAFOODS', name: 'BUA Foods PLC', price: 967.0, change: 0, changePercent: 0, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
+  { symbol: 'SEPLAT', name: 'Seplat Energy Plc', price: 11495.0, change: 125.0, changePercent: 1.1, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
+  { symbol: 'UBA', name: 'United Bank for Africa Plc', price: 43.3, change: 0.2, changePercent: 0.46, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
+  { symbol: 'ACCESSCORP', name: 'Access Holdings Plc', price: 24.0, change: -0.55, changePercent: -2.29, market: 'XNSA', currency: 'NGN', country: 'NG', class: 'equity' },
+  // Kenya — NSE / XNAI (5)
+  { symbol: 'SCOM', name: 'Safaricom PLC', price: 31.1, change: -0.1, changePercent: -0.32, market: 'XNAI', currency: 'KES', country: 'KE', class: 'equity' },
+  { symbol: 'EQTY', name: 'Equity Group Holdings Plc', price: 75.5, change: 0.25, changePercent: 0.33, market: 'XNAI', currency: 'KES', country: 'KE', class: 'equity' },
+  { symbol: 'KCB', name: 'KCB Group PLC', price: 69.25, change: 0, changePercent: 0, market: 'XNAI', currency: 'KES', country: 'KE', class: 'equity' },
+  { symbol: 'EABL', name: 'East African Breweries PLC', price: 253.0, change: 4.0, changePercent: 1.61, market: 'XNAI', currency: 'KES', country: 'KE', class: 'equity' },
+  { symbol: 'BAT', name: 'British American Tobacco Kenya Plc', price: 517.0, change: -0.98, changePercent: -0.19, market: 'XNAI', currency: 'KES', country: 'KE', class: 'equity' },
 ];
 
 function catalogKey(symbol: string, market: string): string {
