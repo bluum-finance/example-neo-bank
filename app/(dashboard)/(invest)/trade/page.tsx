@@ -57,7 +57,7 @@ function TradePageContent() {
         </div>
       </div>
 
-      <section className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 items-start">
+      <section className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2.5fr)] gap-6 items-start">
         <div className="flex min-w-0 flex-col gap-6">
           <QuickTrade
             initialSymbol={initialSymbol}

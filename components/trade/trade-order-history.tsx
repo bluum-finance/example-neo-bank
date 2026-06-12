@@ -60,7 +60,7 @@ export function TradeOrderHistory({ onRefresh, isRefreshing }: TradeOrderHistory
             <tbody className="divide-y divide-[#1E3D2F]/60">
               {orders.map((order) => (
                 <tr key={order.id} className="transition-colors hover:bg-[#07120F]/50">
-                  <td className="px-5 py-3">
+                  <td className="px-5 py-4">
                     <Link
                       href={`/assets/${order.symbol.toLowerCase()}`}
                       className="font-mono font-bold text-white transition-colors hover:text-[#57B75C]"
