@@ -251,7 +251,7 @@ const SelfDirectedDashboard = ({
   ];
 
   return (
-    <div className="space-y-6 my-4 lg:px-8 max-w-5xl mx-auto">
+    <div className="space-y-6 my-4 lg:px-8 mx-auto">
       <section className="pt-6">
         <div className="flex gap-2">
           <button
